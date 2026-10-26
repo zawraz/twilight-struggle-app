@@ -50,7 +50,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
   const [openId, setOpenId] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
-  const [playedLast, setPlayedLast] = useState(false)
+  const [playedLast, setPlayedLast] = useState(true)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
   const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)

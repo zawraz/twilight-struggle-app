@@ -194,13 +194,15 @@ describe('Karty: filters and order', () => {
     expect(rows()).toHaveLength(39)
   })
 
-  it('moves played cards to the bottom only when asked', async () => {
+  it('moves played cards to the bottom until turned off', async () => {
     const user = await setup()
+    const playedLast = screen.getByRole('button', { name: copy.cards.playedLast })
+    expect(playedLast).toHaveAttribute('aria-pressed', 'true')
     await discard(user, 'Kulminacja napięć w Azji')
-    expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
-    await user.click(screen.getByRole('button', { name: copy.cards.playedLast }))
     expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Europie')
     expect(rows()[38]).toHaveTextContent('Kulminacja napięć w Azji')
+    await user.click(playedLast)
+    expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
   })
 })
 
