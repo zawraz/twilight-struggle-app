@@ -1,4 +1,4 @@
-# Twilight Struggle Companion
+# Twilight Struggle App
 
 A single-screen PWA to keep beside a game of Twilight Struggle (Deluxe Edition). Unofficial fan tool.
 
@@ -9,7 +9,7 @@ A single-screen PWA to keep beside a game of Twilight Struggle (Deluxe Edition).
 
 Progress is saved in `localStorage` on every change and restored on launch, until New Game.
 
-React + TypeScript + Tailwind CSS v4, built with Vite and `vite-plugin-pwa` (offline, installable). Styling follows the Twilight Struggle Companion design system.
+React + TypeScript + Tailwind CSS v4, built with Vite and `vite-plugin-pwa` (offline, installable). Styling follows the Twilight Struggle App design system.
 
 ## Scripts
 

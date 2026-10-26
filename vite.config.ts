@@ -12,8 +12,8 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'Twilight Struggle Companion',
-        short_name: 'TS Companion',
+        name: 'Twilight Struggle App',
+        short_name: 'Twilight Struggle',
         description: 'Pomocnik do gry Twilight Struggle: karty 4 PO, rzuty na sukces i EV rzutów.',
         lang: 'pl',
         theme_color: '#0f151c',

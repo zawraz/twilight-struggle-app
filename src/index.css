@@ -7,7 +7,7 @@
 /* Tiny screens (old small phones, any phone in landscape): sections tighten their padding. */
 @custom-variant tiny (@media (max-height: 600px));
 
-/* Twilight Struggle Companion design system tokens.
+/* Twilight Struggle App design system tokens.
    Situation Room (dark) is the default; Briefing (light) follows the OS setting. */
 :root {
   --surface: #0f151c;
