@@ -60,7 +60,9 @@ export function CardsPanel({ cards, dispatch }: CardsPanelProps) {
     setNoticeRun((r) => r + 1)
   }
 
-  const inPlay = cardsInPlay(cards.turn)
+  // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
+  // Each checklist section is already by value, so a single phase reads exactly as on paper.
+  const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)
   const startedPhases = PHASES.filter((phase) => phaseStarted(phase, cards.turn))
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))

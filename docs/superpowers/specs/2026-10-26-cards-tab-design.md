@@ -111,7 +111,9 @@ ops value ("–" for scoring cards), as on the checklist.
 
 ### Order
 
-- Default: checklist order (`order`), with or without filters.
+- Default: by ops value (scoring cards first), then checklist order (`order`) within a value, with or without filters.
+  Once Mid or Late War joins, its cards mix in by value instead of following the earlier phase. With only Early War
+  in play this is exactly the checklist's order, since each section is already sorted by value.
 - A separate toggle in the filter area: **discarded and removed to the bottom**. When on, available cards come first
   (in checklist order), then the rest (in checklist order). When off, every card stays in place.
 

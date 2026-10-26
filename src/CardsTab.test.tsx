@@ -69,6 +69,12 @@ describe('Karty: turns', () => {
     const user = await setup()
     await nextTurns(user, 3)
     expect(rows()).toHaveLength(87)
+    // Sorted by value across phases: Early War and Mid War scoring cards first, then the 1s.
+    expect(rows()[2]).toHaveTextContent('Kulminacja napięć w Europie')
+    expect(rows()[3]).toHaveTextContent('Kulminacja napięć w Afryce')
+    expect(rows()[6]).toHaveTextContent('Kulminacja napięć w Azji Południowo-Wschodniej')
+    expect(rows()[7]).toHaveTextContent('Blokada')
+    expect(rows()[15]).toHaveTextContent('Allende')
     await nextTurns(user, 4)
     expect(turn()).toHaveTextContent('8')
     expect(rows()).toHaveLength(111)
