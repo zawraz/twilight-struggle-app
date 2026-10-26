@@ -262,6 +262,96 @@ describe('Karty: toast', () => {
   })
 })
 
+describe('Karty: event picker', () => {
+  const TEHRAN = 'Nasz człowiek w Teheranie'
+  const ASK_NOT = '„Nie pytajcie co wasz kraj może zrobić dla was…”'
+  const SALT = 'Negocjacje SALT'
+  const pick = (name: string) => screen.getByRole('checkbox', { name: copy.cards.pick(name) })
+  const deck = (n: number) => screen.getByRole('status', { name: copy.cards.deckCount(n) })
+
+  async function play(user: User, name: string) {
+    await user.click(rowButton(name))
+    await user.click(screen.getByRole('button', { name: copy.cards.remove(name) }))
+  }
+
+  it('Tehran opens a picker with no Cancel, and undo takes back the whole play', async () => {
+    const user = await setup(at({ turn: 5, deck: 6 }))
+    await play(user, TEHRAN)
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /anuluj/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+    expect(screen.getByRole('button', { name: copy.cards.previousTurn })).toBeDisabled()
+    expect(rows()).toHaveLength(86)
+
+    const names = early.slice(0, 6).map(nameOf)
+    for (const name of names) await user.click(pick(name))
+    expect(screen.getByText(copy.cards.picked(5, 5))).toBeInTheDocument()
+    expect(pick(names[5])).toHaveAttribute('aria-checked', 'false')
+    await user.click(pick(names[4]))
+    await user.click(pick(names[3]))
+    await user.click(pick(names[2]))
+    expect(pick(names[0])).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(2, 0))).toBeInTheDocument()
+    expect(deck(4)).toBeInTheDocument()
+    expect(stateOf(names[0])).toBe('discarded')
+
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf(TEHRAN)).toBe('available')
+    expect(stateOf(names[0])).toBe('available')
+    expect(deck(6)).toBeInTheDocument()
+  })
+
+  it('Ask Not reshuffles when the deck can’t cover the draw', async () => {
+    const user = await setup(at({ turn: 5, deck: 3, states: discarded(early.slice(10, 15)) }))
+    await play(user, ASK_NOT)
+    for (const id of early.slice(0, 6)) await user.click(pick(nameOf(id)))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.drewReshuffled(6, 11))).toBeInTheDocument()
+    expect(deck(8)).toBeInTheDocument()
+    expect(stateOf(nameOf(early[0]))).toBe('available')
+    expect(inHandIcon(nameOf(early[20]))).not.toBeNull()
+  })
+
+  it('SALT lists only non-scoring discarded cards and puts the pick in hand', async () => {
+    const user = await setup(at({ turn: 5, deck: 20, states: discarded([idOf('Kulminacja napięć w Azji'), idOf('Blokada')]) }))
+    await play(user, SALT)
+    expect(rows()).toHaveLength(1)
+    await user.click(pick('Blokada'))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.toHand('Blokada'))).toBeInTheDocument()
+    expect(stateOf('Blokada')).toBe('available')
+    expect(inHandIcon('Blokada')).not.toBeNull()
+    expect(deck(20)).toBeInTheDocument()
+  })
+
+  it('the picker survives a reload and ignores filters', async () => {
+    const user = await setup(at({ turn: 5, deck: 20 }))
+    await user.click(screen.getByRole('button', { name: copy.cards.filters }))
+    await user.click(screen.getByRole('button', { name: copy.cards.sides.us }))
+    await play(user, TEHRAN)
+    expect(rows()).toHaveLength(86)
+
+    document.body.replaceChildren()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(0, 0))).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+  })
+
+  it('a turn change dismisses the last toast', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    expect(screen.getByRole('button', { name: copy.undo })).toBeInTheDocument()
+    await nextTurns(user, 1)
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+  })
+})
+
 describe('Karty: saved progress', () => {
   it('survives a reload and resets on New Game', async () => {
     const user = await setup()

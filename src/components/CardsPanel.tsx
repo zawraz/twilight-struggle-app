@@ -1,15 +1,20 @@
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Layers, Play, SlidersHorizontal, X } from 'lucide-react'
-import { useState, type Dispatch, type ReactNode } from 'react'
+import { useRef, useState, type Dispatch, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
+  ASK_NOT,
   CARD_STATES,
+  cardsReducer,
   cardsInPlay,
   cardState,
   discardedIds,
   entersWithReshuffle,
+  EVENT_PICKS,
   FIRST_TURN,
   isInHand,
   LAST_TURN,
+  pickableIds,
+  TEHRAN,
   type CardsAction,
   type CardsState,
   type CardState,
@@ -17,6 +22,7 @@ import {
 import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
 import type { Toast } from '../lib/useToast'
 import { CardRow } from './CardRow'
+import { EventPicker } from './EventPicker'
 import { SIDE_TEXT } from './tone'
 
 /** Each count's mark, matching the marks on the card rows. */
@@ -40,17 +46,22 @@ interface CardsPanelProps {
   dispatch: Dispatch<CardsAction>
   /** Shows what just happened over the header, with a way to take it back. */
   notify: (toast: Toast) => void
-  /** Going back a turn makes the last toast's undo stale. */
-  onTurnBack: () => void
+  /** A turn change makes the last toast's undo stale. */
+  onTurnChange: () => void
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, notify, onTurnChange }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
   const [handFirst, setHandFirst] = useState(true)
+  const [picks, setPicks] = useState<number[]>([])
+  // The game from just before the event card was played: what its toast's undo puts back.
+  const eventStart = useRef<CardsState | null>(null)
+  const pending = cards.pending
+  const pickable = pickableIds(cards)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
   const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)
@@ -60,7 +71,8 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length + filters.value.length
 
   const matches = <T,>(selected: readonly T[], value: T) => selected.length === 0 || selected.includes(value)
-  const visible = inPlay.filter(
+  // A picker needs every card it can pick, whatever the filters say.
+  const visible = pending !== null ? inPlay.filter((card) => pickable.includes(card.id)) : inPlay.filter(
     (card) =>
       matches(filters.player, card.player) &&
       matches(phaseFilter, card.phase) &&
@@ -76,25 +88,57 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
     // Going back the turn is what takes its reshuffle back.
     if (entersWithReshuffle(cards)) {
       notify({ text: copy.cards.reshuffled(discardedIds(cards).length), undo: previousTurn })
-    }
+    } else onTurnChange()
     setOpenId(null)
     dispatch({ type: 'nextTurn' })
   }
 
   function previousTurn() {
     setOpenId(null)
-    onTurnBack()
+    onTurnChange()
     dispatch({ type: 'previousTurn' })
   }
 
   function change(id: number, name: string, state: CardState) {
     const before = cardState(cards, id)
     setOpenId(null)
+    if (cardsReducer(cards, { type: 'setCardState', id, state }).pending !== null) {
+      // An event card: its toast comes once its picker is done.
+      eventStart.current = cards
+      setPicks([])
+      dispatch({ type: 'setCardState', id, state })
+      return
+    }
     notify({
       text: copy.cards.changed(name, copy.cards.state[state]),
       undo: () => dispatch({ type: 'setCardState', id, state: before }),
     })
     dispatch({ type: 'setCardState', id, state })
+  }
+
+  function togglePick(id: number) {
+    setPicks((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : prev.length < EVENT_PICKS[pending!] ? [...prev, id] : prev,
+    )
+  }
+
+  function confirmPicks() {
+    const start = eventStart.current
+    const n = picks.length
+    let text: string
+    if (pending === TEHRAN) {
+      text = copy.cards.tehran(n, start && start.deck <= 5 ? discardedIds(start).length : 0)
+    } else if (pending === ASK_NOT) {
+      text = cards.deck < n ? copy.cards.drewReshuffled(n, discardedIds(cards).length + n) : copy.cards.drewWithout(n)
+    } else {
+      const taken = inPlay.find((card) => card.id === picks[0])
+      text = taken ? copy.cards.toHand(taken.name) : copy.cards.nothingTaken
+    }
+    dispatch({ type: 'resolveEvent', picked: picks })
+    setPicks([])
+    eventStart.current = null
+    // After a reload there is no snapshot to go back to.
+    notify(start ? { text, undo: () => dispatch({ type: 'restore', state: start }) } : { text })
   }
 
   const toggle = <K extends keyof Filters>(group: K, value: Filters[K][number]) =>
@@ -110,7 +154,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
     <div className="grid min-h-0 grid-rows-[auto_auto_1fr] gap-2">
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
         <div className="flex items-center gap-2">
-          <IconButton label={copy.cards.previousTurn} onClick={previousTurn} disabled={cards.turn <= FIRST_TURN}>
+          <IconButton label={copy.cards.previousTurn} onClick={previousTurn} disabled={cards.turn <= FIRST_TURN || pending !== null}>
             <ChevronLeft className="size-5" aria-hidden="true" />
           </IconButton>
           <div className="flex items-baseline gap-1.5" aria-label={copy.cards.turnOf(cards.turn)} role="status">
@@ -119,7 +163,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
             </span>
             <span className="w-7 text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
           </div>
-          <IconButton label={copy.cards.nextTurn} onClick={nextTurn} disabled={cards.turn >= LAST_TURN}>
+          <IconButton label={copy.cards.nextTurn} onClick={nextTurn} disabled={cards.turn >= LAST_TURN || pending !== null}>
             <ChevronRight className="size-5" aria-hidden="true" />
           </IconButton>
           <div className="ml-auto flex items-baseline gap-1.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
@@ -155,71 +199,75 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
         </div>
       </section>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Chip pressed={filtersShown} onClick={() => setFiltersShown((s) => !s)}>
-            <SlidersHorizontal className="size-4" aria-hidden="true" />
-            {copy.cards.filters}
-            {activeFilters > 0 && <span className="font-mono tabular-nums">({activeFilters})</span>}
-          </Chip>
-          <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)}>
-            <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
-            {copy.cards.playedLast}
-          </Chip>
-          <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)}>
-            <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
-            {copy.cards.handFirst}
-          </Chip>
-          {activeFilters > 0 && (
-            <button
-              type="button"
-              onClick={() => setFilters(NO_FILTERS)}
-              className="ml-auto px-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted underline"
-            >
-              {copy.cards.clearFilters}
-            </button>
-          )}
-        </div>
-        {filtersShown && (
-          <div className="grid gap-1.5 rounded-card border border-line bg-surface-raised p-2">
-            <ChipGroup label={copy.cards.filterGroups.player}>
-              {CARD_SIDES.map((side) => (
-                <Chip key={side} pressed={filters.player.includes(side)} onClick={() => toggle('player', side)}>
-                  <span className={filters.player.includes(side) ? '' : SIDE_TEXT[side]}>{copy.cards.sides[side]}</span>
-                </Chip>
-              ))}
-            </ChipGroup>
-            {startedPhases.length > 1 && (
-              <ChipGroup label={copy.cards.filterGroups.phase}>
-                {startedPhases.map((phase) => (
-                  <Chip key={phase} pressed={filters.phase.includes(phase)} onClick={() => toggle('phase', phase)}>
-                    {copy.cards.phases[phase]}
+      {pending !== null ? (
+        <EventPicker event={pending} count={picks.length} onConfirm={confirmPicks} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Chip pressed={filtersShown} onClick={() => setFiltersShown((s) => !s)}>
+              <SlidersHorizontal className="size-4" aria-hidden="true" />
+              {copy.cards.filters}
+              {activeFilters > 0 && <span className="font-mono tabular-nums">({activeFilters})</span>}
+            </Chip>
+            <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)}>
+              <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
+              {copy.cards.playedLast}
+            </Chip>
+            <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)}>
+              <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
+              {copy.cards.handFirst}
+            </Chip>
+            {activeFilters > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilters(NO_FILTERS)}
+                className="ml-auto px-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted underline"
+              >
+                {copy.cards.clearFilters}
+              </button>
+            )}
+          </div>
+          {filtersShown && (
+            <div className="grid gap-1.5 rounded-card border border-line bg-surface-raised p-2">
+              <ChipGroup label={copy.cards.filterGroups.player}>
+                {CARD_SIDES.map((side) => (
+                  <Chip key={side} pressed={filters.player.includes(side)} onClick={() => toggle('player', side)}>
+                    <span className={filters.player.includes(side) ? '' : SIDE_TEXT[side]}>{copy.cards.sides[side]}</span>
                   </Chip>
                 ))}
               </ChipGroup>
-            )}
-            <ChipGroup label={copy.cards.filterGroups.state}>
-              {CARD_STATES.map((state) => (
-                <Chip key={state} pressed={filters.state.includes(state)} onClick={() => toggle('state', state)}>
-                  {copy.cards.states[state]}
-                </Chip>
-              ))}
-            </ChipGroup>
-            <ChipGroup label={copy.cards.filterGroups.value}>
-              {CARD_VALUES.map((value) => (
-                <Chip
-                  key={value}
-                  pressed={filters.value.includes(value)}
-                  onClick={() => toggle('value', value)}
-                  label={copy.cards.ops(value)}
-                >
-                  {value === 0 ? copy.cards.scoring : value}
-                </Chip>
-              ))}
-            </ChipGroup>
-          </div>
-        )}
-      </div>
+              {startedPhases.length > 1 && (
+                <ChipGroup label={copy.cards.filterGroups.phase}>
+                  {startedPhases.map((phase) => (
+                    <Chip key={phase} pressed={filters.phase.includes(phase)} onClick={() => toggle('phase', phase)}>
+                      {copy.cards.phases[phase]}
+                    </Chip>
+                  ))}
+                </ChipGroup>
+              )}
+              <ChipGroup label={copy.cards.filterGroups.state}>
+                {CARD_STATES.map((state) => (
+                  <Chip key={state} pressed={filters.state.includes(state)} onClick={() => toggle('state', state)}>
+                    {copy.cards.states[state]}
+                  </Chip>
+                ))}
+              </ChipGroup>
+              <ChipGroup label={copy.cards.filterGroups.value}>
+                {CARD_VALUES.map((value) => (
+                  <Chip
+                    key={value}
+                    pressed={filters.value.includes(value)}
+                    onClick={() => toggle('value', value)}
+                    label={copy.cards.ops(value)}
+                  >
+                    {value === 0 ? copy.cards.scoring : value}
+                  </Chip>
+                ))}
+              </ChipGroup>
+            </div>
+          )}
+        </div>
+      )}
 
       <ul
         aria-label={copy.cards.list}
@@ -235,6 +283,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
             onToggle={() => setOpenId((id) => (id === card.id ? null : card.id))}
             onClose={() => setOpenId(null)}
             onChange={(state) => change(card.id, card.name, state)}
+            pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
           />
         ))}
         {shown.length === 0 && (
