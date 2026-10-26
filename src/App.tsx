@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, NotebookText } from 'lucide-react'
+import { NotebookText, PlayingCardsFan } from 'lucide-react'
 import { useState } from 'react'
 import { GameAction } from './components/GameAction'
 import { OpsCounter } from './components/OpsCounter'
@@ -16,7 +16,7 @@ export const DIE_VALUES = [1, 2, 3, 4, 5, 6] as const
 
 const TABS = [
   { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-5" aria-hidden="true" /> },
-  { id: 'cards', label: copy.tabs.cards, icon: <GalleryVerticalEnd className="size-5" aria-hidden="true" /> },
+  { id: 'cards', label: copy.tabs.cards, icon: <PlayingCardsFan className="size-5" aria-hidden="true" /> },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 const TAB_ID = 'view'
