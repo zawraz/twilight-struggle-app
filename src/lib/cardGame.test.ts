@@ -14,7 +14,6 @@ import {
   SALT,
   TEHRAN,
   type CardsAction,
-  type CardsState,
 } from './cardGame'
 import { CARDS } from './cards'
 import { at, discarded, run } from '../test/cardStates'
