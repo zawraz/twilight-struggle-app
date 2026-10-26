@@ -17,8 +17,8 @@ export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
 export const DIE_VALUES = [1, 2, 3, 4, 5, 6] as const
 
 const TABS = [
-  { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-5" aria-hidden="true" /> },
   { id: 'cards', label: copy.tabs.cards, icon: <PlayingCardsFan className="size-5" aria-hidden="true" /> },
+  { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-5" aria-hidden="true" /> },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 const TAB_ID = 'view'

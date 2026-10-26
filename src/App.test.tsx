@@ -478,7 +478,7 @@ describe('header tabs', () => {
 
   it('opens on Dziennik with the game log', () => {
     setup()
-    expect(within(header()).getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Dziennik', 'Karty'])
+    expect(within(header()).getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Karty', 'Dziennik'])
     expect(tab('Karty')).toHaveTextContent('') // icon only
 
     expect(tab('Dziennik')).toHaveAttribute('aria-selected', 'true')
@@ -506,10 +506,10 @@ describe('header tabs', () => {
   it('moves between tabs with the arrow keys', async () => {
     const { user } = setup()
     act(() => tab('Dziennik').focus())
-    await user.keyboard('{ArrowRight}')
+    await user.keyboard('{ArrowLeft}')
     expect(tab('Karty')).toHaveFocus()
     expect(tab('Karty')).toHaveAttribute('aria-selected', 'true')
-    await user.keyboard('{ArrowRight}')
+    await user.keyboard('{ArrowLeft}')
     expect(tab('Dziennik')).toHaveFocus()
   })
 })
