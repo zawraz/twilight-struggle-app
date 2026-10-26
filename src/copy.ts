@@ -46,7 +46,7 @@ export const copy = {
   } satisfies TrackerCopy,
 
   dice: {
-    title: 'Średnia rzutów',
+    title: 'EV rzutów',
     wheel: (side) => `Rzut kością: ${side}`,
     submit: (side) => `Potwierdź rzut kością: ${side}`,
     undo: (side) => `Cofnij rzut kością: ${side}`,

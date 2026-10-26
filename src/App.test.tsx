@@ -476,7 +476,7 @@ describe('header: End and New Game', () => {
 describe('Polish interface', () => {
   it('shows every label in Polish', async () => {
     const { user } = setup()
-    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'Średnia rzutów', 'Zakończ grę']) {
+    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'EV rzutów', 'Zakończ grę']) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
     expect(screen.getAllByText('ZSRR')).toHaveLength(3)

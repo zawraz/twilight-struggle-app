@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: 'Twilight Struggle Companion',
         short_name: 'TS Companion',
-        description: 'Pomocnik do gry Twilight Struggle: karty 4 PO, rzuty na sukces i średnia rzutów.',
+        description: 'Pomocnik do gry Twilight Struggle: karty 4 PO, rzuty na sukces i EV rzutów.',
         lang: 'pl',
         theme_color: '#0f151c',
         background_color: '#0f151c',
