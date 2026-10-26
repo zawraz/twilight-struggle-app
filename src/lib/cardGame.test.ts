@@ -7,7 +7,12 @@ import {
   loadCards,
   newCards,
   saveCards,
+  ASK_NOT,
+  availableIds,
   isInHand,
+  pickableIds,
+  SALT,
+  TEHRAN,
   type CardsAction,
   type CardsState,
 } from './cardGame'
@@ -34,7 +39,14 @@ const BLOCKADE = 10
 const NASSER = 15
 const ARMS_RACE = 39
 const UN_INTERVENTION = 32
+const ASIA_SCORING = 1
 const early = cardsInPlay(1).map((c) => c.id)
+/** Turn-5 cards other than the event cards, to pick from. */
+const pool = cardsInPlay(5)
+  .map((c) => c.id)
+  .filter((id) => id !== SALT && id !== ASK_NOT && id !== TEHRAN && id !== ASIA_SCORING && id !== BLOCKADE)
+const resolve = (...picked: number[]): CardsAction => ({ type: 'resolveEvent', picked })
+const discarded = (ids: readonly number[]) => Object.fromEntries(ids.map((id) => [id, 'discarded' as const]))
 
 describe('card data', () => {
   it('matches the checklist: 39 early, 48 mid and 24 late cards', () => {
@@ -152,6 +164,102 @@ describe('cardsReducer', () => {
   it('resets on New Game', () => {
     const s = run([discard(BLOCKADE), ...next(5), { type: 'newGame' }])
     expect(s).toEqual(newCards())
+  })
+})
+
+describe('card events', () => {
+  it('removing an event card waits for its picker; nothing else moves meanwhile', () => {
+    const s = run([remove(TEHRAN)], at({ turn: 5, deck: 20 }))
+    expect(s.pending).toBe(TEHRAN)
+    expect(run([...next(1), { type: 'previousTurn' }, discard(BLOCKADE)], s)).toBe(s)
+  })
+
+  it('offers nothing to pick with no event waiting', () => {
+    expect(pickableIds(at({ turn: 5 }))).toEqual([])
+  })
+
+  it('Tehran with more than 5 in the deck: no reshuffle; its discards leave the deck', () => {
+    let s = run([discard(ARMS_RACE), remove(TEHRAN)], at({ turn: 5, deck: 6 }))
+    expect(cardState(s, ARMS_RACE)).toBe('discarded')
+    s = cardsReducer(s, resolve(pool[0], pool[1]))
+    expect([cardState(s, pool[0]), cardState(s, pool[1])]).toEqual(['discarded', 'discarded'])
+    expect(s.deck).toBe(4)
+    expect(s.pending).toBeNull()
+  })
+
+  it('Tehran with 5 or fewer: the discard pile is shuffled in, nobody marked', () => {
+    const s = run([remove(TEHRAN)], at({ turn: 5, deck: 4, states: discarded(pool.slice(0, 10)), inHand: [pool[20]] }))
+    expect(pool.slice(0, 10).every((id) => cardState(s, id) === 'available')).toBe(true)
+    expect(s.deck).toBe(14)
+    expect(s.inHand).toEqual([pool[20]])
+  })
+
+  it('Tehran ignores cards in hand and picks past 5', () => {
+    let s = run([remove(TEHRAN)], at({ turn: 5, deck: 20, inHand: [pool[0]] }))
+    expect(pickableIds(s)).not.toContain(pool[0])
+    s = cardsReducer(s, resolve(...pool.slice(0, 7)))
+    expect(cardState(s, pool[0])).toBe('available')
+    expect(pool.slice(1, 6).every((id) => cardState(s, id) === 'discarded')).toBe(true)
+    expect(cardState(s, pool[6])).toBe('available')
+    expect(s.deck).toBe(15)
+  })
+
+  it('never takes the deck below 0', () => {
+    const s = run([remove(TEHRAN), resolve(...pool.slice(0, 5))], at({ turn: 5, deck: 2 }))
+    expect(s.deck).toBe(0)
+  })
+
+  it('Ask Not draws without a reshuffle when the deck covers it', () => {
+    let s = run([remove(ASK_NOT), resolve(...pool.slice(0, 6))], at({ turn: 5, deck: 11 }))
+    expect(pool.slice(0, 6).every((id) => cardState(s, id) === 'discarded')).toBe(true)
+    expect(s.deck).toBe(5)
+    expect(s.inHand).toEqual([])
+    s = run([remove(ASK_NOT), resolve(...pool.slice(0, 6))], at({ turn: 5, deck: 6 }))
+    expect(s.deck).toBe(0)
+    expect(cardState(s, pool[0])).toBe('discarded')
+  })
+
+  it('Ask Not reshuffles, the just-discarded cards included, and marks the rest in hand', () => {
+    const shuffled = pool.slice(0, 11)
+    const s = run([remove(ASK_NOT), resolve(...pool.slice(0, 6))], at({ turn: 5, deck: 3, states: discarded(pool.slice(6, 11)) }))
+    expect(shuffled.every((id) => cardState(s, id) === 'available')).toBe(true)
+    expect(cardState(s, ASK_NOT)).toBe('removed')
+    expect([...s.inHand].sort()).toEqual(availableIds(s).filter((id) => !shuffled.includes(id)).sort())
+    expect(s.deck).toBe(8)
+  })
+
+  it('Ask Not ignores picks past 8', () => {
+    const s = run([remove(ASK_NOT), resolve(...pool.slice(0, 10))], at({ turn: 5, deck: 20 }))
+    expect(pool.slice(0, 10).filter((id) => cardState(s, id) === 'discarded')).toHaveLength(8)
+    expect(s.deck).toBe(12)
+  })
+
+  it('SALT takes one non-scoring card from the discard pile into a hand', () => {
+    const before = run([discard(ASIA_SCORING), discard(BLOCKADE), discard(NASSER), remove(SALT)], at({ turn: 5, deck: 20 }))
+    expect(pickableIds(before)).toEqual(expect.arrayContaining([BLOCKADE, NASSER]))
+    expect(pickableIds(before)).not.toContain(ASIA_SCORING)
+    const scoring = cardsReducer(before, resolve(ASIA_SCORING))
+    expect(cardState(scoring, ASIA_SCORING)).toBe('discarded')
+    expect(scoring.pending).toBeNull()
+    const s = cardsReducer(before, resolve(BLOCKADE, NASSER))
+    expect(cardState(s, BLOCKADE)).toBe('available')
+    expect(isInHand(s, BLOCKADE)).toBe(true)
+    expect(cardState(s, NASSER)).toBe('discarded')
+    expect(s.deck).toBe(20)
+  })
+
+  it('plays the spec’s turn-5 example down to 5 in the deck', () => {
+    let s = run([remove(TEHRAN)], at({ turn: 5, deck: 4, states: discarded(pool.slice(0, 10)) }))
+    expect(s.deck).toBe(14)
+    s = run([resolve(...pool.slice(10, 13)), remove(ASK_NOT), resolve(...pool.slice(13, 19))], s)
+    expect(s.deck).toBe(5)
+    expect(cardState(s, pool[0])).toBe('available')
+  })
+
+  it('restore puts back a snapshot', () => {
+    const before = at({ turn: 5, deck: 6 })
+    const s = run([remove(TEHRAN), resolve(pool[0]), { type: 'restore', state: before }], before)
+    expect(s).toEqual(before)
   })
 })
 

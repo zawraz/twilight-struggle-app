@@ -16,6 +16,10 @@ export const TEHRAN = 108
 /** Cards whose event the app follows up with a picker. */
 export type EventCard = typeof SALT | typeof ASK_NOT | typeof TEHRAN
 const EVENT_CARDS: readonly number[] = [SALT, ASK_NOT, TEHRAN]
+/** How many cards each event's picker takes at most. */
+export const EVENT_PICKS: Record<EventCard, number> = { [SALT]: 1, [ASK_NOT]: 8, [TEHRAN]: 5 }
+/** Tehran draws 5: a deck this small is reshuffled first. */
+const TEHRAN_DRAW = 5
 
 /** What entering a turn did, so going back can take it back. */
 export interface TurnEntry {
@@ -45,6 +49,10 @@ export type CardsAction =
   | { type: 'setCardState'; id: number; state: CardState }
   | { type: 'nextTurn' }
   | { type: 'previousTurn' }
+  /** Closes the waiting event's picker with what it picked. */
+  | { type: 'resolveEvent'; picked: readonly number[] }
+  /** Puts a whole earlier state back: how an event is taken back. */
+  | { type: 'restore'; state: CardsState }
   | { type: 'newGame' }
 
 export function newCards(): CardsState {
@@ -97,12 +105,74 @@ function unshuffle(state: CardsState, ids: readonly number[]): CardsState {
 }
 
 const isPermanent = (id: number) => CARDS.find((card) => card.id === id)?.isPermanent ?? false
+const valueOf = (id: number) => CARDS.find((card) => card.id === id)?.value ?? 0
+
+/**
+ * What the waiting event's picker may tick: Tehran's discards come from the deck, so not cards
+ * known to be in hand; Ask Not discards from the US hand; SALT takes a non-scoring discard.
+ */
+export function pickableIds(state: CardsState): number[] {
+  switch (state.pending) {
+    case TEHRAN:
+      return availableIds(state).filter((id) => !isInHand(state, id))
+    case ASK_NOT:
+      return availableIds(state)
+    case SALT:
+      return discardedIds(state).filter((id) => valueOf(id) > 0)
+    case null:
+      return []
+  }
+}
+
+/** The discard pile goes back into the deck. */
+function reshuffle(state: CardsState): CardsState {
+  const returned = discardedIds(state)
+  return { ...withStates(state, returned, 'available'), deck: state.deck + returned.length }
+}
+
+/** An event card has just been played: Tehran reshuffles a deck too small for its draw. */
+function playEvent(state: CardsState, id: EventCard): CardsState {
+  const played = { ...withStates(state, [id], 'removed'), pending: id }
+  return id === TEHRAN && played.deck <= TEHRAN_DRAW ? reshuffle(played) : played
+}
+
+function resolveEvent(state: CardsState, picked: readonly number[]): CardsState {
+  const allowed = pickableIds(state)
+  const picks = picked.filter((id) => allowed.includes(id)).slice(0, EVENT_PICKS[state.pending!])
+  const done = { ...state, pending: null }
+  switch (state.pending) {
+    case TEHRAN: {
+      const after = withStates(done, picks, 'discarded')
+      return { ...after, deck: Math.max(0, after.deck - picks.length) }
+    }
+    case ASK_NOT: {
+      const after = withStates(done, picks, 'discarded')
+      if (after.deck >= picks.length) return { ...after, deck: after.deck - picks.length }
+      // The old deck and the other hand were already in hands; the reshuffled cards weren't.
+      const marked = availableIds(after).filter((id) => !isInHand(after, id))
+      const shuffled = reshuffle({ ...after, inHand: [...after.inHand, ...marked] })
+      return { ...shuffled, deck: Math.max(0, shuffled.deck - picks.length) }
+    }
+    case SALT: {
+      const after = withStates(done, picks, 'available')
+      return { ...after, inHand: [...after.inHand, ...picks] }
+    }
+  }
+  return done
+}
 
 export function cardsReducer(state: CardsState, action: CardsAction): CardsState {
+  // A played event is finished before anything else moves.
+  if (state.pending !== null && action.type !== 'resolveEvent' && action.type !== 'restore' && action.type !== 'newGame') {
+    return state
+  }
   switch (action.type) {
     case 'setCardState':
       // Only cards with an asterisk leave the game.
       if (action.state === 'removed' && !isPermanent(action.id)) return state
+      if (action.state === 'removed' && EVENT_CARDS.includes(action.id) && cardState(state, action.id) !== 'removed') {
+        return playEvent(state, action.id as EventCard)
+      }
       return withStates(state, [action.id], action.state)
     case 'nextTurn': {
       if (state.turn >= LAST_TURN) return state
@@ -126,6 +196,10 @@ export function cardsReducer(state: CardsState, action: CardsAction): CardsState
       const left = { ...back, inHand: back.inHand.filter((id) => !entry.marked.includes(id)), history: state.history.slice(0, -1) }
       return { ...left, deck: entry.deck ?? dealtDeck(left) }
     }
+    case 'resolveEvent':
+      return state.pending === null ? state : resolveEvent(state, action.picked)
+    case 'restore':
+      return action.state
     case 'newGame':
       return newCards()
   }
