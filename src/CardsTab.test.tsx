@@ -99,6 +99,15 @@ describe('Karty: turns', () => {
     expect(screen.queryByRole('button', { name: 'Przetasuj' })).not.toBeInTheDocument()
   })
 
+  it('says the deck ran out when there is nothing to reshuffle', async () => {
+    const removed = Object.fromEntries(early.slice(0, 23).map((id) => [id, 'removed' as const]))
+    const user = await setup(at({ states: removed }))
+    await nextTurns(user, 1)
+    expect(screen.getByText(copy.cards.deckRanOut)).toBeInTheDocument()
+    expect(screen.queryByText(copy.cards.reshuffled(0))).not.toBeInTheDocument()
+    expect(inHandIcon(nameOf(early[30]))).not.toBeNull()
+  })
+
   it('reshuffles on a new turn only when the deck runs out, marking cards in hand', async () => {
     const user = await setup(at({ states: discarded(early.slice(0, 23)) }))
     const kept = nameOf(early[30])
@@ -282,6 +291,23 @@ describe('Karty: event picker', () => {
     await user.click(rowButton(name))
     await user.click(screen.getByRole('button', { name: copy.cards.remove(name) }))
   }
+
+  it('Tehran counts what its reshuffle brought back, after a reload too', async () => {
+    const user = await setup(at({ turn: 5, deck: 4, states: discarded([...early.slice(0, 3), idOf(TEHRAN)]) }))
+    // Removed from the discard pile by a right swipe; its row then leaves the picker's list.
+    const surface = rowButton(TEHRAN).parentElement!
+    fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
+    fireEvent.pointerMove(surface, { pointerId: 1, clientX: 160, clientY: 10 })
+    fireEvent.pointerMove(surface, { pointerId: 1, clientX: 100 + SWIPE_COMMIT_PX + 20, clientY: 10 })
+    fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100 + SWIPE_COMMIT_PX + 20, clientY: 10 })
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(deck(7)).toBeInTheDocument()
+    document.body.replaceChildren()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(0, 3))).toBeInTheDocument()
+  })
 
   it('Tehran opens a picker with no Cancel, and undo takes back the whole play', async () => {
     const user = await setup(at({ turn: 5, deck: 6 }))

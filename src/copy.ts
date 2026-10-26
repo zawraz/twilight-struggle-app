@@ -45,6 +45,7 @@ export const copy = {
     nextTurn: 'Następna tura',
     previousTurn: 'Poprzednia tura',
     reshuffled: (n: number) => `Przetasowano: wraca ${cards(n)}`,
+    deckRanOut: 'Talia wyczerpana, nie ma czego przetasować',
     deck: 'Talia',
     deckCount: (n: number) => `Talia: ${cards(n)}`,
     inHand: 'Na ręce',

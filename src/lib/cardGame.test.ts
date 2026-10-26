@@ -123,6 +123,17 @@ describe('cardsReducer', () => {
     expect(isInHand(s, permanent)).toBe(false)
   })
 
+  it('going back a turn keeps a mark given again since', () => {
+    const inPlay = cardsInPlay(4).map((c) => c.id).filter((id) => id !== SALT)
+    let s = run([...discardAll(inPlay.slice(0, 69)), ...next(1)], at({ turn: 4 }))
+    const card = s.inHand.find((id) => id !== SALT && CARDS.find((c) => c.id === id)!.value > 0)!
+    s = run([discard(card), remove(SALT), resolve(card)], s)
+    expect(isInHand(s, card)).toBe(true)
+    s = cardsReducer(s, { type: 'previousTurn' })
+    expect(cardState(s, card)).toBe('available')
+    expect(isInHand(s, card)).toBe(true)
+  })
+
   it('going back a turn undoes its reshuffle and marks, restores the deck, keeps changes made since', () => {
     let s = run([...discardAll(early.slice(0, 23)), ...next(1)], at({ deck: 7 }))
     s = run([discard(early[30]), { type: 'previousTurn' }], s)
@@ -173,6 +184,22 @@ describe('card events', () => {
     expect([cardState(s, pool[0]), cardState(s, pool[1])]).toEqual(['discarded', 'discarded'])
     expect(s.deck).toBe(4)
     expect(s.pending).toBeNull()
+  })
+
+  it('Tehran remembers what its reshuffle brought back, never counting itself', () => {
+    const s = run([discard(TEHRAN), remove(TEHRAN)], at({ turn: 5, deck: 4, states: discarded(pool.slice(0, 3)) }))
+    expect([...s.eventReturned].sort()).toEqual([...pool.slice(0, 3)].sort())
+    expect(s.deck).toBe(7)
+    expect(cardsReducer(s, resolve()).eventReturned).toEqual([])
+    expect(run([remove(TEHRAN)], at({ turn: 5, deck: 6, states: discarded(pool.slice(0, 3)) })).eventReturned).toEqual([])
+  })
+
+  it('Tehran taken back by SALT and then played counts only the cards still discarded', () => {
+    let s = run([discard(TEHRAN), remove(SALT), resolve(TEHRAN)], at({ turn: 5, deck: 4, states: discarded(pool.slice(0, 3)) }))
+    expect(isInHand(s, TEHRAN)).toBe(true)
+    s = cardsReducer(s, remove(TEHRAN))
+    expect([...s.eventReturned].sort()).toEqual([...pool.slice(0, 3)].sort())
+    expect(s.deck).toBe(7)
   })
 
   it('Tehran with 5 or fewer: the discard pile is shuffled in, nobody marked', () => {
@@ -260,6 +287,13 @@ describe('card persistence', () => {
     } as unknown as Storage
   }
 
+  it('loads a save from before events remembered their reshuffle', () => {
+    const store = storage()
+    const { eventReturned: _, ...saved } = at({ turn: 2, deck: 5 })
+    store.setItem(CARDS_STORAGE_KEY, JSON.stringify(saved))
+    expect(loadCards(store)).toEqual(at({ turn: 2, deck: 5 }))
+  })
+
   it('round-trips through storage', () => {
     const store = storage()
     const s = run([discard(BLOCKADE), ...next(4), remove(ARMS_RACE)])
@@ -276,6 +310,7 @@ describe('card persistence', () => {
       inHand: [],
       deck: 22,
       pending: null,
+      eventReturned: [],
       history: [
         { returned: [], marked: [], deck: null },
         { returned: [15], marked: [], deck: null },

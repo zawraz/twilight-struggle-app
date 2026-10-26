@@ -87,7 +87,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
   function nextTurn() {
     // Going back the turn is what takes its reshuffle back.
     if (entersWithReshuffle(cards)) {
-      notify({ text: copy.cards.reshuffled(discardedIds(cards).length), undo: previousTurn })
+      const back = discardedIds(cards).length
+      notify({ text: back > 0 ? copy.cards.reshuffled(back) : copy.cards.deckRanOut, undo: previousTurn })
     } else onToastStale()
     setOpenId(null)
     dispatch({ type: 'nextTurn' })
@@ -128,7 +129,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
     const n = picks.length
     let text: string
     if (pending === TEHRAN) {
-      text = copy.cards.tehran(n, start && start.deck <= 5 ? discardedIds(start).length : 0)
+      text = copy.cards.tehran(n, cards.eventReturned.length)
     } else if (pending === ASK_NOT) {
       text = cards.deck < n ? copy.cards.drewReshuffled(n, discardedIds(cards).length + n) : copy.cards.drewWithout(n)
     } else {

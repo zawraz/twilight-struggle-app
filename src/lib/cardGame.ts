@@ -41,6 +41,8 @@ export interface CardsState {
   deck: number
   /** An event card just played, waiting for its picker. */
   pending: EventCard | null
+  /** What the waiting event's reshuffle brought back, for its toast. */
+  eventReturned: number[]
   /** What entering each turn after the first did, oldest first (`history[t - 2]` is turn t). */
   history: TurnEntry[]
 }
@@ -56,7 +58,7 @@ export type CardsAction =
   | { type: 'newGame' }
 
 export function newCards(): CardsState {
-  return { turn: FIRST_TURN, states: {}, inHand: [], deck: cardsInPlay(FIRST_TURN).length - handSize(FIRST_TURN), pending: null, history: [] }
+  return { turn: FIRST_TURN, states: {}, inHand: [], deck: cardsInPlay(FIRST_TURN).length - handSize(FIRST_TURN), pending: null, eventReturned: [], history: [] }
 }
 
 export const cardState = (state: CardsState, id: number): CardState => state.states[id] ?? 'available'
@@ -84,15 +86,24 @@ export function entersWithReshuffle(state: CardsState): boolean {
   return availableIds(entered).length <= handSize(entered.turn)
 }
 
-/** Cards that leave the hands — discarded or removed — lose their in-hand mark. */
+/**
+ * Cards that leave the hands — discarded or removed — lose their in-hand mark, and the turn that
+ * gave it forgets it: a mark given again later isn't that turn's to take back.
+ */
 function withStates(state: CardsState, ids: readonly number[], next: CardState): CardsState {
   const states = { ...state.states }
   for (const id of ids) {
     if (next === 'available') delete states[id]
     else states[id] = next
   }
-  const inHand = next === 'available' ? state.inHand : state.inHand.filter((id) => !ids.includes(id))
-  return { ...state, states, inHand }
+  if (next === 'available') return { ...state, states }
+  const kept = (id: number) => !ids.includes(id)
+  return {
+    ...state,
+    states,
+    inHand: state.inHand.filter(kept),
+    history: state.history.map((entry) => ({ ...entry, marked: entry.marked.filter(kept) })),
+  }
 }
 
 /** Back to the discard pile — but only cards still available, so a change made since wins. */
@@ -133,13 +144,14 @@ function reshuffle(state: CardsState): CardsState {
 /** An event card has just been played: Tehran reshuffles a deck too small for its draw. */
 function playEvent(state: CardsState, id: EventCard): CardsState {
   const played = { ...withStates(state, [id], 'removed'), pending: id }
-  return id === TEHRAN && played.deck <= TEHRAN_DRAW ? reshuffle(played) : played
+  if (id !== TEHRAN || played.deck > TEHRAN_DRAW) return played
+  return { ...reshuffle(played), eventReturned: discardedIds(played) }
 }
 
 function resolveEvent(state: CardsState, picked: readonly number[]): CardsState {
   const allowed = pickableIds(state)
   const picks = picked.filter((id) => allowed.includes(id)).slice(0, EVENT_PICKS[state.pending!])
-  const done = { ...state, pending: null }
+  const done = { ...state, pending: null, eventReturned: [] }
   switch (state.pending) {
     case TEHRAN: {
       const after = withStates(done, picks, 'discarded')
@@ -233,6 +245,7 @@ export function isCardsState(value: unknown): value is CardsState {
     isIdList(s.inHand) &&
     isCount(s.deck) &&
     (s.pending === null || EVENT_CARDS.includes(s.pending as number)) &&
+    isIdList(s.eventReturned) &&
     Array.isArray(s.history) &&
     s.history.length === s.turn - 1 &&
     s.history.every(isTurnEntry)
@@ -251,6 +264,7 @@ function fromLegacy(value: unknown): CardsState | null {
     inHand: [],
     deck: 0,
     pending: null,
+    eventReturned: [],
     history: s.history.map((returned) => ({ returned, marked: [], deck: null })),
   }
   return { ...state, deck: dealtDeck(state) }
@@ -261,7 +275,9 @@ export function loadCards(storage: Storage | undefined = globalThis.localStorage
   try {
     const raw = storage?.getItem(CARDS_STORAGE_KEY)
     if (raw) {
-      const parsed: unknown = JSON.parse(raw)
+      const stored: unknown = JSON.parse(raw)
+      // Saves from before events remembered their reshuffle.
+      const parsed = typeof stored === 'object' && stored !== null && 'deck' in stored ? { eventReturned: [], ...stored } : stored
       if (isCardsState(parsed)) return parsed
       const legacy = fromLegacy(parsed)
       if (legacy) return legacy
