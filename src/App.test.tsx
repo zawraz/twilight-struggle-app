@@ -198,6 +198,32 @@ describe('wheel picker', () => {
     act(() => vi.advanceTimersByTime(SETTLE_MS))
     expect(selected()).toHaveTextContent('+5')
   })
+
+  it('follows a drag that pauses between rows and then moves on', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    const list = wheel()
+    let scrollTop = 4 * ITEM_HEIGHT // resting on +1
+    Object.defineProperty(list, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (v: number) => {
+        scrollTop = v
+      },
+    })
+    list.scrollTo = () => {} // the finger holds the wheel: a programmatic scroll does not move it
+    fireEvent.touchStart(list)
+
+    scrollTop = 2 * ITEM_HEIGHT + 5 // the finger pauses just past +3
+    fireEvent.scroll(list)
+    act(() => vi.advanceTimersByTime(SETTLE_MS))
+    expect(selected()).toHaveTextContent('+3')
+
+    scrollTop = 7 * ITEM_HEIGHT // and drags on to −3 before letting go
+    fireEvent.scroll(list)
+    act(() => vi.advanceTimersByTime(SETTLE_MS))
+    expect(selected()).toHaveTextContent(`${MINUS}3`)
+  })
 })
 
 describe('Success Rolls', () => {

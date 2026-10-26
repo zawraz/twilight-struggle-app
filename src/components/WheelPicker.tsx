@@ -31,6 +31,9 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
   // Index the wheel is scrolling to on its own (after a tap or key press).
   // Scroll positions on the way there are not the user's choice and are ignored.
   const targetIndex = useRef<number | null>(null)
+  // The value just came from the wheel's own scroll position: it is already there (snap aligns the rest),
+  // and steering it would fight a finger that is still dragging.
+  const fromScroll = useRef(false)
 
   // The row height is set in CSS and changes with the screen size.
   const itemHeight = () => (listRef.current?.firstElementChild as HTMLElement | null)?.offsetHeight || ITEM_HEIGHT
@@ -42,7 +45,8 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
     const top = index * itemHeight()
     const smooth = mounted.current && !prefersReducedMotion()
     mounted.current = true
-    if (Math.abs(el.scrollTop - top) < 1) {
+    if (fromScroll.current || Math.abs(el.scrollTop - top) < 1) {
+      fromScroll.current = false
       targetIndex.current = null
       return
     }
@@ -63,10 +67,12 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
 
   useEffect(() => () => window.clearTimeout(settleTimer.current), [])
 
-  const select = (i: number) => {
+  const select = (i: number, scrolled = false) => {
     window.clearTimeout(settleTimer.current)
     const next = values[Math.min(values.length - 1, Math.max(0, i))]
-    if (next !== value) onChange(next)
+    if (next === value) return
+    fromScroll.current = scrolled
+    onChange(next)
   }
 
   const handleScroll = () => {
@@ -79,7 +85,7 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
         if (settled === targetIndex.current) targetIndex.current = null
         return
       }
-      select(settled)
+      select(settled, true)
     }, SETTLE_MS)
   }
 
