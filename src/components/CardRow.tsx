@@ -1,4 +1,4 @@
-import { Play, RotateCcw, TriangleAlert, X } from 'lucide-react'
+import { Check, Hand, Play, RotateCcw, TriangleAlert, X } from 'lucide-react'
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { copy } from '../copy'
 import type { CardState } from '../lib/cardGame'
@@ -15,11 +15,15 @@ export const LONG_PRESS_MS = 500
 interface CardRowProps {
   card: Card
   state: CardState
+  /** A reshuffle showed the card must be in one hand or the other. */
+  inHand: boolean
   /** The row's action buttons are showing. */
   open: boolean
   onToggle: () => void
   onClose: () => void
   onChange: (state: CardState) => void
+  /** An event's picker is open: the row is a checkbox, and nothing else moves it. */
+  pick?: { checked: boolean; onToggle: () => void }
 }
 
 const DIM: Record<CardState, string> = { available: '', discarded: 'opacity-55', removed: 'opacity-25' }
@@ -36,23 +40,24 @@ interface Gesture {
  * One checklist line. Tap an available card for remove / discard buttons; swipe it left to discard
  * or right to remove; long-press a discarded or removed card to restore it.
  */
-export function CardRow({ card, state, open, onToggle, onClose, onChange }: CardRowProps) {
+export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick }: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
   const longPress = useRef<number | undefined>(undefined)
   // The click that ends a long press or a swipe isn't a tap.
   const swallowClick = useRef(false)
 
-  // Discarding from the discard pile or removing again means nothing: only allowed directions move.
+  // Discarding from the discard pile or removing again means nothing, and only asterisk cards leave
+  // the game: only allowed directions move.
   const canDiscard = state === 'available'
-  const canRemove = state !== 'removed'
+  const canRemove = state !== 'removed' && card.isPermanent
 
   useEffect(() => () => window.clearTimeout(longPress.current), [])
 
   const cancelLongPress = () => window.clearTimeout(longPress.current)
 
   function onPointerDown(event: PointerEvent) {
-    if (event.button !== 0) return
+    if (event.button !== 0 || pick) return
     gesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: 'press' }
     swallowClick.current = false
     if (state !== 'available') {
@@ -101,6 +106,10 @@ export function CardRow({ card, state, open, onToggle, onClose, onChange }: Card
   }
 
   function onClick(event: MouseEvent) {
+    if (pick) {
+      pick.onToggle()
+      return
+    }
     if (swallowClick.current) {
       swallowClick.current = false
       return
@@ -146,14 +155,25 @@ export function CardRow({ card, state, open, onToggle, onClose, onChange }: Card
       >
         <button
           type="button"
-          aria-expanded={open}
+          {...(pick
+            ? { role: 'checkbox', 'aria-checked': pick.checked, 'aria-label': copy.cards.pick(card.name) }
+            : { 'aria-expanded': open })}
           onClick={onClick}
           className="flex min-h-11 min-w-0 flex-1 items-center gap-2 px-2 text-left"
         >
-          <span className="grid size-4 shrink-0 place-items-center">
-            {state === 'discarded' && <Play className="size-3.5 text-ink-muted" aria-hidden="true" />}
-            {state === 'removed' && <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />}
-          </span>
+          {pick ? (
+            <span
+              className={`grid size-4 shrink-0 place-items-center rounded-sm border-2 ${pick.checked ? 'border-gold bg-gold text-on-gold' : 'border-line-strong'}`}
+            >
+              {pick.checked && <Check className="size-3" strokeWidth={3} aria-hidden="true" />}
+            </span>
+          ) : (
+            <span className="grid size-4 shrink-0 place-items-center">
+              {state === 'discarded' && <Play className="size-3.5 text-ink-muted" aria-hidden="true" />}
+              {state === 'removed' && <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />}
+              {inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />}
+            </span>
+          )}
           <span className={`flex min-w-0 flex-1 items-center gap-1 ${DIM[state]}`}>
             <span className={`min-w-0 truncate text-sm ${card.important ? 'font-semibold' : ''}`}>{card.name}</span>
             {card.isPermanent && (
@@ -179,9 +199,11 @@ export function CardRow({ card, state, open, onToggle, onClose, onChange }: Card
           <span className="flex shrink-0 items-center gap-1 pr-1">
             {state === 'available' ? (
               <>
-                <ActionButton label={copy.cards.remove(card.name)} onClick={() => onChange('removed')} className="border-danger text-danger">
-                  <X className="size-5" strokeWidth={3} aria-hidden="true" />
-                </ActionButton>
+                {card.isPermanent && (
+                  <ActionButton label={copy.cards.remove(card.name)} onClick={() => onChange('removed')} className="border-danger text-danger">
+                    <X className="size-5" strokeWidth={3} aria-hidden="true" />
+                  </ActionButton>
+                )}
                 <ActionButton label={copy.cards.discard(card.name)} onClick={() => onChange('discarded')} className="border-gold bg-gold text-on-gold">
                   <Play className="size-5" aria-hidden="true" />
                 </ActionButton>

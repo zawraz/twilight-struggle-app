@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { LONG_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
 import { copy } from './copy'
-import { CARDS_STORAGE_KEY } from './lib/cardGame'
+import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
+import { CARDS } from './lib/cards'
+import { at, discarded } from './test/cardStates'
 import { TOAST_MS } from './lib/useToast'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -16,7 +18,14 @@ const rowButton = (name: string) => within(row(name)).getAllByRole('button')[0]
 const turn = () => screen.getByRole('status', { name: /^Tura \d+ z 10$/ })
 const counts = (state: string) => screen.getByLabelText(new RegExp(`^${state}:`))
 
-async function setup() {
+const early = cardsInPlay(1).map((c) => c.id)
+const nameOf = (id: number) => CARDS.find((c) => c.id === id)!.name
+const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
+const inHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.inHand })
+
+/** Opens the Karty tab, on a saved game when given one. */
+async function setup(saved?: CardsState) {
+  if (saved) localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(saved))
   vi.useFakeTimers({ shouldAdvanceTime: true })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(<App />)
@@ -84,21 +93,43 @@ describe('Karty: turns', () => {
     expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
   })
 
-  it('reshuffles the discard pile on entering turn 3 and takes it back on going back', async () => {
-    const user = await setup()
-    await discard(user, 'Blokada')
-    await discard(user, 'Fidel')
-    await nextTurns(user, 1)
-    expect(stateOf('Blokada')).toBe('discarded')
-    await nextTurns(user, 1)
-    expect(stateOf('Blokada')).toBe('available')
-    expect(stateOf('Fidel')).toBe('available')
-    expect(screen.getByText(copy.cards.reshuffled(2))).toBeInTheDocument()
+  it('shows the deck count and has no Przetasuj button', async () => {
+    await setup()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Przetasuj' })).not.toBeInTheDocument()
+  })
 
-    await user.click(screen.getByRole('button', { name: copy.cards.previousTurn }))
-    expect(turn()).toHaveTextContent('2')
-    expect(stateOf('Blokada')).toBe('discarded')
-    expect(stateOf('Fidel')).toBe('discarded')
+  it('says the deck ran out when there is nothing to reshuffle', async () => {
+    const removed = Object.fromEntries(early.slice(0, 23).map((id) => [id, 'removed' as const]))
+    const user = await setup(at({ states: removed }))
+    await nextTurns(user, 1)
+    expect(screen.getByText(copy.cards.deckRanOut)).toBeInTheDocument()
+    expect(screen.queryByText(copy.cards.reshuffled(0))).not.toBeInTheDocument()
+    expect(inHandIcon(nameOf(early[30]))).not.toBeNull()
+  })
+
+  it('reshuffles on a new turn only when the deck runs out, marking cards in hand', async () => {
+    const user = await setup(at({ states: discarded(early.slice(0, 23)) }))
+    const kept = nameOf(early[30])
+    expect(inHandIcon(kept)).toBeNull()
+    await nextTurns(user, 1)
+    expect(screen.getByText(copy.cards.reshuffled(23))).toBeInTheDocument()
+    expect(stateOf(nameOf(early[0]))).toBe('available')
+    expect(inHandIcon(kept)).not.toBeNull()
+    expect(inHandIcon(nameOf(early[0]))).toBeNull()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(turn()).toHaveTextContent('1')
+    expect(stateOf(nameOf(early[0]))).toBe('discarded')
+    expect(inHandIcon(kept)).toBeNull()
+  })
+
+  it('says nothing on a new turn the deck can cover', async () => {
+    const user = await setup()
+    await nextTurns(user, 1)
+    expect(screen.queryByText(copy.cards.reshuffled(0))).not.toBeInTheDocument()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
   })
 })
 
@@ -156,6 +187,14 @@ describe('Karty: changing a card', () => {
     expect(screen.getByRole('button', { name: copy.cards.restore('Blokada') })).toBeInTheDocument()
   })
 
+  it('does not offer removing a card without an asterisk', async () => {
+    const user = await setup()
+    await user.click(rowButton('Interwencja ONZ'))
+    expect(screen.queryByRole('button', { name: copy.cards.remove('Interwencja ONZ') })).not.toBeInTheDocument()
+    swipe('Interwencja ONZ', SWIPE_COMMIT_PX + 20)
+    expect(stateOf('Interwencja ONZ')).toBe('available')
+  })
+
   it('marks the asterisk and important cards', async () => {
     await setup()
     expect(within(row('Blokada')).getByText(copy.cards.permanent)).toBeInTheDocument()
@@ -194,33 +233,39 @@ describe('Karty: filters and order', () => {
     expect(rows()).toHaveLength(39)
   })
 
-  it('moves played cards to the bottom only when asked', async () => {
+  it('puts cards in hand on top until turned off', async () => {
+    const last = 'Zakaz prób jądrowych'
+    const user = await setup(at({ inHand: [idOf(last)] }))
+    const handFirst = screen.getByRole('button', { name: copy.cards.handFirst })
+    expect(handFirst).toHaveAttribute('aria-pressed', 'true')
+    expect(rows()[0]).toHaveTextContent(last)
+    await user.click(handFirst)
+    expect(rows()[0]).toHaveTextContent('Kulminacja napięć na Bliskim Wschodzie')
+    expect(rows()[38]).toHaveTextContent(last)
+  })
+
+  it('moves played cards to the bottom until turned off', async () => {
     const user = await setup()
+    const playedLast = screen.getByRole('button', { name: copy.cards.playedLast })
+    expect(playedLast).toHaveAttribute('aria-pressed', 'true')
     await discard(user, 'Kulminacja napięć w Azji')
-    expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
-    await user.click(screen.getByRole('button', { name: copy.cards.playedLast }))
     expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Europie')
     expect(rows()[38]).toHaveTextContent('Kulminacja napięć w Azji')
-  })
-})
-
-describe('Karty: manual reshuffle', () => {
-  it('takes two taps and can be taken back', async () => {
-    const user = await setup()
-    await discard(user, 'Blokada')
-    await user.click(screen.getByRole('button', { name: copy.cards.reshuffle }))
-    expect(stateOf('Blokada')).toBe('discarded')
-    await user.click(screen.getByRole('button', { name: copy.cards.reshuffle }))
-    expect(stateOf('Blokada')).toBe('available')
-    expect(screen.getByText(copy.cards.reshuffled(1))).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: copy.undo }))
-    expect(stateOf('Blokada')).toBe('discarded')
-    expect(screen.queryByText(copy.cards.reshuffled(1))).not.toBeInTheDocument()
+    await user.click(playedLast)
+    expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
   })
 })
 
 describe('Karty: toast', () => {
+  it('taking back a discard keeps the card in hand', async () => {
+    const user = await setup(at({ inHand: [idOf('Blokada')] }))
+    await discard(user, 'Blokada')
+    expect(inHandIcon('Blokada')).toBeNull()
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf('Blokada')).toBe('available')
+    expect(inHandIcon('Blokada')).not.toBeNull()
+  })
+
   it('takes a card change back, and leaves after two seconds', async () => {
     const user = await setup()
     await discard(user, 'Blokada')
@@ -233,15 +278,119 @@ describe('Karty: toast', () => {
     expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
     expect(stateOf('Fidel')).toBe('discarded')
   })
+})
 
-  it('takes a turn’s reshuffle back by going back the turn', async () => {
+describe('Karty: event picker', () => {
+  const TEHRAN = 'Nasz człowiek w Teheranie'
+  const ASK_NOT = '„Nie pytajcie co wasz kraj może zrobić dla was…”'
+  const SALT = 'Negocjacje SALT'
+  const pick = (name: string) => screen.getByRole('checkbox', { name: copy.cards.pick(name) })
+  const deck = (n: number) => screen.getByRole('status', { name: copy.cards.deckCount(n) })
+
+  async function play(user: User, name: string) {
+    await user.click(rowButton(name))
+    await user.click(screen.getByRole('button', { name: copy.cards.remove(name) }))
+  }
+
+  it('Tehran counts what its reshuffle brought back, after a reload too', async () => {
+    const user = await setup(at({ turn: 5, deck: 4, states: discarded([...early.slice(0, 3), idOf(TEHRAN)]) }))
+    // Removed from the discard pile by a right swipe; its row then leaves the picker's list.
+    const surface = rowButton(TEHRAN).parentElement!
+    fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
+    fireEvent.pointerMove(surface, { pointerId: 1, clientX: 160, clientY: 10 })
+    fireEvent.pointerMove(surface, { pointerId: 1, clientX: 100 + SWIPE_COMMIT_PX + 20, clientY: 10 })
+    fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100 + SWIPE_COMMIT_PX + 20, clientY: 10 })
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(deck(7)).toBeInTheDocument()
+    document.body.replaceChildren()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(0, 3))).toBeInTheDocument()
+  })
+
+  it('Tehran opens a picker with no Cancel, and undo takes back the whole play', async () => {
+    const user = await setup(at({ turn: 5, deck: 6 }))
+    await play(user, TEHRAN)
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /anuluj/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+    expect(screen.getByRole('button', { name: copy.cards.previousTurn })).toBeDisabled()
+    expect(rows()).toHaveLength(86)
+
+    const names = early.slice(0, 6).map(nameOf)
+    for (const name of names) await user.click(pick(name))
+    expect(screen.getByText(copy.cards.picked(5, 5))).toBeInTheDocument()
+    expect(pick(names[5])).toHaveAttribute('aria-checked', 'false')
+    await user.click(pick(names[4]))
+    await user.click(pick(names[3]))
+    await user.click(pick(names[2]))
+    expect(pick(names[0])).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(2, 0))).toBeInTheDocument()
+    expect(deck(4)).toBeInTheDocument()
+    expect(stateOf(names[0])).toBe('discarded')
+
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf(TEHRAN)).toBe('available')
+    expect(stateOf(names[0])).toBe('available')
+    expect(deck(6)).toBeInTheDocument()
+  })
+
+  it('Ask Not reshuffles when the deck can’t cover the draw', async () => {
+    const user = await setup(at({ turn: 5, deck: 3, states: discarded(early.slice(10, 15)) }))
+    await play(user, ASK_NOT)
+    for (const id of early.slice(0, 6)) await user.click(pick(nameOf(id)))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.drewReshuffled(6, 11))).toBeInTheDocument()
+    expect(deck(8)).toBeInTheDocument()
+    expect(stateOf(nameOf(early[0]))).toBe('available')
+    expect(inHandIcon(nameOf(early[20]))).not.toBeNull()
+  })
+
+  it('SALT lists only non-scoring discarded cards and puts the pick in hand', async () => {
+    const user = await setup(at({ turn: 5, deck: 20, states: discarded([idOf('Kulminacja napięć w Azji'), idOf('Blokada')]) }))
+    await play(user, SALT)
+    expect(rows()).toHaveLength(1)
+    await user.click(pick('Blokada'))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.toHand('Blokada'))).toBeInTheDocument()
+    expect(stateOf('Blokada')).toBe('available')
+    expect(inHandIcon('Blokada')).not.toBeNull()
+    expect(deck(20)).toBeInTheDocument()
+  })
+
+  it('the picker survives a reload and ignores filters', async () => {
+    const user = await setup(at({ turn: 5, deck: 20 }))
+    await user.click(screen.getByRole('button', { name: copy.cards.filters }))
+    await user.click(screen.getByRole('button', { name: copy.cards.sides.us }))
+    await play(user, TEHRAN)
+    expect(rows()).toHaveLength(86)
+
+    document.body.replaceChildren()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(screen.getByText(copy.cards.tehran(0, 0))).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+  })
+
+  it('playing an event card dismisses the last toast', async () => {
+    const user = await setup(at({ turn: 5, deck: 20 }))
+    await discard(user, 'Blokada')
+    await play(user, TEHRAN)
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+  })
+
+  it('a turn change dismisses the last toast', async () => {
     const user = await setup()
     await discard(user, 'Blokada')
-    await nextTurns(user, 2)
-    expect(stateOf('Blokada')).toBe('available')
-    await user.click(screen.getByRole('button', { name: copy.undo }))
-    expect(turn()).toHaveTextContent('2')
-    expect(stateOf('Blokada')).toBe('discarded')
+    expect(screen.getByRole('button', { name: copy.undo })).toBeInTheDocument()
+    await nextTurns(user, 1)
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
   })
 })
 
