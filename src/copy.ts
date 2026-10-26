@@ -27,6 +27,8 @@ export const copy = {
   newGame: 'Nowa gra',
   confirmQuestion: 'Potwierdź?',
   sides: { ussr: 'ZSRR', us: 'USA' },
+  tabs: { log: 'Dziennik', cards: 'Karty' },
+  cardsSoon: 'Wkrótce',
 
   fourOps: {
     title: 'Karty 4 PO',

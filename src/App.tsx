@@ -1,7 +1,10 @@
+import { GalleryVerticalEnd, NotebookText } from 'lucide-react'
+import { useState } from 'react'
 import { GameAction } from './components/GameAction'
 import { OpsCounter } from './components/OpsCounter'
 import { RollTracker } from './components/RollTracker'
 import { Section } from './components/Section'
+import { TabBar } from './components/TabBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
@@ -11,16 +14,39 @@ import { useGame } from './lib/useGame'
 export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
 export const DIE_VALUES = [1, 2, 3, 4, 5, 6] as const
 
+const TABS = [
+  { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-5" aria-hidden="true" /> },
+  { id: 'cards', label: copy.tabs.cards, icon: <GalleryVerticalEnd className="size-5" aria-hidden="true" /> },
+] as const
+type TabId = (typeof TABS)[number]['id']
+const TAB_ID = 'view'
+
 export default function App() {
   const [game, dispatch] = useGame()
+  const [tab, setTab] = useState<TabId>('log')
+  // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
+  const panel = (id: TabId) => ({
+    role: 'tabpanel',
+    id: `${TAB_ID}-panel-${id}`,
+    'aria-labelledby': `${TAB_ID}-tab-${id}`,
+    hidden: tab !== id,
+  })
 
   return (
     <div className="mx-auto grid h-full max-w-3xl grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
       <header className="flex flex-col gap-1.5 short-landscape:gap-1">
-        <div className="flex items-center justify-between gap-3 px-1">
-          <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink short-landscape:text-lg">
+        <div className="flex items-center px-1">
+          <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
             {copy.appTitle}
           </h1>
+          {/* Equal gaps title–icon–icon–action: justify-evenly spaces the edges like the middle, and px matches gap. */}
+          <TabBar
+            tabs={TABS}
+            active={tab}
+            onSelect={setTab}
+            idPrefix={TAB_ID}
+            className="flex-1 justify-evenly gap-2 px-2"
+          />
           <GameAction
             ended={game.ended}
             onEnd={() => dispatch({ type: 'end' })}
@@ -34,41 +60,49 @@ export default function App() {
         </div>
       </header>
 
-      <main className="grid min-h-0 grid-rows-[auto_1fr_1fr] gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1">
-        <Section title={copy.fourOps.title} className="short-landscape:col-span-2">
-          {PLAYERS.map((player) => (
-            <OpsCounter
-              key={player.id}
-              player={player}
-              count={game.fourOps[player.id]}
-              locked={game.ended}
-              onIncrement={() => dispatch({ type: 'incrementFourOps', player: player.id })}
-              onDecrement={() => dispatch({ type: 'decrementFourOps', player: player.id })}
-            />
-          ))}
-        </Section>
-        <RollTracker
-          text={copy.success}
-          values={SUCCESS_VALUES}
-          initialValue={1}
-          formatValue={formatSigned}
-          summarize={(values) => formatSigned(sum(values))}
-          entries={game.rolls.success}
-          onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'success', player, value })}
-          onUndo={(player) => dispatch({ type: 'undoRoll', track: 'success', player })}
-          revealed={game.ended}
-        />
-        <RollTracker
-          text={copy.dice}
-          values={DIE_VALUES}
-          initialValue={1}
-          formatValue={String}
-          summarize={(values) => formatAverage(average(values))}
-          entries={game.rolls.dice}
-          onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'dice', player, value })}
-          onUndo={(player) => dispatch({ type: 'undoRoll', track: 'dice', player })}
-          revealed={game.ended}
-        />
+      <main className="grid min-h-0">
+        <div
+          {...panel('log')}
+          className="grid min-h-0 grid-rows-[auto_1fr_1fr] gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1"
+        >
+          <Section title={copy.fourOps.title} className="short-landscape:col-span-2">
+            {PLAYERS.map((player) => (
+              <OpsCounter
+                key={player.id}
+                player={player}
+                count={game.fourOps[player.id]}
+                locked={game.ended}
+                onIncrement={() => dispatch({ type: 'incrementFourOps', player: player.id })}
+                onDecrement={() => dispatch({ type: 'decrementFourOps', player: player.id })}
+              />
+            ))}
+          </Section>
+          <RollTracker
+            text={copy.success}
+            values={SUCCESS_VALUES}
+            initialValue={1}
+            formatValue={formatSigned}
+            summarize={(values) => formatSigned(sum(values))}
+            entries={game.rolls.success}
+            onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'success', player, value })}
+            onUndo={(player) => dispatch({ type: 'undoRoll', track: 'success', player })}
+            revealed={game.ended}
+          />
+          <RollTracker
+            text={copy.dice}
+            values={DIE_VALUES}
+            initialValue={1}
+            formatValue={String}
+            summarize={(values) => formatAverage(average(values))}
+            entries={game.rolls.dice}
+            onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'dice', player, value })}
+            onUndo={(player) => dispatch({ type: 'undoRoll', track: 'dice', player })}
+            revealed={game.ended}
+          />
+        </div>
+        <div {...panel('cards')} className="grid min-h-0 place-items-center rounded-card border border-line bg-surface-raised">
+          <p className="font-condensed text-sm uppercase tracking-[0.08em] text-ink-muted">{copy.cardsSoon}</p>
+        </div>
       </main>
     </div>
   )

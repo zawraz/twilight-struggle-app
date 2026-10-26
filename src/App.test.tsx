@@ -473,6 +473,47 @@ describe('header: End and New Game', () => {
   })
 })
 
+describe('header tabs', () => {
+  const tab = (name: string) => within(header()).getByRole('tab', { name })
+
+  it('opens on Dziennik with the game log', () => {
+    setup()
+    expect(within(header()).getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Dziennik', 'Karty'])
+    expect(tab('Karty')).toHaveTextContent('') // icon only
+
+    expect(tab('Dziennik')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel', { name: 'Dziennik' })).toContainElement(section(copy.fourOps.title))
+  })
+
+  it('switches to Karty and hides the log', async () => {
+    const { user } = setup()
+    await user.click(tab('Karty'))
+    expect(tab('Karty')).toHaveAttribute('aria-selected', 'true')
+    expect(tab('Dziennik')).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByRole('tabpanel', { name: 'Karty' })).toBeVisible()
+    expect(screen.queryByRole('region', { name: copy.fourOps.title })).not.toBeInTheDocument()
+  })
+
+  it('keeps the log as it was after a round trip', async () => {
+    const { user } = setup()
+    const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })
+    await user.click(within(wheel()).getByRole('option', { name: '+4' }))
+    await user.click(tab('Karty'))
+    await user.click(tab('Dziennik'))
+    expect(within(wheel()).getByRole('option', { selected: true })).toHaveTextContent('+4')
+  })
+
+  it('moves between tabs with the arrow keys', async () => {
+    const { user } = setup()
+    act(() => tab('Dziennik').focus())
+    await user.keyboard('{ArrowRight}')
+    expect(tab('Karty')).toHaveFocus()
+    expect(tab('Karty')).toHaveAttribute('aria-selected', 'true')
+    await user.keyboard('{ArrowRight}')
+    expect(tab('Dziennik')).toHaveFocus()
+  })
+})
+
 describe('Polish interface', () => {
   it('shows every label in Polish', async () => {
     const { user } = setup()
