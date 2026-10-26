@@ -10,14 +10,14 @@ import './index.css'
 import App from './App'
 
 // An installed PWA resumed from the background never re-navigates, so the browser
-// would not look for a new deploy on its own. Check on resume and every 30 minutes;
+// would not look for a new deploy on its own. Check on resume and once a day;
 // with autoUpdate, a new service worker takes over and the page reloads itself.
 registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return
     const check = () => registration.update()
-    setInterval(check, 30 * 60 * 1000)
+    setInterval(check, 24 * 60 * 60 * 1000)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') check()
     })
