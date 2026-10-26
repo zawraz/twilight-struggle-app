@@ -248,6 +248,15 @@ describe('Karty: filters and order', () => {
 })
 
 describe('Karty: toast', () => {
+  it('taking back a discard keeps the card in hand', async () => {
+    const user = await setup(at({ inHand: [idOf('Blokada')] }))
+    await discard(user, 'Blokada')
+    expect(inHandIcon('Blokada')).toBeNull()
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf('Blokada')).toBe('available')
+    expect(inHandIcon('Blokada')).not.toBeNull()
+  })
+
   it('takes a card change back, and leaves after two seconds', async () => {
     const user = await setup()
     await discard(user, 'Blokada')
@@ -340,6 +349,13 @@ describe('Karty: event picker', () => {
     expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: copy.cards.ok }))
     expect(screen.getByText(copy.cards.tehran(0, 0))).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+  })
+
+  it('playing an event card dismisses the last toast', async () => {
+    const user = await setup(at({ turn: 5, deck: 20 }))
+    await discard(user, 'Blokada')
+    await play(user, TEHRAN)
     expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
   })
 

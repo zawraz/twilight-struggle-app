@@ -106,7 +106,7 @@ export default function App() {
           />
         </div>
         <div {...panel('cards')} className="grid min-h-0">
-          <CardsPanel cards={cards} dispatch={dispatchCards} notify={showToast} onTurnChange={dismissToast} />
+          <CardsPanel cards={cards} dispatch={dispatchCards} notify={showToast} onToastStale={dismissToast} />
         </div>
       </main>
     </div>

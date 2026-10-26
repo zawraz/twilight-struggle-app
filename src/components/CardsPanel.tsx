@@ -46,12 +46,12 @@ interface CardsPanelProps {
   dispatch: Dispatch<CardsAction>
   /** Shows what just happened over the header, with a way to take it back. */
   notify: (toast: Toast) => void
-  /** A turn change makes the last toast's undo stale. */
-  onTurnChange: () => void
+  /** A turn change or a played event makes the last toast's undo stale. */
+  onToastStale: () => void
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, notify, onTurnChange }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
@@ -88,30 +88,31 @@ export function CardsPanel({ cards, dispatch, notify, onTurnChange }: CardsPanel
     // Going back the turn is what takes its reshuffle back.
     if (entersWithReshuffle(cards)) {
       notify({ text: copy.cards.reshuffled(discardedIds(cards).length), undo: previousTurn })
-    } else onTurnChange()
+    } else onToastStale()
     setOpenId(null)
     dispatch({ type: 'nextTurn' })
   }
 
   function previousTurn() {
     setOpenId(null)
-    onTurnChange()
+    onToastStale()
     dispatch({ type: 'previousTurn' })
   }
 
   function change(id: number, name: string, state: CardState) {
-    const before = cardState(cards, id)
     setOpenId(null)
     if (cardsReducer(cards, { type: 'setCardState', id, state }).pending !== null) {
       // An event card: its toast comes once its picker is done.
       eventStart.current = cards
       setPicks([])
+      onToastStale()
       dispatch({ type: 'setCardState', id, state })
       return
     }
     notify({
       text: copy.cards.changed(name, copy.cards.state[state]),
-      undo: () => dispatch({ type: 'setCardState', id, state: before }),
+      // The whole game back, so a card in hand gets its mark back too.
+      undo: () => dispatch({ type: 'restore', state: cards }),
     })
     dispatch({ type: 'setCardState', id, state })
   }
