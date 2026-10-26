@@ -1,0 +1,179 @@
+@import 'tailwindcss';
+
+/* Phones held sideways: too short to stack three sections, so the two roll sections sit side by side. */
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
+/* Short phones (and all landscape phones): the roll trackers tighten their spacing. */
+@custom-variant short (@media (max-height: 700px));
+/* Tiny screens (old small phones, any phone in landscape): sections tighten their padding. */
+@custom-variant tiny (@media (max-height: 600px));
+
+/* Twilight Struggle Companion design system tokens.
+   Situation Room (dark) is the default; Briefing (light) follows the OS setting. */
+:root {
+  --surface: #0f151c;
+  --surface-raised: #17202a;
+  --surface-sunken: #0a0f14;
+  --line: #263340;
+  --line-strong: #5a6d7e;
+  --ink: #e6ebef;
+  --ink-muted: #9badbb;
+  --us: #6aa2f0;
+  --on-us: #0a0f14;
+  --us-soft: #142844;
+  --ussr: #f26b5e;
+  --on-ussr: #0a0f14;
+  --ussr-soft: #3d1612;
+  --gold: #e8b13a;
+  --on-gold: #1a1206;
+  --gold-text: #e8b13a;
+  --focus: #f2c45a;
+  --danger: #ff4b3e;
+  color-scheme: dark;
+}
+
+/* Value wheel: one row's height (also the size of its confirm button) and its width.
+   As large as the screen allows: three rows, the player row and the log must fit each roll section. */
+:root {
+  --wheel-item: 48px;
+  --wheel-width: 76px;
+}
+@media (max-width: 374px) {
+  :root {
+    --wheel-item: 36px;
+    --wheel-width: 60px;
+  }
+}
+@media (max-height: 800px) {
+  :root {
+    --wheel-item: 40px;
+    --wheel-width: 66px;
+  }
+}
+@media (max-height: 700px) {
+  :root {
+    --wheel-item: 36px;
+    --wheel-width: 60px;
+  }
+}
+@media (max-height: 600px) {
+  :root {
+    --wheel-item: 32px;
+    --wheel-width: 56px;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface: #edf0f2;
+    --surface-raised: #fbfcfc;
+    --surface-sunken: #dfe5e9;
+    --line: #c7d0d7;
+    --line-strong: #6f7e8b;
+    --ink: #121a22;
+    --ink-muted: #4a5967;
+    --us: #1f4f9e;
+    --on-us: #ffffff;
+    --us-soft: #dbe5f5;
+    --ussr: #b0241c;
+    --on-ussr: #ffffff;
+    --ussr-soft: #f6dcd8;
+    --gold: #e3a82a;
+    --on-gold: #1a1206;
+    --gold-text: #7a5300;
+    --focus: #7a5300;
+    --danger: #b3121b;
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-us: var(--us);
+  --color-on-us: var(--on-us);
+  --color-us-soft: var(--us-soft);
+  --color-ussr: var(--ussr);
+  --color-on-ussr: var(--on-ussr);
+  --color-ussr-soft: var(--ussr-soft);
+  --color-gold: var(--gold);
+  --color-on-gold: var(--on-gold);
+  --color-gold-text: var(--gold-text);
+  --color-focus: var(--focus);
+  --color-danger: var(--danger);
+
+  --font-stencil: 'Big Shoulders Stencil Display', 'Arial Narrow', sans-serif;
+  --font-condensed: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-counter: 3px;
+  --radius-card: 8px;
+
+  /* A log entry just added: lights up in its side's color, then fades back. */
+  --animate-log-flash: log-flash 1.4s ease-out;
+  /* The submit button's 2s cooldown, as a bar that drains away. */
+  --animate-drain: drain 2s linear forwards;
+
+  @keyframes log-flash {
+    0%,
+    35% {
+      background-color: var(--flash);
+      color: var(--on-flash);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes drain {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
