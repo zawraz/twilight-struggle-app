@@ -1,5 +1,6 @@
 import { NotebookText, PlayingCardsFan } from 'lucide-react'
 import { useState } from 'react'
+import { CardsPanel } from './components/CardsPanel'
 import { GameAction } from './components/GameAction'
 import { OpsCounter } from './components/OpsCounter'
 import { RollTracker } from './components/RollTracker'
@@ -8,6 +9,7 @@ import { TabBar } from './components/TabBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
+import { useCards } from './lib/useCards'
 import { useGame } from './lib/useGame'
 
 // −5…+5 without 0, highest on top.
@@ -23,6 +25,7 @@ const TAB_ID = 'view'
 
 export default function App() {
   const [game, dispatch] = useGame()
+  const [cards, dispatchCards] = useCards()
   const [tab, setTab] = useState<TabId>('log')
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
   const panel = (id: TabId) => ({
@@ -50,7 +53,10 @@ export default function App() {
           <GameAction
             ended={game.ended}
             onEnd={() => dispatch({ type: 'end' })}
-            onNewGame={() => dispatch({ type: 'newGame' })}
+            onNewGame={() => {
+              dispatch({ type: 'newGame' })
+              dispatchCards({ type: 'newGame' })
+            }}
           />
         </div>
         {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
@@ -100,8 +106,8 @@ export default function App() {
             revealed={game.ended}
           />
         </div>
-        <div {...panel('cards')} className="grid min-h-0 place-items-center rounded-card border border-line bg-surface-raised">
-          <p className="font-condensed text-sm uppercase tracking-[0.08em] text-ink-muted">{copy.cardsSoon}</p>
+        <div {...panel('cards')} className="grid min-h-0">
+          <CardsPanel cards={cards} dispatch={dispatchCards} />
         </div>
       </main>
     </div>

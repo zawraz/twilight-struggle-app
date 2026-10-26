@@ -1,3 +1,4 @@
+import type { CardSide } from '../lib/cards'
 import type { PlayerId } from '../lib/players'
 
 // Literal class names per side, so Tailwind can see them.
@@ -19,3 +20,6 @@ export const TONE = {
     flashVars: { '--flash': 'var(--us)', '--on-flash': 'var(--on-us)' },
   },
 } as const satisfies Record<PlayerId, Record<string, string | Record<string, string>>>
+
+/** A card's side as text colour: red ZSRR, blue USA, grey neutral. */
+export const SIDE_TEXT: Record<CardSide, string> = { ussr: TONE.ussr.text, us: TONE.us.text, neutral: 'text-ink-muted' }

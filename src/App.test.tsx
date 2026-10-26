@@ -520,8 +520,10 @@ describe('Polish interface', () => {
     for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'EV rzutów', 'Zakończ grę']) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
-    expect(screen.getAllByText('ZSRR')).toHaveLength(3)
-    expect(screen.getAllByText('USA')).toHaveLength(3)
+    // The card list (in the hidden Karty panel) has side labels of its own.
+    const log = within(screen.getByRole('tabpanel', { name: 'Dziennik' }))
+    expect(log.getAllByText('ZSRR')).toHaveLength(3)
+    expect(log.getAllByText('USA')).toHaveLength(3)
     expect(screen.getAllByText('0 rzutów')).toHaveLength(4)
     expect(screen.getAllByText('Brak rzutów')).toHaveLength(4)
     expect(screen.getAllByText('Ostatnie 3 rzuty:')).toHaveLength(2) // one caption shared by both players

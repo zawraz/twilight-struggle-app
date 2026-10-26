@@ -9,6 +9,15 @@ export function rolls(n: number): string {
   return `${n} rzutów`
 }
 
+/** "1 karta", "2 karty", "5 kart", "22 karty", "12 kart". */
+export function cards(n: number): string {
+  const lastDigit = n % 10
+  const lastTwo = n % 100
+  if (n === 1) return '1 karta'
+  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwo < 12 || lastTwo > 14)) return `${n} karty`
+  return `${n} kart`
+}
+
 /** Text for one roll-tracking section; each function takes the side's label (ZSRR, USA). */
 export interface TrackerCopy {
   title: string
@@ -28,7 +37,39 @@ export const copy = {
   confirmQuestion: 'Potwierdź?',
   sides: { ussr: 'ZSRR', us: 'USA' },
   tabs: { log: 'Dziennik', cards: 'Karty' },
-  cardsSoon: 'Wkrótce',
+
+  cards: {
+    turn: 'Tura',
+    turnOf: (n: number) => `Tura ${n} z 10`,
+    nextTurn: 'Następna tura',
+    previousTurn: 'Poprzednia tura',
+    reshuffle: 'Przetasuj',
+    undoReshuffle: 'Cofnij tasowanie',
+    reshuffled: (n: number) => `Przetasowano: wraca ${cards(n)}`,
+    nothingToReshuffle: 'Stos kart odrzuconych jest pusty',
+    states: { available: 'Dostępne', discarded: 'Odrzucone', removed: 'Usunięte' },
+    state: { available: 'dostępna', discarded: 'odrzucona', removed: 'usunięta' },
+    counts: 'Stan kart',
+    countFor: (state: string, ussr: number, us: number, neutral: number) =>
+      `${state}: ZSRR ${ussr}, USA ${us}, neutralne ${neutral}`,
+    sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
+    phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
+    filters: 'Filtry',
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO' },
+    clearFilters: 'Wyczyść',
+    playedLast: 'Zagrane na dół',
+    list: 'Karty',
+    noMatches: 'Brak kart',
+    scoring: '–',
+    ops: (value: number) => (value === 0 ? 'karta punktacji' : `${value} PO`),
+    important: 'Ważna',
+    permanent: 'Usuwana po zagraniu zdarzenia',
+    discard: (name: string) => `Odrzuć: ${name}`,
+    remove: (name: string) => `Usuń: ${name}`,
+    restore: (name: string) => `Przywróć: ${name}`,
+    restoreLabel: 'Przywróć',
+    changed: (name: string, state: string) => `${name}: ${state}`,
+  },
 
   fourOps: {
     title: 'Karty 4 PO',

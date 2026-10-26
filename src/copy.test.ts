@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rolls } from './copy'
+import { cards, rolls } from './copy'
 
 describe('Polish roll counts', () => {
   it.each([
@@ -17,5 +17,18 @@ describe('Polish roll counts', () => {
     [112, '112 rzutów'],
   ])('%i → %s', (n, text) => {
     expect(rolls(n)).toBe(text)
+  })
+})
+
+describe('Polish card counts', () => {
+  it.each([
+    [0, '0 kart'],
+    [1, '1 karta'],
+    [2, '2 karty'],
+    [5, '5 kart'],
+    [12, '12 kart'],
+    [22, '22 karty'],
+  ])('%i → %s', (n, text) => {
+    expect(cards(n)).toBe(text)
   })
 })
