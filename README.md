@@ -14,9 +14,9 @@ React + TypeScript + Tailwind CSS v4, built with Vite and `vite-plugin-pwa` (off
 ## Scripts
 
 ```sh
-npm install
-npm run dev      # dev server
-npm test         # Vitest + Testing Library
-npm run build    # type-check, build, generate the service worker
-npm run preview  # serve the production build
+pnpm install
+pnpm dev         # dev server
+pnpm test        # Vitest + Testing Library
+pnpm build       # type-check, build, generate the service worker
+pnpm preview     # serve the production build
 ```
