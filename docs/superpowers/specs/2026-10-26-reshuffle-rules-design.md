@@ -76,9 +76,10 @@ On OK it becomes available and is marked in hand. The deck count doesn't change.
 - Opens when card 77, 108 or 43 is marked removed (by swipe or button).
 - Each eligible row shows a checkmark slot where the "x" of removed cards normally sits;
   ineligible rows can't be ticked.
-- A bar shows "N / max" with **OK** and **Cancel**. Ticking past the max isn't possible.
-- Cancel, or OK with nothing ticked: the card stays removed, nothing else happens (Tehran's
-  reshuffle, if it happened in step 1, stays).
+- A bar shows "N / max" with **OK** only — no Cancel: playing the event is irreversible, so the
+  picker has to be finished. Ticking past the max isn't possible; OK with nothing ticked is allowed
+  (the event discarded or took nothing).
+- While the picker is open, the rest of the tab (turn controls, other rows' actions) waits for OK.
 - After OK, a toast says what happened (e.g. "Odrzucono 6, dobrano bez tasowania",
   "…przetasowano: wraca N kart", "Do ręki: <name>"). Its undo reverses the whole event: the
   removal of 77/108/43, its reshuffle, discards, marks and deck change.
@@ -86,8 +87,16 @@ On OK it becomes available and is marked in hand. The deck count doesn't change.
 ## The in-hand mark
 
 - A hand icon on the row, in the "x" slot.
-- Cleared when the card is discarded or removed (by hand or by a picker). Stays across turns.
+- Kept until the card is discarded or removed (by hand or by a picker) — through later turns
+  and later reshuffles.
+
 - Filtering and the "played last" order treat in-hand cards as available.
+
+## Removing only cards with an asterisk
+
+Only cards with an asterisk (`isPermanent`) can be removed from the game. For every other card,
+swipe right does nothing and the remove button isn't offered. A non-asterisk card already marked
+removed in an old saved game can still be restored with a long press.
 
 ## Saved games
 
@@ -104,12 +113,12 @@ discards 3 → deck 11. Card 77 discards 6: 11 ≥ 6, draw without reshuffle →
 ## Calls made by Claude (not asked)
 
 - Deck count is visible on the tab.
-- Picker Cancel keeps the event card removed; the toast undo is the way to take it all back.
+- The toast after the picker's OK still offers undo, as a safety for a mis-tap — the only way
+  back from an event, since the picker has no Cancel.
 - Setting 77/108/43 back to available by hand doesn't reverse its event — use the toast undo or
   fix cards by hand.
 - Restoring a discarded/removed card by hand doesn't change the deck count.
 - The deck count never shows below 0 (a mis-entry can't break it).
-- Cards already marked in hand keep their mark through a later reshuffle.
 
 ## Left to the builder
 
