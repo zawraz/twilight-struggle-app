@@ -424,7 +424,7 @@ describe('header: End and New Game', () => {
 
     await user.click(end)
     expect(end).toHaveAttribute('data-armed', 'true')
-    expect(end).toHaveClass('text-danger')
+    expect(end).toHaveClass('ring-danger')
     expect(within(header()).getByText('Potwierdź?')).toBeVisible()
     expect(screen.queryByRole('status', { name: copy.success.resultFor('USA') })).not.toBeInTheDocument()
 
@@ -517,9 +517,10 @@ describe('header tabs', () => {
 describe('Polish interface', () => {
   it('shows every label in Polish', async () => {
     const { user } = setup()
-    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'EV rzutów', 'Zakończ grę']) {
+    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'EV rzutów']) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
+    expect(screen.getByRole('button', { name: 'Zakończ grę' })).toBeInTheDocument()
     // The card list (in the hidden Karty panel) has side labels of its own.
     const log = within(screen.getByRole('tabpanel', { name: 'Dziennik' }))
     expect(log.getAllByText('ZSRR')).toHaveLength(3)
@@ -533,7 +534,7 @@ describe('Polish interface', () => {
     await endGame(user)
     expect(screen.getAllByText('Suma')).toHaveLength(2)
     expect(screen.getAllByText('Średnia')).toHaveLength(2)
-    expect(screen.getByText('Nowa gra')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nowa gra' })).toBeInTheDocument()
   })
 
   it('declares the page language as Polish', () => {

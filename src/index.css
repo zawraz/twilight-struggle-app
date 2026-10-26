@@ -28,6 +28,7 @@
   --gold-text: #e8b13a;
   --focus: #f2c45a;
   --danger: #ff4b3e;
+  --go: #4cd07d;
   color-scheme: dark;
 }
 
@@ -82,6 +83,7 @@
     --gold-text: #7a5300;
     --focus: #7a5300;
     --danger: #b3121b;
+    --go: #1a7f3c;
     color-scheme: light;
   }
 }
@@ -105,6 +107,7 @@
   --color-gold-text: var(--gold-text);
   --color-focus: var(--focus);
   --color-danger: var(--danger);
+  --color-go: var(--go);
 
   --font-stencil: 'Big Shoulders Stencil Display', 'Arial Narrow', sans-serif;
   --font-condensed: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;

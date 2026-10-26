@@ -1,3 +1,4 @@
+import { Power } from 'lucide-react'
 import { copy } from '../copy'
 import { useConfirmTap } from '../lib/useConfirmTap'
 import { ConfirmCaption } from './ConfirmCaption'
@@ -8,17 +9,17 @@ interface GameActionProps {
   onNewGame: () => void
 }
 
-const BUTTON = 'h-8 min-w-20 rounded-counter border-2 px-3 font-condensed text-xs font-semibold uppercase tracking-[0.08em]'
-const IDLE = 'border-ink bg-ink text-surface'
+const BUTTON = 'grid size-8 place-items-center rounded-counter border-2 transition-colors'
+const ICON = <Power className="size-5" aria-hidden="true" />
 
 /**
- * The header's one action: End while the game runs (irreversible, so it takes a
- * confirming second tap), New Game once it has ended.
+ * The header's one action, a power button: red End while the game runs
+ * (irreversible, so it takes a confirming second tap), green New Game once it has ended.
  */
 export function GameAction({ ended, onEnd, onNewGame }: GameActionProps) {
   return ended ? (
-    <button type="button" onClick={onNewGame} className={`${BUTTON} ${IDLE}`}>
-      {copy.newGame}
+    <button type="button" aria-label={copy.newGame} onClick={onNewGame} className={`${BUTTON} border-go bg-go text-surface`}>
+      {ICON}
     </button>
   ) : (
     <EndButton onEnd={onEnd} />
@@ -32,11 +33,12 @@ function EndButton({ onEnd }: { onEnd: () => void }) {
       {armed && <ConfirmCaption placement="left" />}
       <button
         type="button"
+        aria-label={copy.end}
         data-armed={armed}
         onClick={tap}
-        className={`${BUTTON} transition-colors ${armed ? 'border-danger text-danger' : IDLE}`}
+        className={`${BUTTON} border-danger bg-danger text-surface ${armed ? 'ring-2 ring-danger ring-offset-2 ring-offset-surface' : ''}`}
       >
-        {copy.end}
+        {ICON}
       </button>
     </div>
   )
