@@ -6,11 +6,13 @@ import { OpsCounter } from './components/OpsCounter'
 import { RollTracker } from './components/RollTracker'
 import { Section } from './components/Section'
 import { TabBar } from './components/TabBar'
+import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
 import { useCards } from './lib/useCards'
 import { useGame } from './lib/useGame'
+import { useToast } from './lib/useToast'
 
 // −5…+5 without 0, highest on top.
 export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
@@ -27,6 +29,7 @@ export default function App() {
   const [game, dispatch] = useGame()
   const [cards, dispatchCards] = useCards()
   const [tab, setTab] = useState<TabId>('log')
+  const [toast, showToast, dismissToast] = useToast()
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
   const panel = (id: TabId) => ({
     role: 'tabpanel',
@@ -37,7 +40,7 @@ export default function App() {
 
   return (
     <div className="mx-auto grid h-full max-w-3xl grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
-      <header className="flex flex-col gap-1.5 short-landscape:gap-1">
+      <header className="relative flex flex-col gap-1.5 short-landscape:gap-1">
         <div className="flex items-center px-1">
           <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
             {copy.appTitle}
@@ -50,6 +53,7 @@ export default function App() {
             onNewGame={() => {
               dispatch({ type: 'newGame' })
               dispatchCards({ type: 'newGame' })
+              dismissToast()
             }}
           />
         </div>
@@ -58,6 +62,7 @@ export default function App() {
           <span className="flex-1 rounded-counter bg-ussr" />
           <span className="flex-1 rounded-counter bg-us" />
         </div>
+        <ToastBar toast={toast} onDismiss={dismissToast} />
       </header>
 
       <main className="grid min-h-0">
@@ -101,7 +106,7 @@ export default function App() {
           />
         </div>
         <div {...panel('cards')} className="grid min-h-0">
-          <CardsPanel cards={cards} dispatch={dispatchCards} />
+          <CardsPanel cards={cards} dispatch={dispatchCards} notify={showToast} onTurnBack={dismissToast} />
         </div>
       </main>
     </div>

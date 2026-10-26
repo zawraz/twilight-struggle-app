@@ -1,5 +1,5 @@
-import { ArrowDownWideNarrow, ChevronLeft, ChevronRight, Shuffle, SlidersHorizontal, Undo2 } from 'lucide-react'
-import { useEffect, useState, type Dispatch, type ReactNode } from 'react'
+import { ArrowDownWideNarrow, ChevronLeft, ChevronRight, Layers, Play, Shuffle, SlidersHorizontal, X } from 'lucide-react'
+import { useState, type Dispatch, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
   CARD_STATES,
@@ -15,15 +15,17 @@ import {
 } from '../lib/cardGame'
 import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
 import { useConfirmTap } from '../lib/useConfirmTap'
-import { useCooldown } from '../lib/useCooldown'
+import type { Toast } from '../lib/useToast'
 import { CardRow } from './CardRow'
 import { ConfirmCaption } from './ConfirmCaption'
 import { SIDE_TEXT } from './tone'
 
-/** After a manual reshuffle the button offers to take it back for this long. */
-export const RESHUFFLE_UNDO_MS = 5000
-/** How long a turn or reshuffle message stays on screen. */
-export const NOTICE_MS = 5000
+/** Each count's mark, matching the marks on the card rows. */
+const STATE_ICON: Record<CardState, ReactNode> = {
+  available: <Layers className="size-4 text-ink-muted" aria-hidden="true" />,
+  discarded: <Play className="size-3.5 text-ink-muted" aria-hidden="true" />,
+  removed: <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />,
+}
 
 interface Filters {
   player: CardSide[]
@@ -37,29 +39,18 @@ const NO_FILTERS: Filters = { player: [], phase: [], state: [], value: [] }
 interface CardsPanelProps {
   cards: CardsState
   dispatch: Dispatch<CardsAction>
+  /** Shows what just happened over the header, with a way to take it back. */
+  notify: (toast: Toast) => void
+  /** Going back a turn makes the last toast's undo stale. */
+  onTurnBack: () => void
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(false)
-  const [notice, setNotice] = useState('')
-  // Bumped with every notice, so a repeated message still restarts its timer.
-  const [noticeRun, setNoticeRun] = useState(0)
-
-  useEffect(() => {
-    if (!notice) return
-    const timer = window.setTimeout(() => setNotice(''), NOTICE_MS)
-    return () => window.clearTimeout(timer)
-  }, [notice, noticeRun])
-
-  const announce = (text: string) => {
-    setNotice(text)
-    setNoticeRun((r) => r + 1)
-  }
-
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
   const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)
@@ -85,20 +76,27 @@ export function CardsPanel({ cards, dispatch }: CardsPanelProps) {
 
   function nextTurn() {
     const entering = cards.turn + 1
-    if (RESHUFFLE_TURNS.includes(entering)) announce(copy.cards.reshuffled(discardedIds(cards).length))
+    // Going back the turn is what takes its reshuffle back.
+    if (RESHUFFLE_TURNS.includes(entering)) {
+      notify({ text: copy.cards.reshuffled(discardedIds(cards).length), undo: previousTurn })
+    }
     setOpenId(null)
     dispatch({ type: 'nextTurn' })
   }
 
   function previousTurn() {
     setOpenId(null)
-    setNotice('')
+    onTurnBack()
     dispatch({ type: 'previousTurn' })
   }
 
   function change(id: number, name: string, state: CardState) {
+    const before = cardState(cards, id)
     setOpenId(null)
-    announce(copy.cards.changed(name, copy.cards.state[state]))
+    notify({
+      text: copy.cards.changed(name, copy.cards.state[state]),
+      undo: () => dispatch({ type: 'setCardState', id, state: before }),
+    })
     dispatch({ type: 'setCardState', id, state })
   }
 
@@ -127,32 +125,32 @@ export function CardsPanel({ cards, dispatch }: CardsPanelProps) {
           <IconButton label={copy.cards.nextTurn} onClick={nextTurn} disabled={cards.turn >= LAST_TURN}>
             <ChevronRight className="size-5" aria-hidden="true" />
           </IconButton>
-          <ReshuffleButton cards={cards} dispatch={dispatch} announce={announce} />
+          <ReshuffleButton cards={cards} dispatch={dispatch} notify={notify} />
         </div>
-        <dl aria-label={copy.cards.counts} className="grid grid-cols-3 gap-1">
+        <div role="group" aria-label={copy.cards.counts} className="flex justify-between gap-2 px-1">
           {CARD_STATES.map((state) => {
             const count = (side: CardSide) =>
               inPlay.filter((card) => card.player === side && cardState(cards, card.id) === state).length
             const [ussr, us, neutral] = CARD_SIDES.map(count)
             return (
-              <div key={state} className="flex flex-col" aria-label={copy.cards.countFor(copy.cards.states[state], ussr, us, neutral)}>
-                <dt className="font-condensed text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
-                  {copy.cards.states[state]}
-                </dt>
-                <dd className="font-mono text-sm tabular-nums" aria-hidden="true">
+              <div
+                key={state}
+                role="img"
+                className="flex items-center gap-1.5"
+                aria-label={copy.cards.countFor(copy.cards.states[state], ussr, us, neutral)}
+              >
+                {STATE_ICON[state]}
+                <span className="font-mono text-sm tabular-nums">
                   <span className={SIDE_TEXT.ussr}>{ussr}</span>
                   <span className="text-line-strong">|</span>
                   <span className={SIDE_TEXT.us}>{us}</span>
                   <span className="text-line-strong">|</span>
                   <span className={SIDE_TEXT.neutral}>{neutral}</span>
-                </dd>
+                </span>
               </div>
             )
           })}
-        </dl>
-        <p role="status" className="min-h-4 font-condensed text-xs leading-4 font-semibold uppercase tracking-[0.06em] text-gold-text">
-          {notice}
-        </p>
+        </div>
       </section>
 
       <div className="flex flex-col gap-2">
@@ -242,60 +240,39 @@ export function CardsPanel({ cards, dispatch }: CardsPanelProps) {
   )
 }
 
-/** Przetasuj takes a confirming second tap; afterwards it offers to take the reshuffle back for a while. */
+/** Przetasuj takes a confirming second tap; the toast it leaves offers to take the reshuffle back. */
 function ReshuffleButton({
   cards,
   dispatch,
-  announce,
+  notify,
 }: {
   cards: CardsState
   dispatch: Dispatch<CardsAction>
-  announce: (text: string) => void
+  notify: (toast: Toast) => void
 }) {
-  const [returned, setReturned] = useState<number[]>([])
-  const [cooling, startCooldown, cancelCooldown] = useCooldown(RESHUFFLE_UNDO_MS)
   const { armed, tap } = useConfirmTap(() => {
     const ids = discardedIds(cards)
     if (ids.length === 0) {
-      announce(copy.cards.nothingToReshuffle)
+      notify({ text: copy.cards.nothingToReshuffle })
       return
     }
     dispatch({ type: 'reshuffle' })
-    setReturned(ids)
-    announce(copy.cards.reshuffled(ids.length))
-    startCooldown()
+    notify({ text: copy.cards.reshuffled(ids.length), undo: () => dispatch({ type: 'undoReshuffle', ids }) })
   })
-
-  const undo = () => {
-    dispatch({ type: 'undoReshuffle', ids: returned })
-    cancelCooldown()
-    announce('')
-  }
 
   return (
     <div className="relative ml-auto shrink-0">
       {armed && <ConfirmCaption placement="left" />}
       <button
         type="button"
+        aria-label={copy.cards.reshuffle}
         data-armed={armed}
-        onClick={cooling ? undo : tap}
-        className={`relative flex h-9 items-center gap-1.5 overflow-hidden rounded-counter border-2 px-2.5 font-condensed text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-          cooling
-            ? 'border-gold bg-surface-sunken text-gold-text'
-            : armed
-              ? 'border-danger text-danger'
-              : 'border-line-strong text-ink'
+        onClick={tap}
+        className={`grid size-9 place-items-center rounded-counter border-2 transition-colors ${
+          armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
         }`}
       >
-        {cooling ? <Undo2 className="size-4" aria-hidden="true" /> : <Shuffle className="size-4" aria-hidden="true" />}
-        {cooling ? copy.cards.undoReshuffle : copy.cards.reshuffle}
-        {cooling && (
-          <span
-            aria-hidden="true"
-            style={{ animationDuration: `${RESHUFFLE_UNDO_MS}ms` }}
-            className="absolute inset-x-0 bottom-0 h-1 origin-left animate-drain bg-gold motion-reduce:hidden"
-          />
-        )}
+        <Shuffle className="size-5" aria-hidden="true" />
       </button>
     </div>
   )

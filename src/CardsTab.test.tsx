@@ -5,6 +5,7 @@ import App from './App'
 import { LONG_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
 import { copy } from './copy'
 import { CARDS_STORAGE_KEY } from './lib/cardGame'
+import { TOAST_MS } from './lib/useToast'
 
 type User = ReturnType<typeof userEvent.setup>
 
@@ -213,7 +214,33 @@ describe('Karty: manual reshuffle', () => {
     expect(stateOf('Blokada')).toBe('available')
     expect(screen.getByText(copy.cards.reshuffled(1))).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: copy.cards.undoReshuffle }))
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf('Blokada')).toBe('discarded')
+    expect(screen.queryByText(copy.cards.reshuffled(1))).not.toBeInTheDocument()
+  })
+})
+
+describe('Karty: toast', () => {
+  it('takes a card change back, and leaves after two seconds', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    expect(screen.getByText(copy.cards.changed('Blokada', copy.cards.state.discarded))).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf('Blokada')).toBe('available')
+
+    await discard(user, 'Fidel')
+    act(() => vi.advanceTimersByTime(TOAST_MS))
+    expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
+    expect(stateOf('Fidel')).toBe('discarded')
+  })
+
+  it('takes a turn’s reshuffle back by going back the turn', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    await nextTurns(user, 2)
+    expect(stateOf('Blokada')).toBe('available')
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(turn()).toHaveTextContent('2')
     expect(stateOf('Blokada')).toBe('discarded')
   })
 })

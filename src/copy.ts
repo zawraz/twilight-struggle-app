@@ -35,6 +35,7 @@ export const copy = {
   end: 'Zakończ grę',
   newGame: 'Nowa gra',
   confirmQuestion: 'Potwierdź?',
+  undo: 'Cofnij',
   sides: { ussr: 'ZSRR', us: 'USA' },
   tabs: { log: 'Dziennik', cards: 'Karty' },
 
@@ -44,7 +45,6 @@ export const copy = {
     nextTurn: 'Następna tura',
     previousTurn: 'Poprzednia tura',
     reshuffle: 'Przetasuj',
-    undoReshuffle: 'Cofnij tasowanie',
     reshuffled: (n: number) => `Przetasowano: wraca ${cards(n)}`,
     nothingToReshuffle: 'Stos kart odrzuconych jest pusty',
     states: { available: 'Dostępne', discarded: 'Odrzucone', removed: 'Usunięte' },
