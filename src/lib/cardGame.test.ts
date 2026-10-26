@@ -7,6 +7,7 @@ import {
   loadCards,
   newCards,
   saveCards,
+  isInHand,
   type CardsAction,
   type CardsState,
 } from './cardGame'
@@ -16,12 +17,24 @@ const run = (actions: CardsAction[], from: CardsState = newCards()) => actions.r
 const next = (times: number): CardsAction[] => Array.from({ length: times }, () => ({ type: 'nextTurn' }))
 const discard = (id: number): CardsAction => ({ type: 'setCardState', id, state: 'discarded' })
 const remove = (id: number): CardsAction => ({ type: 'setCardState', id, state: 'removed' })
+const discardAll = (ids: readonly number[]) => ids.map(discard)
+/** A game on any turn, as if nothing had happened on the way there. */
+const at = (partial: Partial<CardsState>): CardsState => {
+  const turn = partial.turn ?? 1
+  return {
+    ...newCards(),
+    history: Array.from({ length: turn - 1 }, () => ({ returned: [], marked: [], deck: 0 })),
+    ...partial,
+    turn,
+  }
+}
 
-// Blockade (early), Arms Race (mid), Terrorism (late).
+// Blockade and Nasser (early), Arms Race (mid).
 const BLOCKADE = 10
 const NASSER = 15
 const ARMS_RACE = 39
-const TERRORISM = 92
+const UN_INTERVENTION = 32
+const early = cardsInPlay(1).map((c) => c.id)
 
 describe('card data', () => {
   it('matches the checklist: 39 early, 48 mid and 24 late cards', () => {
@@ -62,13 +75,22 @@ describe('cardsReducer', () => {
     expect(cardState(s, NASSER)).toBe('available')
   })
 
-  it('reshuffles the discard pile when entering turn 3, but not removed cards', () => {
-    let s = run([discard(BLOCKADE), remove(NASSER), ...next(1)])
-    expect(cardState(s, BLOCKADE)).toBe('discarded')
-    s = cardsReducer(s, { type: 'nextTurn' })
-    expect(s.turn).toBe(3)
-    expect(cardState(s, BLOCKADE)).toBe('available')
-    expect(cardState(s, NASSER)).toBe('removed')
+  it('starts with 23 cards in the deck', () => {
+    expect(newCards().deck).toBe(23)
+  })
+
+  it('does not reshuffle while the deck can cover the deal', () => {
+    const s = run([...discardAll(early.slice(0, 22)), ...next(1)])
+    expect(cardState(s, early[0])).toBe('discarded')
+    expect(s.deck).toBe(1)
+    expect(s.inHand).toEqual([])
+  })
+
+  it('reshuffles when available cards are no more than both hands, marking the rest in hand', () => {
+    const s = run([...discardAll(early.slice(0, 23)), ...next(1)])
+    expect(early.slice(0, 23).every((id) => cardState(s, id) === 'available')).toBe(true)
+    expect([...s.inHand].sort()).toEqual([...early.slice(23)].sort())
+    expect(s.deck).toBe(23)
   })
 
   it('does not reshuffle when Mid War or Late War cards join', () => {
@@ -80,31 +102,41 @@ describe('cardsReducer', () => {
     expect(cardState(late, ARMS_RACE)).toBe('discarded')
   })
 
-  it('reshuffles again when entering turn 7', () => {
-    const s = run([...next(4), discard(ARMS_RACE), discard(BLOCKADE), ...next(2)])
-    expect(s.turn).toBe(7)
-    expect(cardState(s, ARMS_RACE)).toBe('available')
-    expect(cardState(s, BLOCKADE)).toBe('available')
+  it('counts both hands as 18 from turn 4, after Mid War joins', () => {
+    const s = run([...discardAll(early.slice(0, 34)), ...next(1)], at({ turn: 3 }))
+    expect(s.turn).toBe(4)
+    expect(cardState(s, early[0])).toBe('discarded')
+    expect(s.deck).toBe(35)
+    const inPlay = cardsInPlay(4).map((c) => c.id)
+    expect(run([...discardAll(inPlay.slice(0, 68)), ...next(1)], at({ turn: 4 })).inHand).toEqual([])
+    expect(run([...discardAll(inPlay.slice(0, 69)), ...next(1)], at({ turn: 4 })).inHand).toHaveLength(18)
   })
 
-  it('going back a turn undoes its reshuffle, but keeps changes made since', () => {
-    let s = run([discard(BLOCKADE), discard(NASSER), ...next(2)])
-    s = cardsReducer(s, remove(NASSER))
-    s = cardsReducer(s, { type: 'previousTurn' })
-    expect(s.turn).toBe(2)
-    expect(cardState(s, BLOCKADE)).toBe('discarded')
-    expect(cardState(s, NASSER)).toBe('removed')
+  it('keeps cards in hand across turns until they are discarded or removed', () => {
+    let s = run([...discardAll(early.slice(0, 23)), ...next(2)])
+    expect(s.turn).toBe(3)
+    const permanent = early.slice(23).find((id) => CARDS.find((c) => c.id === id)!.isPermanent)!
+    expect(isInHand(s, early[30])).toBe(true)
+    expect(isInHand(s, permanent)).toBe(true)
+    s = run([discard(early[30]), remove(permanent)], s)
+    expect(isInHand(s, early[30])).toBe(false)
+    expect(isInHand(s, permanent)).toBe(false)
+  })
+
+  it('going back a turn undoes its reshuffle and marks, restores the deck, keeps changes made since', () => {
+    let s = run([...discardAll(early.slice(0, 23)), ...next(1)], at({ deck: 7 }))
+    s = run([discard(early[30]), { type: 'previousTurn' }], s)
+    expect(s.turn).toBe(1)
+    expect(early.slice(0, 23).every((id) => cardState(s, id) === 'discarded')).toBe(true)
+    expect(cardState(s, early[30])).toBe('discarded')
+    expect(s.inHand).toEqual([])
+    expect(s.deck).toBe(7)
   })
 
   it('goes back several turns, each undoing its own step', () => {
-    // Blockade comes back on turn 3; Arms Race, discarded on turn 6, on turn 7.
-    let s = run([discard(BLOCKADE), ...next(5), discard(ARMS_RACE), ...next(2)])
-    expect(s.turn).toBe(8)
-    s = run(Array.from({ length: 7 }, () => ({ type: 'previousTurn' }) as const), s)
-    expect(s.turn).toBe(1)
-    expect(cardState(s, ARMS_RACE)).toBe('discarded')
-    expect(cardState(s, BLOCKADE)).toBe('discarded')
-    expect(s.history).toEqual([])
+    const start = run(discardAll(early.slice(0, 23)))
+    const s = run([...next(7), ...Array.from({ length: 7 }, () => ({ type: 'previousTurn' }) as const)], start)
+    expect(s).toEqual(start)
   })
 
   it('stays within turns 1–10', () => {
@@ -112,14 +144,9 @@ describe('cardsReducer', () => {
     expect(run(next(12)).turn).toBe(10)
   })
 
-  it('reshuffles by hand and takes it back', () => {
-    let s = run([...next(8), discard(TERRORISM), discard(BLOCKADE)])
-    s = cardsReducer(s, { type: 'reshuffle' })
-    expect(cardState(s, TERRORISM)).toBe('available')
-    s = cardsReducer(s, remove(BLOCKADE))
-    s = cardsReducer(s, { type: 'undoReshuffle', ids: [TERRORISM, BLOCKADE] })
-    expect(cardState(s, TERRORISM)).toBe('discarded')
-    expect(cardState(s, BLOCKADE)).toBe('removed')
+  it('can only remove cards with an asterisk', () => {
+    const s = run([remove(UN_INTERVENTION)])
+    expect(cardState(s, UN_INTERVENTION)).toBe('available')
   })
 
   it('resets on New Game', () => {
@@ -142,6 +169,22 @@ describe('card persistence', () => {
     const s = run([discard(BLOCKADE), ...next(4), remove(ARMS_RACE)])
     saveCards(s, store)
     expect(loadCards(store)).toEqual(s)
+  })
+
+  it('loads a game saved before the deck was tracked', () => {
+    const store = storage()
+    store.setItem(CARDS_STORAGE_KEY, JSON.stringify({ turn: 3, states: { 10: 'discarded' }, history: [[], [15]] }))
+    expect(loadCards(store)).toEqual({
+      turn: 3,
+      states: { 10: 'discarded' },
+      inHand: [],
+      deck: 22,
+      pending: null,
+      history: [
+        { returned: [], marked: [], deck: null },
+        { returned: [15], marked: [], deck: null },
+      ],
+    })
   })
 
   it('starts fresh on unusable data', () => {
