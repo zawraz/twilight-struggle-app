@@ -42,14 +42,8 @@ export default function App() {
           <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
             {copy.appTitle}
           </h1>
-          {/* Equal gaps title–icon–icon–action: justify-evenly spaces the edges like the middle, and px matches gap. */}
-          <TabBar
-            tabs={TABS}
-            active={tab}
-            onSelect={setTab}
-            idPrefix={TAB_ID}
-            className="flex-1 justify-evenly gap-2 px-2"
-          />
+          {/* Auto margins centre the pill between the title and the action. */}
+          <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} className="mx-auto px-2" />
           <GameAction
             ended={game.ended}
             onEnd={() => dispatch({ type: 'end' })}

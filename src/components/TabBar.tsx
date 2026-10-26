@@ -16,7 +16,7 @@ interface TabBarProps<Id extends string> {
   className?: string
 }
 
-/** The header's views, as icons. Arrow keys, Home and End move between tabs, as in any tablist. */
+/** The header's views, as icons joined into one segmented pill. Arrow keys, Home and End move between tabs, as in any tablist. */
 export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, className = '' }: TabBarProps<Id>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -54,8 +54,8 @@ export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, cl
             tabIndex={selected ? 0 : -1}
             onClick={() => onSelect(tab.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`grid size-8 place-items-center rounded-counter border-2 transition-colors ${
-              selected ? 'border-gold text-ink' : 'border-transparent text-ink-muted'
+            className={`grid h-8 w-16 place-items-center border-y-2 transition-colors first:rounded-l-counter first:border-l-2 last:rounded-r-counter last:border-r-2 ${
+              selected ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
             }`}
           >
             {tab.icon}
