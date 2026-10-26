@@ -75,6 +75,9 @@ export const copy = {
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     handFirst: 'Na ręce na górę',
+    /** The order chips' visible labels: their arrows say which way. */
+    playedLastShort: 'Zagrane',
+    handFirstShort: 'Na ręce',
     list: 'Karty',
     noMatches: 'Brak kart',
     scoring: '–',

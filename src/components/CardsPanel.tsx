@@ -205,19 +205,20 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
         <EventPicker event={pending} count={picks.length} onConfirm={confirmPicks} />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* One line at phone width: the order chips show short labels. */}
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             <Chip pressed={filtersShown} onClick={() => setFiltersShown((s) => !s)}>
               <SlidersHorizontal className="size-4" aria-hidden="true" />
               {copy.cards.filters}
               {activeFilters > 0 && <span className="font-mono tabular-nums">({activeFilters})</span>}
             </Chip>
-            <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)}>
+            <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)} label={copy.cards.playedLast}>
               <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
-              {copy.cards.playedLast}
+              {copy.cards.playedLastShort}
             </Chip>
-            <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)}>
+            <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)} label={copy.cards.handFirst}>
               <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
-              {copy.cards.handFirst}
+              {copy.cards.handFirstShort}
             </Chip>
             {activeFilters > 0 && (
               <button
