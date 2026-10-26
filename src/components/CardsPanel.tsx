@@ -1,4 +1,4 @@
-import { ArrowDownWideNarrow, ChevronLeft, ChevronRight, Layers, Play, Shuffle, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Layers, Play, SlidersHorizontal, X } from 'lucide-react'
 import { useState, type Dispatch, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
@@ -6,18 +6,17 @@ import {
   cardsInPlay,
   cardState,
   discardedIds,
+  entersWithReshuffle,
   FIRST_TURN,
+  isInHand,
   LAST_TURN,
-  RESHUFFLE_TURNS,
   type CardsAction,
   type CardsState,
   type CardState,
 } from '../lib/cardGame'
 import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
-import { useConfirmTap } from '../lib/useConfirmTap'
 import type { Toast } from '../lib/useToast'
 import { CardRow } from './CardRow'
-import { ConfirmCaption } from './ConfirmCaption'
 import { SIDE_TEXT } from './tone'
 
 /** Each count's mark, matching the marks on the card rows. */
@@ -51,6 +50,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
+  const [handFirst, setHandFirst] = useState(true)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
   const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)
@@ -67,17 +67,14 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
       matches(filters.state, cardState(cards, card.id)) &&
       matches(filters.value, card.value),
   )
-  // Stable sort: available cards first, played ones after, each in checklist order.
-  const shown = playedLast
-    ? [...visible].sort(
-        (a, b) => Number(cardState(cards, a.id) !== 'available') - Number(cardState(cards, b.id) !== 'available'),
-      )
-    : visible
+  // Stable sort: cards in hand, then the rest available, then played ones, each in checklist order.
+  const rank = (id: number) =>
+    (playedLast && cardState(cards, id) !== 'available' ? 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
+  const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
 
   function nextTurn() {
-    const entering = cards.turn + 1
     // Going back the turn is what takes its reshuffle back.
-    if (RESHUFFLE_TURNS.includes(entering)) {
+    if (entersWithReshuffle(cards)) {
       notify({ text: copy.cards.reshuffled(discardedIds(cards).length), undo: previousTurn })
     }
     setOpenId(null)
@@ -125,7 +122,12 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
           <IconButton label={copy.cards.nextTurn} onClick={nextTurn} disabled={cards.turn >= LAST_TURN}>
             <ChevronRight className="size-5" aria-hidden="true" />
           </IconButton>
-          <ReshuffleButton cards={cards} dispatch={dispatch} notify={notify} />
+          <div className="ml-auto flex items-baseline gap-1.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
+            <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              {copy.cards.deck}
+            </span>
+            <span className="min-w-7 text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
+          </div>
         </div>
         <div role="group" aria-label={copy.cards.counts} className="flex justify-between gap-2 px-1">
           {CARD_STATES.map((state) => {
@@ -163,6 +165,10 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
           <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)}>
             <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
             {copy.cards.playedLast}
+          </Chip>
+          <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)}>
+            <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
+            {copy.cards.handFirst}
           </Chip>
           {activeFilters > 0 && (
             <button
@@ -224,6 +230,7 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
             key={card.id}
             card={card}
             state={cardState(cards, card.id)}
+            inHand={isInHand(cards, card.id)}
             open={openId === card.id}
             onToggle={() => setOpenId((id) => (id === card.id ? null : card.id))}
             onClose={() => setOpenId(null)}
@@ -236,44 +243,6 @@ export function CardsPanel({ cards, dispatch, notify, onTurnBack }: CardsPanelPr
           </li>
         )}
       </ul>
-    </div>
-  )
-}
-
-/** Przetasuj takes a confirming second tap; the toast it leaves offers to take the reshuffle back. */
-function ReshuffleButton({
-  cards,
-  dispatch,
-  notify,
-}: {
-  cards: CardsState
-  dispatch: Dispatch<CardsAction>
-  notify: (toast: Toast) => void
-}) {
-  const { armed, tap } = useConfirmTap(() => {
-    const ids = discardedIds(cards)
-    if (ids.length === 0) {
-      notify({ text: copy.cards.nothingToReshuffle })
-      return
-    }
-    dispatch({ type: 'reshuffle' })
-    notify({ text: copy.cards.reshuffled(ids.length), undo: () => dispatch({ type: 'undoReshuffle', ids }) })
-  })
-
-  return (
-    <div className="relative ml-auto shrink-0">
-      {armed && <ConfirmCaption placement="left" />}
-      <button
-        type="button"
-        aria-label={copy.cards.reshuffle}
-        data-armed={armed}
-        onClick={tap}
-        className={`grid size-9 place-items-center rounded-counter border-2 transition-colors ${
-          armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
-        }`}
-      >
-        <Shuffle className="size-5" aria-hidden="true" />
-      </button>
     </div>
   )
 }

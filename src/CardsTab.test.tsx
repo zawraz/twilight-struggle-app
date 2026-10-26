@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { LONG_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
 import { copy } from './copy'
-import { CARDS_STORAGE_KEY } from './lib/cardGame'
+import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
+import { CARDS } from './lib/cards'
+import { at, discarded } from './test/cardStates'
 import { TOAST_MS } from './lib/useToast'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -16,7 +18,14 @@ const rowButton = (name: string) => within(row(name)).getAllByRole('button')[0]
 const turn = () => screen.getByRole('status', { name: /^Tura \d+ z 10$/ })
 const counts = (state: string) => screen.getByLabelText(new RegExp(`^${state}:`))
 
-async function setup() {
+const early = cardsInPlay(1).map((c) => c.id)
+const nameOf = (id: number) => CARDS.find((c) => c.id === id)!.name
+const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
+const inHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.inHand })
+
+/** Opens the Karty tab, on a saved game when given one. */
+async function setup(saved?: CardsState) {
+  if (saved) localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(saved))
   vi.useFakeTimers({ shouldAdvanceTime: true })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(<App />)
@@ -84,21 +93,34 @@ describe('Karty: turns', () => {
     expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
   })
 
-  it('reshuffles the discard pile on entering turn 3 and takes it back on going back', async () => {
-    const user = await setup()
-    await discard(user, 'Blokada')
-    await discard(user, 'Fidel')
-    await nextTurns(user, 1)
-    expect(stateOf('Blokada')).toBe('discarded')
-    await nextTurns(user, 1)
-    expect(stateOf('Blokada')).toBe('available')
-    expect(stateOf('Fidel')).toBe('available')
-    expect(screen.getByText(copy.cards.reshuffled(2))).toBeInTheDocument()
+  it('shows the deck count and has no Przetasuj button', async () => {
+    await setup()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Przetasuj' })).not.toBeInTheDocument()
+  })
 
-    await user.click(screen.getByRole('button', { name: copy.cards.previousTurn }))
-    expect(turn()).toHaveTextContent('2')
-    expect(stateOf('Blokada')).toBe('discarded')
-    expect(stateOf('Fidel')).toBe('discarded')
+  it('reshuffles on a new turn only when the deck runs out, marking cards in hand', async () => {
+    const user = await setup(at({ states: discarded(early.slice(0, 23)) }))
+    const kept = nameOf(early[30])
+    expect(inHandIcon(kept)).toBeNull()
+    await nextTurns(user, 1)
+    expect(screen.getByText(copy.cards.reshuffled(23))).toBeInTheDocument()
+    expect(stateOf(nameOf(early[0]))).toBe('available')
+    expect(inHandIcon(kept)).not.toBeNull()
+    expect(inHandIcon(nameOf(early[0]))).toBeNull()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(turn()).toHaveTextContent('1')
+    expect(stateOf(nameOf(early[0]))).toBe('discarded')
+    expect(inHandIcon(kept)).toBeNull()
+  })
+
+  it('says nothing on a new turn the deck can cover', async () => {
+    const user = await setup()
+    await nextTurns(user, 1)
+    expect(screen.queryByText(copy.cards.reshuffled(0))).not.toBeInTheDocument()
+    expect(screen.getByRole('status', { name: copy.cards.deckCount(23) })).toBeInTheDocument()
   })
 })
 
@@ -156,6 +178,14 @@ describe('Karty: changing a card', () => {
     expect(screen.getByRole('button', { name: copy.cards.restore('Blokada') })).toBeInTheDocument()
   })
 
+  it('does not offer removing a card without an asterisk', async () => {
+    const user = await setup()
+    await user.click(rowButton('Interwencja ONZ'))
+    expect(screen.queryByRole('button', { name: copy.cards.remove('Interwencja ONZ') })).not.toBeInTheDocument()
+    swipe('Interwencja ONZ', SWIPE_COMMIT_PX + 20)
+    expect(stateOf('Interwencja ONZ')).toBe('available')
+  })
+
   it('marks the asterisk and important cards', async () => {
     await setup()
     expect(within(row('Blokada')).getByText(copy.cards.permanent)).toBeInTheDocument()
@@ -194,6 +224,17 @@ describe('Karty: filters and order', () => {
     expect(rows()).toHaveLength(39)
   })
 
+  it('puts cards in hand on top until turned off', async () => {
+    const last = 'Zakaz prób jądrowych'
+    const user = await setup(at({ inHand: [idOf(last)] }))
+    const handFirst = screen.getByRole('button', { name: copy.cards.handFirst })
+    expect(handFirst).toHaveAttribute('aria-pressed', 'true')
+    expect(rows()[0]).toHaveTextContent(last)
+    await user.click(handFirst)
+    expect(rows()[0]).toHaveTextContent('Kulminacja napięć na Bliskim Wschodzie')
+    expect(rows()[38]).toHaveTextContent(last)
+  })
+
   it('moves played cards to the bottom until turned off', async () => {
     const user = await setup()
     const playedLast = screen.getByRole('button', { name: copy.cards.playedLast })
@@ -203,22 +244,6 @@ describe('Karty: filters and order', () => {
     expect(rows()[38]).toHaveTextContent('Kulminacja napięć w Azji')
     await user.click(playedLast)
     expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
-  })
-})
-
-describe('Karty: manual reshuffle', () => {
-  it('takes two taps and can be taken back', async () => {
-    const user = await setup()
-    await discard(user, 'Blokada')
-    await user.click(screen.getByRole('button', { name: copy.cards.reshuffle }))
-    expect(stateOf('Blokada')).toBe('discarded')
-    await user.click(screen.getByRole('button', { name: copy.cards.reshuffle }))
-    expect(stateOf('Blokada')).toBe('available')
-    expect(screen.getByText(copy.cards.reshuffled(1))).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: copy.undo }))
-    expect(stateOf('Blokada')).toBe('discarded')
-    expect(screen.queryByText(copy.cards.reshuffled(1))).not.toBeInTheDocument()
   })
 })
 
@@ -234,16 +259,6 @@ describe('Karty: toast', () => {
     act(() => vi.advanceTimersByTime(TOAST_MS))
     expect(screen.queryByRole('button', { name: copy.undo })).not.toBeInTheDocument()
     expect(stateOf('Fidel')).toBe('discarded')
-  })
-
-  it('takes a turn’s reshuffle back by going back the turn', async () => {
-    const user = await setup()
-    await discard(user, 'Blokada')
-    await nextTurns(user, 2)
-    expect(stateOf('Blokada')).toBe('available')
-    await user.click(screen.getByRole('button', { name: copy.undo }))
-    expect(turn()).toHaveTextContent('2')
-    expect(stateOf('Blokada')).toBe('discarded')
   })
 })
 

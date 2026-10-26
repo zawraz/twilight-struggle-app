@@ -17,22 +17,12 @@ import {
   type CardsState,
 } from './cardGame'
 import { CARDS } from './cards'
+import { at, discarded, run } from '../test/cardStates'
 
-const run = (actions: CardsAction[], from: CardsState = newCards()) => actions.reduce(cardsReducer, from)
 const next = (times: number): CardsAction[] => Array.from({ length: times }, () => ({ type: 'nextTurn' }))
 const discard = (id: number): CardsAction => ({ type: 'setCardState', id, state: 'discarded' })
 const remove = (id: number): CardsAction => ({ type: 'setCardState', id, state: 'removed' })
 const discardAll = (ids: readonly number[]) => ids.map(discard)
-/** A game on any turn, as if nothing had happened on the way there. */
-const at = (partial: Partial<CardsState>): CardsState => {
-  const turn = partial.turn ?? 1
-  return {
-    ...newCards(),
-    history: Array.from({ length: turn - 1 }, () => ({ returned: [], marked: [], deck: 0 })),
-    ...partial,
-    turn,
-  }
-}
 
 // Blockade and Nasser (early), Arms Race (mid).
 const BLOCKADE = 10
@@ -46,7 +36,6 @@ const pool = cardsInPlay(5)
   .map((c) => c.id)
   .filter((id) => id !== SALT && id !== ASK_NOT && id !== TEHRAN && id !== ASIA_SCORING && id !== BLOCKADE)
 const resolve = (...picked: number[]): CardsAction => ({ type: 'resolveEvent', picked })
-const discarded = (ids: readonly number[]) => Object.fromEntries(ids.map((id) => [id, 'discarded' as const]))
 
 describe('card data', () => {
   it('matches the checklist: 39 early, 48 mid and 24 late cards', () => {
