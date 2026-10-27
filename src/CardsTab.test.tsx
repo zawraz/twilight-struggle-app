@@ -280,6 +280,75 @@ describe('Karty: toast', () => {
   })
 })
 
+describe('Karty: 4 Ops cards', () => {
+  const NATO = 'NATO'
+  const BAN = 'Zakaz prób jądrowych'
+  const opsCount = (player: string) => screen.getByRole('status', { name: copy.fourOps.count(player), hidden: true })
+  const dialog = () => screen.getByRole('dialog', { name: copy.fourOps.whoPlayed })
+
+  it('asks who played it, and counts it for that side', async () => {
+    const user = await setup()
+    await discard(user, BAN)
+    expect(stateOf(BAN)).toBe('available')
+    expect(within(dialog()).getByText(BAN)).toBeInTheDocument()
+
+    await user.click(within(dialog()).getByRole('button', { name: 'USA' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(stateOf(BAN)).toBe('discarded')
+    expect(opsCount('USA')).toHaveTextContent('1')
+    expect(opsCount('ZSRR')).toHaveTextContent('0')
+    expect(screen.getByText(copy.fourOps.playedBy(copy.cards.changed(BAN, copy.cards.state.discarded), 'USA'))).toBeInTheDocument()
+  })
+
+  it('asks on a swipe too, for a discard or a removal', async () => {
+    const user = await setup()
+    swipe(NATO, SWIPE_COMMIT_PX + 10)
+    await user.click(within(dialog()).getByRole('button', { name: 'ZSRR' }))
+    expect(stateOf(NATO)).toBe('removed')
+    expect(opsCount('ZSRR')).toHaveTextContent('1')
+
+    swipe(BAN, -(SWIPE_COMMIT_PX + 10))
+    await user.click(within(dialog()).getByRole('button', { name: 'ZSRR' }))
+    expect(opsCount('ZSRR')).toHaveTextContent('2')
+  })
+
+  it('leaves the card and the count alone when cancelled', async () => {
+    const user = await setup()
+    await discard(user, BAN)
+    await user.click(within(dialog()).getByRole('button', { name: copy.cancel }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(stateOf(BAN)).toBe('available')
+    expect(opsCount('USA')).toHaveTextContent('0')
+
+    swipe(BAN, -(SWIPE_COMMIT_PX + 10))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(stateOf(BAN)).toBe('available')
+  })
+
+  it('takes the count back with the card on undo', async () => {
+    const user = await setup()
+    await discard(user, BAN)
+    await user.click(within(dialog()).getByRole('button', { name: 'ZSRR' }))
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(stateOf(BAN)).toBe('available')
+    expect(opsCount('ZSRR')).toHaveTextContent('0')
+  })
+
+  it('does not ask for other cards, nor once the game has ended', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await discard(user, BAN)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(stateOf(BAN)).toBe('discarded')
+    expect(opsCount('USA')).toHaveTextContent('0')
+  })
+})
+
 describe('Karty: event picker', () => {
   const TEHRAN = 'Nasz człowiek w Teheranie'
   const ASK_NOT = '„Nie pytajcie co wasz kraj może zrobić dla was…”'

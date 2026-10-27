@@ -35,6 +35,12 @@ async function endGame(user: User) {
   await user.click(within(header()).getByRole('button', { name: 'Zakończ grę' }))
 }
 
+/** + takes two taps too: one to arm, one to confirm. */
+async function addFourOps(user: User, player: string) {
+  await user.click(screen.getByRole('button', { name: copy.fourOps.add(player) }))
+  await user.click(screen.getByRole('button', { name: copy.fourOps.add(player) }))
+}
+
 async function startNewGame(user: User) {
   await user.click(within(header()).getByRole('button', { name: 'Nowa gra' }))
 }
@@ -56,9 +62,9 @@ describe('4 Ops Cards', () => {
 
   it('increments with + and keeps players independent', async () => {
     const { user } = setup()
-    await user.click(plus('ZSRR'))
-    await user.click(plus('ZSRR'))
-    await user.click(plus('USA'))
+    await addFourOps(user, 'ZSRR')
+    await addFourOps(user, 'ZSRR')
+    await addFourOps(user, 'USA')
     expect(count('ZSRR')).toHaveTextContent('2')
     expect(count('USA')).toHaveTextContent('1')
   })
@@ -70,8 +76,8 @@ describe('4 Ops Cards', () => {
 
   it('asks for confirmation on the first − tap and decrements on the second', async () => {
     const { user } = setup()
-    await user.click(plus('USA'))
-    await user.click(plus('USA'))
+    await addFourOps(user, 'USA')
+    await addFourOps(user, 'USA')
 
     await user.click(minus('USA'))
     expect(count('USA')).toHaveTextContent('2')
@@ -87,25 +93,44 @@ describe('4 Ops Cards', () => {
 
   it('only arms the − of the player who tapped it', async () => {
     const { user } = setup()
-    await user.click(plus('ZSRR'))
-    await user.click(plus('USA'))
+    await addFourOps(user, 'ZSRR')
+    await addFourOps(user, 'USA')
     await user.click(minus('ZSRR'))
     expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
     expect(minus('USA')).toHaveAttribute('data-armed', 'false')
   })
 
-  it('cancels a pending − when + is tapped', async () => {
+  it('asks for confirmation on the first + tap and increments on the second', async () => {
     const { user } = setup()
     await user.click(plus('ZSRR'))
+    expect(count('ZSRR')).toHaveTextContent('0')
+    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'true')
+    expect(within(section(copy.fourOps.title)).getByText('Potwierdź?')).toBeVisible()
+
+    await user.click(plus('ZSRR'))
+    expect(count('ZSRR')).toHaveTextContent('1')
+    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'false')
+  })
+
+  it('swaps a pending − for a pending + and back', async () => {
+    const { user } = setup()
+    await addFourOps(user, 'ZSRR')
     await user.click(minus('ZSRR'))
     await user.click(plus('ZSRR'))
     expect(minus('ZSRR')).toHaveAttribute('data-armed', 'false')
-    expect(count('ZSRR')).toHaveTextContent('2')
+    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'true')
+    expect(count('ZSRR')).toHaveTextContent('1')
+
+    await user.click(minus('ZSRR'))
+    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'false')
+    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
+    expect(count('ZSRR')).toHaveTextContent('1')
   })
 
   it('cancels a pending − after a timeout', () => {
     vi.useFakeTimers()
     render(<App />)
+    fireEvent.click(plus('ZSRR'))
     fireEvent.click(plus('ZSRR'))
     fireEvent.click(minus('ZSRR'))
     expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
@@ -429,8 +454,8 @@ describe('header: End and New Game', () => {
   const opsCount = (player: string) => screen.getByRole('status', { name: copy.fourOps.count(player) })
 
   async function playSomeRounds(user: User) {
-    await user.click(screen.getByRole('button', { name: copy.fourOps.add('ZSRR') }))
-    await user.click(screen.getByRole('button', { name: copy.fourOps.add('ZSRR') }))
+    await addFourOps(user, 'ZSRR')
+    await addFourOps(user, 'ZSRR')
     await submitRoll(user, screen.getByRole('button', { name: copy.success.submit('USA') })) // +1
     await submitRoll(user, screen.getByRole('button', { name: copy.dice.submit('USA') })) // 1
   }
@@ -571,7 +596,7 @@ describe('Polish interface', () => {
 describe('saved progress', () => {
   it('restores the game after a reload', async () => {
     const { user, unmount } = setup()
-    await user.click(screen.getByRole('button', { name: copy.fourOps.add('USA') }))
+    await addFourOps(user, 'USA')
     await user.click(
       within(screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })).getByRole('option', { name: '+4' }),
     )
@@ -598,7 +623,7 @@ describe('saved progress', () => {
 
   it('stays fresh after New Game and a reload', async () => {
     const { user, unmount } = setup()
-    await user.click(screen.getByRole('button', { name: copy.fourOps.add('USA') }))
+    await addFourOps(user, 'USA')
     await endGame(user)
     await startNewGame(user)
     unmount()

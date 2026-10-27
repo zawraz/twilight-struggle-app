@@ -36,6 +36,7 @@ export const copy = {
   newGame: 'Nowa gra',
   confirmQuestion: 'Potwierdź?',
   undo: 'Cofnij',
+  cancel: 'Anuluj',
   sides: { ussr: 'ZSRR', us: 'USA' },
   tabs: { log: 'Dziennik', cards: 'Karty' },
 
@@ -96,6 +97,8 @@ export const copy = {
     add: (side: string) => `Dodaj kartę 4 PO: ${side}`,
     remove: (side: string) => `Odejmij kartę 4 PO: ${side}`,
     count: (side: string) => `Zagrane karty 4 PO: ${side}`,
+    whoPlayed: 'Kto zagrał kartę 4 PO?',
+    playedBy: (text: string, side: string) => `${text} (${side})`,
   },
 
   success: {

@@ -14,11 +14,18 @@ interface OpsCounterProps {
 }
 
 export function OpsCounter({ player, count, onIncrement, onDecrement, locked = false }: OpsCounterProps) {
+  // Playing a card on the Karty tab keeps the count, so a tap here is a correction: both take a confirming second tap.
   const minus = useConfirmTap(onDecrement)
+  const plus = useConfirmTap(onIncrement)
+
+  const handleMinus = () => {
+    plus.disarm()
+    minus.tap()
+  }
 
   const handlePlus = () => {
     minus.disarm()
-    onIncrement()
+    plus.tap()
   }
 
   const tone = TONE[player.id]
@@ -36,7 +43,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             aria-label={copy.fourOps.remove(player.label)}
             data-armed={minus.armed}
             disabled={locked || count === 0}
-            onClick={minus.tap}
+            onClick={handleMinus}
             className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${
               minus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
             }`}
@@ -52,17 +59,23 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
         >
           {count}
         </output>
-        <button
-          type="button"
-          aria-label={copy.fourOps.add(player.label)}
-          onClick={handlePlus}
-          disabled={locked}
-          className="grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 border-line-strong text-ink disabled:opacity-40"
-        >
-          <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
-            <path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />
-          </svg>
-        </button>
+        <div className="relative">
+          {plus.armed && <ConfirmCaption />}
+          <button
+            type="button"
+            aria-label={copy.fourOps.add(player.label)}
+            data-armed={plus.armed}
+            onClick={handlePlus}
+            disabled={locked}
+            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${
+              plus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
+            }`}
+          >
+            <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+              <path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   )

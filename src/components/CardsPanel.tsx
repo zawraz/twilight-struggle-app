@@ -20,9 +20,11 @@ import {
   type CardState,
 } from '../lib/cardGame'
 import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
+import { PLAYERS, type PlayerId } from '../lib/players'
 import type { Toast } from '../lib/useToast'
 import { CardRow } from './CardRow'
 import { EventPicker } from './EventPicker'
+import { PlayerPicker } from './PlayerPicker'
 import { SIDE_TEXT } from './tone'
 
 /** Each count's mark, matching the marks on the card rows. */
@@ -48,11 +50,21 @@ interface CardsPanelProps {
   notify: (toast: Toast) => void
   /** A turn change or a played event makes the last toast's undo stale. */
   onToastStale: () => void
+  /** Moves a side's Dziennik count of 4 Ops cards; null once the game has ended and the count is final. */
+  onFourOps: ((player: PlayerId, by: 1 | -1) => void) | null
+}
+
+interface Play {
+  id: number
+  name: string
+  state: CardState
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
+  // A 4 Ops card waiting to hear who played it.
+  const [asking, setAsking] = useState<Play | null>(null)
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
@@ -102,6 +114,22 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
 
   function change(id: number, name: string, state: CardState) {
     setOpenId(null)
+    const card = inPlay.find((c) => c.id === id)
+    if (state !== 'available' && card?.value === 4 && onFourOps) {
+      setAsking({ id, name, state })
+      return
+    }
+    play(id, name, state)
+  }
+
+  function playedBy(player: PlayerId) {
+    const { id, name, state } = asking!
+    setAsking(null)
+    onFourOps!(player, 1)
+    play(id, name, state, player)
+  }
+
+  function play(id: number, name: string, state: CardState, by?: PlayerId) {
     if (cardsReducer(cards, { type: 'setCardState', id, state }).pending !== null) {
       // An event card: its toast comes once its picker is done.
       eventStart.current = cards
@@ -110,10 +138,14 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
       dispatch({ type: 'setCardState', id, state })
       return
     }
+    const text = copy.cards.changed(name, copy.cards.state[state])
     notify({
-      text: copy.cards.changed(name, copy.cards.state[state]),
-      // The whole game back, so a card in hand gets its mark back too.
-      undo: () => dispatch({ type: 'restore', state: cards }),
+      text: by ? copy.fourOps.playedBy(text, PLAYERS.find((p) => p.id === by)!.label) : text,
+      // The whole game back, so a card in hand gets its mark back too; a 4 Ops card takes its count with it.
+      undo: () => {
+        dispatch({ type: 'restore', state: cards })
+        if (by) onFourOps?.(by, -1)
+      },
     })
     dispatch({ type: 'setCardState', id, state })
   }
@@ -295,6 +327,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale }: CardsPanel
           </li>
         )}
       </ul>
+
+      {asking && <PlayerPicker cardName={asking.name} onPick={playedBy} onCancel={() => setAsking(null)} />}
     </div>
   )
 }

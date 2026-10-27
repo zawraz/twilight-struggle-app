@@ -106,7 +106,17 @@ export default function App() {
           />
         </div>
         <div {...panel('cards')} className="grid min-h-0">
-          <CardsPanel cards={cards} dispatch={dispatchCards} notify={showToast} onToastStale={dismissToast} />
+          <CardsPanel
+            cards={cards}
+            dispatch={dispatchCards}
+            notify={showToast}
+            onToastStale={dismissToast}
+            onFourOps={
+              game.ended
+                ? null
+                : (player, by) => dispatch({ type: by > 0 ? 'incrementFourOps' : 'decrementFourOps', player })
+            }
+          />
         </div>
       </main>
     </div>
