@@ -1,4 +1,4 @@
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Layers, Play, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Layers, Pin, Play, SlidersHorizontal, X } from 'lucide-react'
 import { useRef, useState, type Dispatch, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
@@ -14,6 +14,7 @@ import {
   isInHand,
   LAST_TURN,
   pickableIds,
+  SHUTTLE_DIPLOMACY,
   TEHRAN,
   type CardsAction,
   type CardsState,
@@ -30,9 +31,13 @@ import { SIDE_TEXT } from './tone'
 /** Each count's mark, matching the marks on the card rows. */
 const STATE_ICON: Record<CardState, ReactNode> = {
   available: <Layers className="size-4 text-ink-muted" aria-hidden="true" />,
+  in_play: <Pin className="size-4 text-go" strokeWidth={2.5} aria-hidden="true" />,
   discarded: <Play className="size-3.5 text-ink-muted" aria-hidden="true" />,
   removed: <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />,
 }
+
+/** With played cards at the bottom: available first, then a card in play, then the played ones. */
+const PLAYED_RANK: Record<CardState, number> = { available: 0, in_play: 1, discarded: 2, removed: 2 }
 
 interface Filters {
   player: CardSide[]
@@ -91,9 +96,9 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       matches(filters.state, cardState(cards, card.id)) &&
       matches(filters.value, card.value),
   )
-  // Stable sort: cards in hand, then the rest available, then played ones, each in checklist order.
+  // Stable sort: cards in hand, then the rest available, then one in play, then played ones, each in checklist order.
   const rank = (id: number) =>
-    (playedLast && cardState(cards, id) !== 'available' ? 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
+    (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
 
   function nextTurn() {
@@ -212,12 +217,15 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             const count = (side: CardSide) =>
               inPlay.filter((card) => card.player === side && cardState(cards, card.id) === state).length
             const [ussr, us, neutral] = CARD_SIDES.map(count)
+            // The card in play sits beside the discard pile it goes to next.
+            const shuttle = state === 'discarded' && cardState(cards, SHUTTLE_DIPLOMACY) === 'in_play'
+            const label = copy.cards.countFor(copy.cards.states[state], ussr, us, neutral)
             return (
               <div
                 key={state}
                 role="img"
                 className="flex items-center gap-1.5"
-                aria-label={copy.cards.countFor(copy.cards.states[state], ussr, us, neutral)}
+                aria-label={shuttle ? copy.cards.withInPlay(label) : label}
               >
                 {STATE_ICON[state]}
                 <span className="font-mono text-sm tabular-nums">
@@ -227,6 +235,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                   <span className="text-line-strong">|</span>
                   <span className={SIDE_TEXT.neutral}>{neutral}</span>
                 </span>
+                {shuttle && STATE_ICON.in_play}
               </div>
             )
           })}

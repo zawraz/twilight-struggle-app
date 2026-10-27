@@ -159,6 +159,36 @@ describe('Karty: changing a card', () => {
     expect(screen.queryByRole('button', { name: copy.cards.discard('Fidel') })).not.toBeInTheDocument()
   })
 
+  it('puts Shuttle Diplomacy in play with a right swipe, between available and played cards', async () => {
+    const name = 'Dyplomacja Wahadłowa'
+    const user = await setup(at({ turn: 4 }))
+    await discard(user, 'Blokada')
+    expect(counts(copy.cards.states.discarded)).not.toHaveAccessibleName(/w grze/)
+    swipe(name, SWIPE_COMMIT_PX + 10)
+    expect(stateOf(name)).toBe('in_play')
+    expect(counts(copy.cards.states.discarded)).toHaveAccessibleName(/w grze: Dyplomacja Wahadłowa$/)
+    const order = rows().map((li) => li.getAttribute('data-state'))
+    const i = order.indexOf('in_play')
+    expect(order.slice(0, i).every((s) => s === 'available')).toBe(true)
+    expect(order.slice(i + 1).every((s) => s === 'discarded')).toBe(true)
+    // In play, a right swipe does nothing; a left one discards it.
+    swipe(name, SWIPE_COMMIT_PX + 10)
+    expect(stateOf(name)).toBe('in_play')
+    swipe(name, -(SWIPE_COMMIT_PX + 10))
+    expect(stateOf(name)).toBe('discarded')
+  })
+
+  it('a tap on Shuttle Diplomacy offers putting it in play', async () => {
+    const name = 'Dyplomacja Wahadłowa'
+    const user = await setup(at({ turn: 4 }))
+    await user.click(rowButton(name))
+    expect(screen.queryByRole('button', { name: copy.cards.remove(name) })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: copy.cards.putInPlay(name) }))
+    expect(stateOf(name)).toBe('in_play')
+    await discard(user, name)
+    expect(stateOf(name)).toBe('discarded')
+  })
+
   it('removes a discarded card with a right swipe, but cannot discard it again', async () => {
     const user = await setup()
     await discard(user, 'Blokada')

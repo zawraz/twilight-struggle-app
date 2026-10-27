@@ -12,6 +12,7 @@ import {
   isInHand,
   pickableIds,
   SALT,
+  SHUTTLE_DIPLOMACY,
   TEHRAN,
   type CardsAction,
 } from './cardGame'
@@ -278,6 +279,25 @@ describe('card events', () => {
   })
 })
 
+describe('Shuttle Diplomacy', () => {
+  const putInPlay = (id: number): CardsAction => ({ type: 'setCardState', id, state: 'in_play' })
+
+  it('stays in play through a reshuffle until discarded', () => {
+    let s = run([...next(3), putInPlay(SHUTTLE_DIPLOMACY)])
+    expect(cardState(s, SHUTTLE_DIPLOMACY)).toBe('in_play')
+    expect(availableIds(s)).not.toContain(SHUTTLE_DIPLOMACY)
+    s = run(discardAll(availableIds(s)), s)
+    s = run(next(1), s)
+    expect(cardState(s, SHUTTLE_DIPLOMACY)).toBe('in_play')
+    s = run([discard(SHUTTLE_DIPLOMACY)], s)
+    expect(cardState(s, SHUTTLE_DIPLOMACY)).toBe('discarded')
+  })
+
+  it('is the only card that goes into play', () => {
+    expect(cardState(run([putInPlay(BLOCKADE)]), BLOCKADE)).toBe('available')
+  })
+})
+
 describe('card persistence', () => {
   const storage = () => {
     const data = new Map<string, string>()
@@ -296,7 +316,7 @@ describe('card persistence', () => {
 
   it('round-trips through storage', () => {
     const store = storage()
-    const s = run([discard(BLOCKADE), ...next(4), remove(ARMS_RACE)])
+    const s = run([discard(BLOCKADE), ...next(4), remove(ARMS_RACE), { type: 'setCardState', id: SHUTTLE_DIPLOMACY, state: 'in_play' }])
     saveCards(s, store)
     expect(loadCards(store)).toEqual(s)
   })

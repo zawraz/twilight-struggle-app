@@ -1,7 +1,11 @@
 import { CARDS, phaseStarted, type Card } from './cards'
 
-/** Available: in the draw deck or in either hand — the app can't tell which. */
-export type CardState = 'available' | 'discarded' | 'removed'
+/**
+ * Available: in the draw deck or in either hand — the app can't tell which. In play: an event that
+ * stays on the table after it is played, out of the deck and the discard pile until it is discarded.
+ */
+export type CardState = 'available' | 'in_play' | 'discarded' | 'removed'
+/** The states the counts and the filters show; only Shuttle Diplomacy is ever in play. */
 export const CARD_STATES: readonly CardState[] = ['available', 'discarded', 'removed']
 
 export const FIRST_TURN = 1
@@ -13,6 +17,9 @@ export const handSize = (turn: number): number => (turn <= 3 ? 16 : 18)
 export const SALT = 43
 export const ASK_NOT = 77
 export const TEHRAN = 108
+export const SHUTTLE_DIPLOMACY = 73
+/** Played as an event, the card stays in play rather than going to the discard pile. */
+export const staysInPlay = (id: number): boolean => id === SHUTTLE_DIPLOMACY
 /** Cards whose event the app follows up with a picker. */
 export type EventCard = typeof SALT | typeof ASK_NOT | typeof TEHRAN
 const EVENT_CARDS: readonly number[] = [SALT, ASK_NOT, TEHRAN]
@@ -182,6 +189,7 @@ export function cardsReducer(state: CardsState, action: CardsAction): CardsState
     case 'setCardState':
       // Only cards with an asterisk leave the game.
       if (action.state === 'removed' && !isPermanent(action.id)) return state
+      if (action.state === 'in_play' && !staysInPlay(action.id)) return state
       if (action.state === 'removed' && EVENT_CARDS.includes(action.id) && cardState(state, action.id) !== 'removed') {
         return playEvent(state, action.id as EventCard)
       }
@@ -228,7 +236,7 @@ const isIdList = (v: unknown): v is number[] => Array.isArray(v) && v.every((id)
 const isStates = (v: unknown): v is CardsState['states'] =>
   typeof v === 'object' &&
   v !== null &&
-  Object.entries(v).every(([id, state]) => KNOWN_IDS.has(Number(id)) && (state === 'discarded' || state === 'removed'))
+  Object.entries(v).every(([id, state]) => KNOWN_IDS.has(Number(id)) && (state === 'discarded' || state === 'removed' || state === 'in_play'))
 const isTurnEntry = (v: unknown): v is TurnEntry => {
   if (typeof v !== 'object' || v === null) return false
   const e = v as Record<string, unknown>
