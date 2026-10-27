@@ -102,6 +102,9 @@
   --color-ussr: var(--ussr);
   --color-on-ussr: var(--on-ussr);
   --color-ussr-soft: var(--ussr-soft);
+  /* Card names: body ink with a hint of their side's color. */
+  --color-us-ink: color-mix(in oklab, var(--us) 40%, var(--ink));
+  --color-ussr-ink: color-mix(in oklab, var(--ussr) 40%, var(--ink));
   --color-gold: var(--gold);
   --color-on-gold: var(--on-gold);
   --color-gold-text: var(--gold-text);

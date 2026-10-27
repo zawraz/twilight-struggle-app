@@ -23,3 +23,6 @@ export const TONE = {
 
 /** A card's side as text colour: red ZSRR, blue USA, grey neutral. */
 export const SIDE_TEXT: Record<CardSide, string> = { ussr: TONE.ussr.text, us: TONE.us.text, neutral: 'text-ink-muted' }
+
+/** A card's name as text colour: ink tinted red for ZSRR, blue for USA, plain for neutral. */
+export const SIDE_NAME_TEXT: Record<CardSide, string> = { ussr: 'text-ussr-ink', us: 'text-us-ink', neutral: '' }

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type R
 import { copy } from '../copy'
 import type { CardState } from '../lib/cardGame'
 import type { Card } from '../lib/cards'
-import { SIDE_TEXT } from './tone'
+import { SIDE_NAME_TEXT, SIDE_TEXT } from './tone'
 
 /** How far a row must be dragged sideways to commit the swipe. */
 export const SWIPE_COMMIT_PX = 80
@@ -175,7 +175,7 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
             </span>
           )}
           <span className={`flex min-w-0 flex-1 items-center gap-1 ${DIM[state]}`}>
-            <span className={`min-w-0 truncate text-sm ${card.important ? 'font-semibold' : ''}`}>{card.name}</span>
+            <span className={`min-w-0 truncate text-sm ${SIDE_NAME_TEXT[card.player]}`}>{card.name}</span>
             {card.isPermanent && (
               <span className="shrink-0 font-mono text-sm text-ink-muted" title={copy.cards.permanent}>
                 *<span className="sr-only">{copy.cards.permanent}</span>
