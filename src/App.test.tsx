@@ -269,7 +269,7 @@ describe('Success Rolls', () => {
     expect(options).toEqual(['+5', '+4', '+3', '+2', '+1', ...[1, 2, 3, 4, 5].map((n) => `${MINUS}${n}`)])
   })
 
-  it('turns the checkmark into an undo button for 2 seconds, showing the value just added', async () => {
+  it('turns the checkmark into an undo button for 5 seconds, showing the value just added', async () => {
     const { user } = setup()
     await pick(user, 'ZSRR', '+3')
     await user.click(confirm('ZSRR'))
@@ -289,7 +289,7 @@ describe('Success Rolls', () => {
     expect(logged('ZSRR')).toEqual(['+3'])
   })
 
-  it('takes the roll back when tapped again within 2 seconds', async () => {
+  it('takes the roll back when tapped again within 5 seconds', async () => {
     const { user } = setup()
     await pick(user, 'ZSRR', '+3')
     await submitRoll(user, confirm('ZSRR'))
@@ -311,7 +311,7 @@ describe('Success Rolls', () => {
     expect(screen.getByRole('status', { name: copy.success.resultFor('ZSRR') })).toHaveTextContent('+1')
   })
 
-  it('cannot undo once the 2 seconds are over: the tap adds a new roll', async () => {
+  it('cannot undo once the 5 seconds are over: the tap adds a new roll', async () => {
     const { user } = setup()
     await submitRoll(user, confirm('ZSRR'))
     await user.click(confirm('ZSRR'))
@@ -415,7 +415,7 @@ describe('Dice EV', () => {
     )
   })
 
-  it('offers to undo for 2 seconds after adding', async () => {
+  it('offers to undo for 5 seconds after adding', async () => {
     const { user } = setup()
     await pick(user, 'USA', '5')
     await user.click(add('USA'))

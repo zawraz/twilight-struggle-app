@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /** How long a toast stays over the header. */
-export const TOAST_MS = 2000
+export const TOAST_MS = 5000
 
 export interface Toast {
   text: string

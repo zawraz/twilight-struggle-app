@@ -266,7 +266,7 @@ describe('Karty: toast', () => {
     expect(inHandIcon('Blokada')).not.toBeNull()
   })
 
-  it('takes a card change back, and leaves after two seconds', async () => {
+  it('takes a card change back, and leaves after five seconds', async () => {
     const user = await setup()
     await discard(user, 'Blokada')
     expect(screen.getByText(copy.cards.changed('Blokada', copy.cards.state.discarded))).toBeInTheDocument()

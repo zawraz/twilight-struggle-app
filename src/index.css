@@ -119,8 +119,8 @@
 
   /* A log entry just added: lights up in its side's color, then fades back. */
   --animate-log-flash: log-flash 1.4s ease-out;
-  /* The submit button's 2s cooldown, as a bar that drains away. */
-  --animate-drain: drain 2s linear forwards;
+  /* An undo window (submit cooldown, toast), as a bar that drains away; each sets its own duration. */
+  --animate-drain: drain 5s linear forwards;
 
   @keyframes log-flash {
     0%,

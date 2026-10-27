@@ -9,7 +9,7 @@ import { TONE } from './tone'
 /** How many of the newest entries the log shows. */
 export const LOG_VISIBLE = 3
 /** After a submit the button shows what was added for this long; a tap meanwhile takes it back. */
-export const SUBMIT_COOLDOWN_MS = 2000
+export const SUBMIT_COOLDOWN_MS = 5000
 
 interface RollTrackerProps {
   /** The section's title and every label it shows or announces. */
@@ -175,6 +175,7 @@ function PlayerColumn({
             {cooling && (
               <span
                 aria-hidden="true"
+                style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
                 className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
               />
             )}
