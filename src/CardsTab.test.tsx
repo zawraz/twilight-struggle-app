@@ -284,6 +284,12 @@ describe('Karty: filters and order', () => {
     expect(rows().at(-1)).not.toHaveAttribute('data-group-end')
   })
 
+  it('closes a card in play on top with a thicker line', async () => {
+    await setup(at({ turn: 4, states: { [idOf('Dyplomacja Wahadłowa')]: 'in_play' } }))
+    expect(rows()[0]).toHaveTextContent('Dyplomacja Wahadłowa')
+    expect(rows()[0]).toHaveAttribute('data-group-end', 'true')
+  })
+
   it('draws no thicker line between played cards', async () => {
     const user = await setup()
     // Played last, in checklist order: a scoring card, then Blokada.

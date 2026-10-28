@@ -106,11 +106,12 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       ? -1
       : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
-  // Among the cards still to come, a thicker line closes each ops value.
-  const available = (id: number) => cardState(cards, id) === 'available'
+  // Among the cards still to come, a thicker line closes each ops value. A card in play still counts:
+  // it can be played on to the discard pile, so it gets the line too.
+  const live = (id: number) => ['available', 'in_play'].includes(cardState(cards, id))
   const groupEnd = (i: number) => {
     const [card, next] = [shown[i], shown[i + 1]]
-    return next !== undefined && available(card.id) && available(next.id) && next.value !== card.value
+    return next !== undefined && live(card.id) && live(next.id) && next.value !== card.value
   }
 
   function nextTurn() {
