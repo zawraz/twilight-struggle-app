@@ -154,7 +154,7 @@ const LATE: Row[] = [
   [110, 'awacs-sale-to-saudis', 'Sprzedaż AWACS Saudyjczykom', U, 3, true, false],
   [83, 'the-iron-lady', 'Żelazna Dama', U, 3, true, false],
   [96, 'tear-down-this-wall', '„Zburzcie ten mur”', U, 3, true, true],
-  [100, 'wargames', 'Gry Wojenne', N, 4, true, false],
+  [100, 'wargames', 'Gry Wojenne', N, 4, true, true],
   [90, 'glasnost', 'Głasnost', R, 4, true, false],
   [89, 'soviets-shoot-down-kal-007', 'Sowieci strącają KAL-007', U, 4, true, true],
 ]
