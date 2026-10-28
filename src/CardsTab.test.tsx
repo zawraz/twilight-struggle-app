@@ -318,6 +318,53 @@ describe('Karty: filters and order', () => {
     expect(played.map((li) => li.dataset.divider)).toEqual([undefined, undefined])
   })
 
+  describe('with the order chips', () => {
+    // A hand of three values and three played cards, each played one on a value's edge.
+    const game = () =>
+      at({
+        inHand: [idOf('Nasser'), idOf('Fidel'), idOf('Zakaz prób jądrowych')],
+        states: Object.fromEntries(['Kulminacja napięć w Azji', 'Blokada', 'Dekolonizacja'].map((n) => [idOf(n), 'discarded'])),
+      })
+    const dividers = () => rows().flatMap((li, i) => (li.dataset.divider ? [`${i}:${li.dataset.divider}`] : []))
+    const names = (...indexes: number[]) => indexes.map((i) => rows()[i].textContent)
+    const toggleOrder = async (user: User, ...names: string[]) => {
+      await openFilters(user)
+      for (const name of names) await user.click(screen.getByRole('button', { name }))
+    }
+
+    it('both on: one line closes the hand, then a line per value, then the red one', async () => {
+      await setup(game())
+      // Hand 0–2, scoring 3–4, 1 ops 5–10, 2 ops 11–20, 3 ops 21–31, 4 ops 32–35, played 36–38.
+      expect(dividers()).toEqual(['2:value', '4:value', '10:value', '20:value', '31:value', '35:played'])
+      expect(names(2, 36)).toEqual([expect.stringContaining('Zakaz prób jądrowych'), expect.stringContaining('Kulminacja napięć w Azji')])
+    })
+
+    it('Zagrane off: no red lines, and a played card on a value’s edge still closes it', async () => {
+      const user = await setup(game())
+      await toggleOrder(user, copy.cards.playedLast)
+      expect(dividers().filter((d) => d.endsWith('played'))).toEqual([])
+      // The 0 → 1 edge falls between Kulminacja napięć w Europie and the discarded Blokada.
+      const edge = rows().findIndex((li) => li.textContent!.includes('Blokada'))
+      expect(rows()[edge - 1]).toHaveAttribute('data-divider', 'value')
+      expect(rows()[edge]).not.toHaveAttribute('data-divider')
+    })
+
+    it('Na ręce off: the hand cards take their places, with no line of their own', async () => {
+      const user = await setup(game())
+      await toggleOrder(user, copy.cards.handFirst)
+      // Scoring 0–1, 1 ops 2–8, 2 ops 9–19, 3 ops 20–30, 4 ops 31–35, played 36–38.
+      expect(dividers()).toEqual(['1:value', '8:value', '19:value', '30:value', '35:played'])
+    })
+
+    it('both off: one line per value through the whole checklist', async () => {
+      const user = await setup(game())
+      await toggleOrder(user, copy.cards.playedLast, copy.cards.handFirst)
+      const values = rows().map((li) => CARDS.find((c) => li.textContent!.includes(c.name))!.value)
+      const edges = values.flatMap((v, i) => (i < values.length - 1 && values[i + 1] !== v ? [`${i}:value`] : []))
+      expect(dividers()).toEqual(edges)
+    })
+  })
+
   it('draws a red line where the played cards begin', async () => {
     const user = await setup()
     await discard(user, 'Blokada')

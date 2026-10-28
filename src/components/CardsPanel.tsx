@@ -110,14 +110,22 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       ? -1
       : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
-  // Among the cards still to come, a thicker line closes each ops value; a red one ends them where the
-  // played cards begin. A card in play still counts: it can be played on to the discard pile.
-  const live = (id: number) => ['available', 'in_play'].includes(cardState(cards, id))
+  // The list falls into the blocks the order puts together: the card in play, the hand, the rest,
+  // and the played cards. A thicker line closes each block and, in the rest, each ops value;
+  // a red one where the played cards begin. With the order chips off their cards join the rest.
+  const block = (id: number) => {
+    const state = cardState(cards, id)
+    if (state === 'in_play') return 'in_play'
+    if (playedLast && state !== 'available') return 'played'
+    if (handFirst && isInHand(cards, id)) return 'hand'
+    return 'rest'
+  }
   const divider = (i: number): RowDivider | undefined => {
     const [card, next] = [shown[i], shown[i + 1]]
-    if (next === undefined || !live(card.id)) return undefined
-    if (!live(next.id)) return 'played'
-    return next.value !== card.value ? 'value' : undefined
+    if (next === undefined) return undefined
+    const [here, below] = [block(card.id), block(next.id)]
+    if (here !== below) return below === 'played' ? 'played' : 'value'
+    return here === 'rest' && next.value !== card.value ? 'value' : undefined
   }
 
   function nextTurn() {
