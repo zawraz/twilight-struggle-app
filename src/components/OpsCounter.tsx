@@ -45,7 +45,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             disabled={locked || count === 0}
             onClick={handleMinus}
             className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              minus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
+              minus.armed ? 'border-danger text-danger' : `${tone.border} ${tone.text}`
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -68,7 +68,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             onClick={handlePlus}
             disabled={locked}
             className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              plus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
+              plus.armed ? 'border-danger text-danger' : `${tone.border} ${tone.text}`
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">

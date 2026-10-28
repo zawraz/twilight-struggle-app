@@ -15,7 +15,7 @@ export function Section({ title, children, className = '', bodyClassName = '' }:
       aria-labelledby={headingId}
       className={`flex min-h-0 flex-col gap-2 rounded-card border border-line bg-surface-raised p-3 tiny:gap-1 tiny:p-2 ${className}`}
     >
-      <h2 id={headingId} className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+      <h2 id={headingId} className="text-center font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
         {title}
       </h2>
       <div className={`grid min-h-0 flex-1 grid-cols-2 gap-3 ${bodyClassName}`}>{children}</div>
