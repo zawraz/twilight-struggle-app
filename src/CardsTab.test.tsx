@@ -278,16 +278,16 @@ describe('Karty: filters and order', () => {
   it('closes each ops value with a thicker line, among available cards only', async () => {
     await setup()
     // The three scoring cards, then the 1-ops cards from Blokada on.
-    expect(rows()[1]).not.toHaveAttribute('data-group-end')
-    expect(rows()[2]).toHaveAttribute('data-group-end', 'true')
+    expect(rows()[1]).not.toHaveAttribute('data-divider')
+    expect(rows()[2]).toHaveAttribute('data-divider', 'value')
     expect(rows()[3]).toHaveTextContent('Blokada')
-    expect(rows().at(-1)).not.toHaveAttribute('data-group-end')
+    expect(rows().at(-1)).not.toHaveAttribute('data-divider')
   })
 
   it('closes a card in play on top with a thicker line', async () => {
     await setup(at({ turn: 4, states: { [idOf('Dyplomacja Wahadłowa')]: 'in_play' } }))
     expect(rows()[0]).toHaveTextContent('Dyplomacja Wahadłowa')
-    expect(rows()[0]).toHaveAttribute('data-group-end', 'true')
+    expect(rows()[0]).toHaveAttribute('data-divider', 'value')
   })
 
   it('draws no thicker line between played cards', async () => {
@@ -296,7 +296,16 @@ describe('Karty: filters and order', () => {
     await discard(user, 'Kulminacja napięć w Azji')
     await discard(user, 'Blokada')
     const played = rows().filter((li) => li.dataset.state === 'discarded')
-    expect(played.map((li) => li.dataset.groupEnd)).toEqual([undefined, undefined])
+    expect(played.map((li) => li.dataset.divider)).toEqual([undefined, undefined])
+  })
+
+  it('draws a red line where the played cards begin', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    const last = rows().findLastIndex((li) => li.dataset.state === 'available')
+    expect(rows()[last]).toHaveAttribute('data-divider', 'played')
+    expect(rows()[last + 1]).toHaveTextContent('Blokada')
+    expect(rows().filter((li) => li.dataset.divider === 'played')).toHaveLength(1)
   })
 
   it('combines groups: USA + 4 shows only US 4-ops cards', async () => {

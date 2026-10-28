@@ -24,8 +24,15 @@ interface CardRowProps {
   onChange: (state: CardState) => void
   /** An event's picker is open: the row is a checkbox, and nothing else moves it. */
   pick?: { checked: boolean; onToggle: () => void }
-  /** The next card down has another ops value: a thicker line closes this group. */
-  groupEnd?: boolean
+  /** A thicker line under the row: the next card down has another ops value, or is already played. */
+  divider?: RowDivider
+}
+
+export type RowDivider = 'value' | 'played'
+
+const DIVIDER: Record<RowDivider, string> = {
+  value: 'border-b-2 border-line-strong/60',
+  played: 'border-b-2 border-danger/60',
 }
 
 const DIM: Record<CardState, string> = { available: '', in_play: '', discarded: 'opacity-55', removed: 'opacity-25' }
@@ -43,7 +50,7 @@ interface Gesture {
  * or right to remove; long-press a discarded or removed card to restore it. Shuttle Diplomacy swipes
  * right into play instead, and left from there to the discard pile.
  */
-export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick, groupEnd = false }: CardRowProps) {
+export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick, divider }: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
   const longPress = useRef<number | undefined>(undefined)
@@ -129,8 +136,8 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
   return (
     <li
       data-state={state}
-      data-group-end={groupEnd || undefined}
-      className={`relative overflow-hidden last:border-b-0 ${groupEnd ? 'border-b-2 border-line-strong/60' : 'border-b border-line'}`}
+      data-divider={divider}
+      className={`relative overflow-hidden last:border-b-0 ${divider ? DIVIDER[divider] : 'border-b border-line'}`}
       onContextMenu={(event) => event.preventDefault()}
     >
       {/* What the swipe will do, revealed behind the row and following its edge. */}

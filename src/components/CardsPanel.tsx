@@ -23,7 +23,7 @@ import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phas
 import { PLAYERS, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
-import { CardRow } from './CardRow'
+import { CardRow, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
 import { PlayerPicker } from './PlayerPicker'
 import { SUBMIT_COOLDOWN_MS, UndoIcon } from './RollTracker'
@@ -106,12 +106,14 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       ? -1
       : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
-  // Among the cards still to come, a thicker line closes each ops value. A card in play still counts:
-  // it can be played on to the discard pile, so it gets the line too.
+  // Among the cards still to come, a thicker line closes each ops value; a red one ends them where the
+  // played cards begin. A card in play still counts: it can be played on to the discard pile.
   const live = (id: number) => ['available', 'in_play'].includes(cardState(cards, id))
-  const groupEnd = (i: number) => {
+  const divider = (i: number): RowDivider | undefined => {
     const [card, next] = [shown[i], shown[i + 1]]
-    return next !== undefined && live(card.id) && live(next.id) && next.value !== card.value
+    if (next === undefined || !live(card.id)) return undefined
+    if (!live(next.id)) return 'played'
+    return next.value !== card.value ? 'value' : undefined
   }
 
   function nextTurn() {
@@ -379,7 +381,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             onClose={() => setOpenId(null)}
             onChange={(state) => change(card.id, card.name, state)}
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
-            groupEnd={groupEnd(i)}
+            divider={divider(i)}
           />
         ))}
         {shown.length === 0 && (
