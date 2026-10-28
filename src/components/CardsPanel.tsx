@@ -202,7 +202,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   return (
     <div className={`grid min-h-0 gap-2 ${pending !== null ? 'grid-rows-[auto_auto_1fr]' : 'grid-rows-[auto_1fr]'}`}>
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
-        {/* Four blocks spaced evenly: the filters, the deck, the counts, the turn and its button. */}
+        {/* Four blocks spaced evenly: the filters, the deck, the counts, the turn and its button.
+            The deck and turn numbers carry their labels on top, to keep the row narrow. */}
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
@@ -224,11 +225,11 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               </span>
             )}
           </button>
-          <div className="flex items-baseline gap-1.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
-            <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+          <div className="flex flex-col items-center gap-0.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
+            <span className="font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
               {copy.cards.deck}
             </span>
-            <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
+            <span className="min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
           </div>
           {/* Stacked, to fit between the deck and the turn; one grid, so each side's numbers line up right-aligned.
               Each number gets room for two digits and the Shuttle Diplomacy pin always has its place, so nothing shifts. */}
@@ -263,11 +264,11 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             })}
           </div>
           <div className="flex items-center gap-1">
-            <div className="flex items-baseline gap-1.5" aria-label={copy.cards.turnOf(cards.turn)} role="status">
-              <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+            <div className="flex flex-col items-center gap-0.5" aria-label={copy.cards.turnOf(cards.turn)} role="status">
+              <span className="font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {copy.cards.turn}
               </span>
-              <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
+              <span className="min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
             </div>
             <button
               type="button"
