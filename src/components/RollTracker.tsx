@@ -132,8 +132,8 @@ function PlayerColumn({
   return (
     <>
       <div className={`${COLUMN[column]} row-start-1 flex min-h-0 min-w-0 flex-col justify-center gap-2 short:gap-1 tiny:gap-0`}>
-        {/* Name, label and value share one baseline; the row stays vertically centred. */}
-        <div className="flex min-h-8 flex-wrap content-center items-baseline gap-x-2 short:min-h-5 tiny:min-h-4">
+        {/* Name, label and value share one baseline; the row stays centred over the wheel and button. */}
+        <div className="flex min-h-8 flex-wrap content-center items-baseline justify-center gap-x-2 short:min-h-5 tiny:min-h-4">
           <span className={`font-condensed text-xs font-semibold uppercase tracking-[0.08em] ${tone.text}`}>
             {player.label}
           </span>
@@ -192,10 +192,10 @@ function PlayerColumn({
       </div>
       {/* Once the game has ended the log is history: greyed out like the locked controls. */}
       <div
-        className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center whitespace-nowrap text-ink-muted transition-opacity ${revealed ? LOCKED : ''}`}
+        className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center justify-center whitespace-nowrap text-ink-muted transition-opacity ${revealed ? LOCKED : ''}`}
       >
         {count === 0 && <span className="font-mono text-xs opacity-70">{copy.noRolls}</span>}
-        {/* Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
+        {/* Centred under the wheel and button. Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
         <ol
           aria-label={text.log(player.label)}
           className="flex min-w-0 max-w-full justify-end gap-0.5 overflow-hidden font-mono text-xs leading-5"
