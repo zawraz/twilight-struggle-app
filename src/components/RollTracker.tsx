@@ -66,7 +66,7 @@ export function RollTracker({
         />
       ))}
       <span
-        className={`col-span-2 row-start-2 pt-2 text-center font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 ${revealed ? LOCKED : 'opacity-70'}`}
+        className={`col-span-2 row-start-2 pt-2 pb-1.5 text-center font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
       >
         {copy.lastRolls}
       </span>
