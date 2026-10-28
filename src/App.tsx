@@ -101,7 +101,7 @@ export default function App() {
           <RollTracker
             text={copy.dice}
             values={DIE_VALUES}
-            initialValue={1}
+            initialValue={4}
             formatValue={String}
             summarize={(values) => formatAverage(average(values))}
             entries={game.rolls.dice}

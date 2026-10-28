@@ -457,7 +457,7 @@ describe('header: End and New Game', () => {
     await addFourOps(user, 'ZSRR')
     await addFourOps(user, 'ZSRR')
     await submitRoll(user, screen.getByRole('button', { name: copy.success.submit('USA') })) // +1
-    await submitRoll(user, screen.getByRole('button', { name: copy.dice.submit('USA') })) // 1
+    await submitRoll(user, screen.getByRole('button', { name: copy.dice.submit('USA') })) // 4
   }
 
   it('names the app and holds the End button', () => {
@@ -482,7 +482,7 @@ describe('header: End and New Game', () => {
 
     await user.click(end)
     expect(screen.getByRole('status', { name: copy.success.resultFor('USA') })).toHaveTextContent('+1')
-    expect(screen.getByRole('status', { name: copy.dice.resultFor('USA') })).toHaveTextContent('1,00')
+    expect(screen.getByRole('status', { name: copy.dice.resultFor('USA') })).toHaveTextContent('4,00')
   })
 
   it('cancels a pending End after a timeout', () => {
@@ -510,8 +510,8 @@ describe('header: End and New Game', () => {
     // The wheels lock too: greyed out, and a tap on another value does nothing.
     const wheel = screen.getByRole('listbox', { name: copy.dice.wheel('USA') })
     expect(wheel).toHaveAttribute('aria-disabled', 'true')
-    await user.click(within(wheel).getByRole('option', { name: '4' }))
-    expect(within(wheel).getByRole('option', { selected: true })).toHaveTextContent('1')
+    await user.click(within(wheel).getByRole('option', { name: '6' }))
+    expect(within(wheel).getByRole('option', { selected: true })).toHaveTextContent('4')
     // The four-ops counts and each summary stay at full strength.
     expect(opsCount('ZSRR')).toHaveTextContent('2')
     expect(screen.getByRole('status', { name: copy.success.resultFor('USA') })).toHaveTextContent('+1')
@@ -649,7 +649,7 @@ describe('saved progress', () => {
     unmount()
 
     setup()
-    expect(screen.getByRole('status', { name: copy.dice.resultFor('ZSRR') })).toHaveTextContent('1,00')
+    expect(screen.getByRole('status', { name: copy.dice.resultFor('ZSRR') })).toHaveTextContent('4,00')
     expect(within(header()).getByRole('button', { name: 'Nowa gra' })).toBeInTheDocument()
   })
 
