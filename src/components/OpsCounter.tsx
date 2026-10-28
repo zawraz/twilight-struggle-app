@@ -45,7 +45,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             disabled={locked || count === 0}
             onClick={handleMinus}
             className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              minus.armed ? 'border-danger text-danger' : `${tone.border} ${tone.text}`
+              minus.armed ? 'border-danger bg-danger text-surface' : `${tone.border} ${tone.fill}`
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -55,7 +55,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
         </div>
         <output
           aria-label={copy.fourOps.count(player.label)}
-          className={`min-w-[2ch] text-center font-stencil text-4xl font-extrabold tabular-nums ${tone.text}`}
+          className="min-w-[2ch] text-center font-stencil text-4xl font-extrabold tabular-nums text-ink"
         >
           {count}
         </output>
@@ -68,7 +68,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             onClick={handlePlus}
             disabled={locked}
             className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              plus.armed ? 'border-danger text-danger' : `${tone.border} ${tone.text}`
+              plus.armed ? 'border-danger bg-danger text-surface' : `${tone.border} ${tone.fill}`
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">

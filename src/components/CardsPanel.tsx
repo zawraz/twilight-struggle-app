@@ -34,7 +34,7 @@ const STATE_ICON: Record<CardState, ReactNode> = {
   available: <Layers className="size-4 text-ink-muted" aria-hidden="true" />,
   in_play: <Pin className="size-4 text-go" strokeWidth={2.5} aria-hidden="true" />,
   discarded: <Play className="size-3.5 text-ink-muted" aria-hidden="true" />,
-  removed: <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />,
+  removed: <X className="size-4 text-ink-muted" strokeWidth={3} aria-hidden="true" />,
 }
 
 /** The state filter a card answers to: a card in play counts as available. */

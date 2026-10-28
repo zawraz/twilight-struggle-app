@@ -82,7 +82,7 @@ describe('4 Ops Cards', () => {
     await user.click(minus('USA'))
     expect(count('USA')).toHaveTextContent('2')
     expect(minus('USA')).toHaveAttribute('data-armed', 'true')
-    expect(minus('USA')).toHaveClass('text-danger')
+    expect(minus('USA')).toHaveClass('bg-danger')
     expect(within(section(copy.fourOps.title)).getByText('Potwierdź?')).toBeVisible()
 
     await user.click(minus('USA'))
