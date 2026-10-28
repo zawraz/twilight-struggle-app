@@ -473,9 +473,10 @@ describe('header: End and New Game', () => {
     await playSomeRounds(user)
     const end = within(header()).getByRole('button', { name: 'Zakończ grę' })
 
+    expect(end).not.toHaveClass('bg-danger')
     await user.click(end)
     expect(end).toHaveAttribute('data-armed', 'true')
-    expect(end).toHaveClass('ring-danger')
+    expect(end).toHaveClass('bg-danger')
     expect(within(header()).getByText('Potwierdź?')).toBeVisible()
     expect(screen.queryByRole('status', { name: copy.success.resultFor('USA') })).not.toBeInTheDocument()
 
