@@ -44,8 +44,8 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={minus.armed}
             disabled={locked || count === 0}
             onClick={handleMinus}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              minus.armed ? 'border-danger bg-danger text-surface' : `${tone.border} ${tone.fill}`
+            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
+              minus.armed ? tone.soft : tone.fill
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -67,8 +67,8 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={plus.armed}
             onClick={handlePlus}
             disabled={locked}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
-              plus.armed ? 'border-danger bg-danger text-surface' : `${tone.border} ${tone.fill}`
+            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
+              plus.armed ? tone.soft : tone.fill
             }`}
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
