@@ -195,8 +195,9 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
                 *<span className="sr-only">{copy.cards.permanent}</span>
               </span>
             )}
+            {/* Pushed right, so the warnings line up in a column beside the side label. */}
             {card.important && (
-              <TriangleAlert className="size-4 shrink-0 text-gold-text" aria-label={copy.cards.important} role="img" />
+              <TriangleAlert className="ml-auto size-4 shrink-0 text-gold-text" aria-label={copy.cards.important} role="img" />
             )}
           </span>
           <span className={`flex shrink-0 items-baseline gap-2 ${DIM[state]}`}>
