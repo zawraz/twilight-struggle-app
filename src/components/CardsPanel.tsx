@@ -36,8 +36,8 @@ const STATE_ICON: Record<CardState, ReactNode> = {
   removed: <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />,
 }
 
-/** With played cards at the bottom: available first, then a card in play, then the played ones. */
-const PLAYED_RANK: Record<CardState, number> = { available: 0, in_play: 1, discarded: 2, removed: 2 }
+/** With played cards at the bottom: available first, then the played ones. A card in play is pinned above both. */
+const PLAYED_RANK: Record<CardState, number> = { available: 0, in_play: 0, discarded: 1, removed: 1 }
 
 interface Filters {
   player: CardSide[]
@@ -96,9 +96,12 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       matches(filters.state, cardState(cards, card.id)) &&
       matches(filters.value, card.value),
   )
-  // Stable sort: cards in hand, then the rest available, then one in play, then played ones, each in checklist order.
+  // Stable sort: a card in play pinned on top whatever the order chips say, then cards in hand,
+  // then the rest available, then played ones, each in checklist order.
   const rank = (id: number) =>
-    (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
+    cardState(cards, id) === 'in_play'
+      ? -1
+      : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
 
   function nextTurn() {

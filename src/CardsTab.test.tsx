@@ -159,18 +159,20 @@ describe('Karty: changing a card', () => {
     expect(screen.queryByRole('button', { name: copy.cards.discard('Fidel') })).not.toBeInTheDocument()
   })
 
-  it('puts Shuttle Diplomacy in play with a right swipe, between available and played cards', async () => {
+  it('puts Shuttle Diplomacy in play with a right swipe, pinned above every other card', async () => {
     const name = 'Dyplomacja Wahadłowa'
-    const user = await setup(at({ turn: 4 }))
+    const user = await setup(at({ turn: 4, inHand: [idOf('Nasser'), idOf('Fidel')] }))
+    expect(rows()[0]).toHaveTextContent('Nasser')
     await discard(user, 'Blokada')
     expect(counts(copy.cards.states.discarded)).not.toHaveAccessibleName(/w grze/)
     swipe(name, SWIPE_COMMIT_PX + 10)
     expect(stateOf(name)).toBe('in_play')
     expect(counts(copy.cards.states.discarded)).toHaveAccessibleName(/w grze: Dyplomacja Wahadłowa$/)
-    const order = rows().map((li) => li.getAttribute('data-state'))
-    const i = order.indexOf('in_play')
-    expect(order.slice(0, i).every((s) => s === 'available')).toBe(true)
-    expect(order.slice(i + 1).every((s) => s === 'discarded')).toBe(true)
+    expect(rows()[0]).toHaveTextContent(name)
+    // Still on top with the order chips off.
+    await user.click(screen.getByRole('button', { name: copy.cards.playedLast }))
+    await user.click(screen.getByRole('button', { name: copy.cards.handFirst }))
+    expect(rows()[0]).toHaveTextContent(name)
     // In play, a right swipe does nothing; a left one discards it.
     swipe(name, SWIPE_COMMIT_PX + 10)
     expect(stateOf(name)).toBe('in_play')
