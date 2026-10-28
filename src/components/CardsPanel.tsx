@@ -224,11 +224,12 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     <div className={`grid min-h-0 gap-2 ${pending !== null ? 'grid-rows-[auto_auto_1fr]' : 'grid-rows-[auto_1fr]'}`}>
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
         {/* Mirrored around the counts: the filters and the deck on the left, the turn and its button on the right.
-            The outer columns share the space left over equally, so the counts sit dead centre.
+            The outer columns share the space left over equally, so the counts sit dead centre,
+            and each number is centred in what its button leaves of its column.
             The deck and turn numbers carry their labels on top, to keep the row narrow; the labels hang
             above the numbers so the numbers, not number and label together, centre on the row. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <div className="flex items-center gap-3 justify-self-start">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               aria-label={copy.cards.filters}
@@ -249,7 +250,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                 </span>
               )}
             </button>
-            <div className="relative" aria-label={copy.cards.deckCount(cards.deck)} role="status">
+            <div className="relative flex-1" aria-label={copy.cards.deckCount(cards.deck)} role="status">
               <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {copy.cards.deck}
               </span>
@@ -288,8 +289,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               )
             })}
           </div>
-          <div className="flex items-center gap-3 justify-self-end">
-            <div className="relative" aria-label={copy.cards.turnOf(cards.turn)} role="status">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1" aria-label={copy.cards.turnOf(cards.turn)} role="status">
               <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {copy.cards.turn}
               </span>
