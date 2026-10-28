@@ -44,11 +44,16 @@ export default function App() {
         <div className="flex items-center gap-2 px-1">
           <GameAction
             ended={game.ended}
-            onEnd={() => dispatch({ type: 'end' })}
+            // Ending shows the results in the log; a new game starts at the deck.
+            onEnd={() => {
+              dispatch({ type: 'end' })
+              setTab('log')
+            }}
             onNewGame={() => {
               dispatch({ type: 'newGame' })
               dispatchCards({ type: 'newGame' })
               dismissToast()
+              setTab('cards')
             }}
           />
           <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">

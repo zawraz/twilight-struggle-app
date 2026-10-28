@@ -404,6 +404,8 @@ describe('Karty: 4 Ops cards', () => {
 
     await user.click(screen.getByRole('button', { name: copy.end }))
     await user.click(screen.getByRole('button', { name: copy.end }))
+    // Ending moves to the log; come back to keep playing cards.
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
     await discard(user, BAN)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(stateOf(BAN)).toBe('discarded')

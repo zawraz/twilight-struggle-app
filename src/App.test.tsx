@@ -517,11 +517,26 @@ describe('header: End and New Game', () => {
 
     await user.click(within(header()).getByRole('button', { name: 'Nowa gra' }))
     expect(screen.queryByText('Potwierdź?')).not.toBeInTheDocument()
+    await user.click(within(header()).getByRole('tab', { name: 'Dziennik' }))
     expect(opsCount('ZSRR')).toHaveTextContent('0')
     expect(screen.getAllByText('Brak rzutów')).toHaveLength(4)
     expect(screen.queryByRole('status', { name: copy.success.resultFor('USA') })).not.toBeInTheDocument()
     expect(within(header()).getByRole('button', { name: 'Zakończ grę' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: copy.fourOps.add('ZSRR') })).toBeEnabled()
+  })
+})
+
+describe('header: End and New Game switch tabs', () => {
+  const selected = () => within(header()).getByRole('tab', { selected: true })
+
+  it('ending moves to Dziennik, a new game to Karty', async () => {
+    const { user } = setup()
+    await user.click(within(header()).getByRole('tab', { name: 'Karty' }))
+    await endGame(user)
+    expect(selected()).toHaveAccessibleName('Dziennik')
+
+    await user.click(within(header()).getByRole('button', { name: 'Nowa gra' }))
+    expect(selected()).toHaveAccessibleName('Karty')
   })
 })
 
