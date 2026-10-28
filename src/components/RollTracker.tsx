@@ -65,7 +65,9 @@ export function RollTracker({
           summarize={summarize}
         />
       ))}
-      <span className="col-span-2 row-start-2 pt-2 font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted opacity-70 short:pt-1">
+      <span
+        className={`col-span-2 row-start-2 pt-2 font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 ${revealed ? LOCKED : 'opacity-70'}`}
+      >
         {copy.lastRolls}
       </span>
     </Section>
@@ -86,6 +88,8 @@ interface PlayerColumnProps
 }
 
 const COLUMN = ['col-start-1', 'col-start-2']
+/** How a locked part of the tracker shows once the game has ended. */
+const LOCKED = 'opacity-20 grayscale'
 
 function PlayerColumn({
   column,
@@ -166,7 +170,7 @@ function PlayerColumn({
             onClick={cooling ? undo : submit}
             disabled={revealed}
             className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
-              cooling ? tone.soft : `${tone.fill} ${revealed ? 'opacity-20 grayscale' : ''}`
+              cooling ? tone.soft : `${tone.fill} ${revealed ? LOCKED : ''}`
             }`}
           >
             {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
@@ -186,7 +190,10 @@ function PlayerColumn({
           </span>
         </div>
       </div>
-      <div className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center whitespace-nowrap text-ink-muted`}>
+      {/* Once the game has ended the log is history: greyed out like the locked controls. */}
+      <div
+        className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center whitespace-nowrap text-ink-muted transition-opacity ${revealed ? LOCKED : ''}`}
+      >
         {count === 0 && <span className="font-mono text-xs opacity-70">{copy.noRolls}</span>}
         {/* Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
         <ol
