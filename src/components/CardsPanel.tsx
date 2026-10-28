@@ -202,42 +202,45 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   return (
     <div className={`grid min-h-0 gap-2 ${pending !== null ? 'grid-rows-[auto_auto_1fr]' : 'grid-rows-[auto_1fr]'}`}>
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
-        {/* Four blocks spaced evenly: the filters, the deck, the counts, the turn and its button.
+        {/* Mirrored around the counts: the filters and the deck on the left, the turn and its button on the right.
+            The outer columns share the space left over equally, so the counts sit dead centre.
             The deck and turn numbers carry their labels on top, to keep the row narrow; the labels hang
             above the numbers so the numbers, not number and label together, centre on the row. */}
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            aria-label={copy.cards.filters}
-            aria-pressed={filtersShown}
-            onClick={() => setFiltersShown((s) => !s)}
-            disabled={pending !== null}
-            className={`relative grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
-              filtersShown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
-            }`}
-          >
-            <SlidersHorizontal className="size-4" aria-hidden="true" />
-            {activeFilters > 0 && (
-              <span
-                aria-hidden="true"
-                className="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full border border-surface-raised bg-gold font-mono text-[10px] leading-none font-bold text-on-gold tabular-nums"
-              >
-                {activeFilters}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="flex items-center gap-3 justify-self-start">
+            <button
+              type="button"
+              aria-label={copy.cards.filters}
+              aria-pressed={filtersShown}
+              onClick={() => setFiltersShown((s) => !s)}
+              disabled={pending !== null}
+              className={`relative grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
+                filtersShown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
+              }`}
+            >
+              <SlidersHorizontal className="size-4" aria-hidden="true" />
+              {activeFilters > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full border border-surface-raised bg-gold font-mono text-[10px] leading-none font-bold text-on-gold tabular-nums"
+                >
+                  {activeFilters}
+                </span>
+              )}
+            </button>
+            <div className="relative" aria-label={copy.cards.deckCount(cards.deck)} role="status">
+              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                {copy.cards.deck}
               </span>
-            )}
-          </button>
-          <div className="relative" aria-label={copy.cards.deckCount(cards.deck)} role="status">
-            <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
-              {copy.cards.deck}
-            </span>
-            <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
+              <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
+            </div>
           </div>
           {/* Stacked, to fit between the deck and the turn; one grid, so each side's numbers line up right-aligned.
               Each number gets room for two digits and the Shuttle Diplomacy pin always has its place, so nothing shifts. */}
           <div
             role="group"
             aria-label={copy.cards.counts}
-            className="grid grid-cols-[auto_auto_auto_auto_auto_auto_auto] font-mono text-xs leading-4 tabular-nums"
+            className="grid justify-self-center grid-cols-[auto_auto_auto_auto_auto_auto_auto] font-mono text-xs leading-4 tabular-nums"
           >
             {CARD_STATES.map((state) => {
               const count = (side: CardSide) =>
@@ -264,7 +267,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               )
             })}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3 justify-self-end">
             <div className="relative" aria-label={copy.cards.turnOf(cards.turn)} role="status">
               <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {copy.cards.turn}
