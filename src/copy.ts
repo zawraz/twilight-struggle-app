@@ -66,6 +66,7 @@ export const copy = {
     toHand: (name: string) => `Do ręki: ${name}`,
     nothingTaken: 'Negocjacje SALT: bez karty',
     states: { available: 'Dostępne', in_play: 'W grze', discarded: 'Odrzucone', removed: 'Usunięte' },
+    withShuttle: 'z kartą w grze',
     state: { available: 'dostępna', in_play: 'w grze', discarded: 'odrzucona', removed: 'usunięta' },
     counts: 'Stan kart',
     countFor: (state: string, ussr: number, us: number, neutral: number) =>

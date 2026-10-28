@@ -275,6 +275,25 @@ describe('Karty: counts', () => {
 })
 
 describe('Karty: filters and order', () => {
+  it('keeps Shuttle Diplomacy in play under Dostępne, which carries its pin', async () => {
+    const user = await setup(at({ turn: 4, states: { [idOf('Dyplomacja Wahadłowa')]: 'in_play' } }))
+    await openFilters(user)
+    const available = within(screen.getByRole('group', { name: copy.cards.filterGroups.state })).getByRole('button', {
+      name: new RegExp(`^${copy.cards.states.available}\s*${copy.cards.withShuttle}$`),
+    })
+    await user.click(available)
+    expect(rows()[0]).toHaveTextContent('Dyplomacja Wahadłowa')
+    expect(rows().every((li) => ['available', 'in_play'].includes(li.dataset.state!))).toBe(true)
+  })
+
+  it('shows the pin on Dostępne only while Shuttle Diplomacy is in play', async () => {
+    const user = await setup(at({ turn: 4 }))
+    await openFilters(user)
+    const state = within(screen.getByRole('group', { name: copy.cards.filterGroups.state }))
+    expect(state.getByRole('button', { name: copy.cards.states.available })).toBeInTheDocument()
+    expect(state.queryByRole('img', { name: copy.cards.withShuttle })).not.toBeInTheDocument()
+  })
+
   it('closes each ops value with a thicker line, among available cards only', async () => {
     await setup()
     // The three scoring cards, then the 1-ops cards from Blokada on.

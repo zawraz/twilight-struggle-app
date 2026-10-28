@@ -37,6 +37,9 @@ const STATE_ICON: Record<CardState, ReactNode> = {
   removed: <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />,
 }
 
+/** The state filter a card answers to: a card in play counts as available. */
+const filterState = (state: CardState): CardState => (state === 'in_play' ? 'available' : state)
+
 /** With played cards at the bottom: available first, then the played ones. A card in play is pinned above both. */
 const PLAYED_RANK: Record<CardState, number> = { available: 0, in_play: 0, discarded: 1, removed: 1 }
 
@@ -96,7 +99,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     (card) =>
       matches(filters.player, card.player) &&
       matches(phaseFilter, card.phase) &&
-      matches(filters.state, cardState(cards, card.id)) &&
+      // Shuttle Diplomacy in play is still to be played on, so Dostępne keeps it.
+      matches(filters.state, filterState(cardState(cards, card.id))) &&
       matches(filters.value, card.value),
   )
   // Stable sort: a card in play pinned on top whatever the order chips say, then cards in hand,
@@ -326,6 +330,14 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               {CARD_STATES.map((state) => (
                 <Chip key={state} pressed={filters.state.includes(state)} onClick={() => toggle('state', state)}>
                   {copy.cards.states[state]}
+                  {state === 'available' && cardState(cards, SHUTTLE_DIPLOMACY) === 'in_play' && (
+                    <Pin
+                      className={`size-3.5 ${filters.state.includes(state) ? '' : 'text-go'}`}
+                      strokeWidth={2.5}
+                      aria-label={copy.cards.withShuttle}
+                      role="img"
+                    />
+                  )}
                 </Chip>
               ))}
             </ChipGroup>
