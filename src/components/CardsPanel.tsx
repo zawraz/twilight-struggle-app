@@ -262,7 +262,9 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
           <div
             role="group"
             aria-label={copy.cards.counts}
-            className="grid justify-self-center grid-cols-[auto_auto_auto_auto_auto_auto_auto] font-mono text-xs leading-4 tabular-nums"
+            // Padded left by what the right side has over the left (a divider and a number: 3ch and its 8px of room),
+            // so the divider between the red and blue numbers sits dead centre, under the header's Iron Curtain gap.
+            className="grid justify-self-center grid-cols-[auto_auto_auto_auto_auto_auto_auto] pl-[calc(3ch+8px)] font-mono text-xs leading-4 tabular-nums"
           >
             {CARD_STATES.map((state) => {
               const count = (side: CardSide) =>
