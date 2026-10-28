@@ -24,14 +24,15 @@ interface CardRowProps {
   onChange: (state: CardState) => void
   /** An event's picker is open: the row is a checkbox, and nothing else moves it. */
   pick?: { checked: boolean; onToggle: () => void }
-  /** A thicker line under the row: the next card down has another ops value, or is already played. */
+  /** A thicker line under the row: the next card down has another ops value, is out of the hand, or is already played. */
   divider?: RowDivider
 }
 
-export type RowDivider = 'value' | 'played'
+export type RowDivider = 'value' | 'hand' | 'played'
 
 const DIVIDER: Record<RowDivider, string> = {
   value: 'border-b-2 border-line-strong/60',
+  hand: 'border-b-2 border-go/60',
   played: 'border-b-2 border-danger/60',
 }
 

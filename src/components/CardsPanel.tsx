@@ -111,8 +111,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
   // The list falls into the blocks the order puts together: the card in play, the hand, the rest,
-  // and the played cards. A thicker line closes each block and, in the rest, each ops value;
-  // a red one where the played cards begin. With the order chips off their cards join the rest.
+  // and the played cards. A thicker line closes each block and, in the hand and the rest, each ops value;
+  // a green one closes the hand, a red one where the played cards begin. With the order chips off their cards join the rest.
   const block = (id: number) => {
     const state = cardState(cards, id)
     if (state === 'in_play') return 'in_play'
@@ -124,8 +124,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     const [card, next] = [shown[i], shown[i + 1]]
     if (next === undefined) return undefined
     const [here, below] = [block(card.id), block(next.id)]
-    if (here !== below) return below === 'played' ? 'played' : 'value'
-    return here === 'rest' && next.value !== card.value ? 'value' : undefined
+    if (here !== below) return below === 'played' ? 'played' : here === 'hand' ? 'hand' : 'value'
+    return here !== 'played' && next.value !== card.value ? 'value' : undefined
   }
 
   function nextTurn() {

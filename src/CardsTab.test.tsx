@@ -332,10 +332,10 @@ describe('Karty: filters and order', () => {
       for (const name of names) await user.click(screen.getByRole('button', { name }))
     }
 
-    it('both on: one line closes the hand, then a line per value, then the red one', async () => {
+    it('both on: a line per value in the hand, a green one closing it, a line per value, then the red one', async () => {
       await setup(game())
-      // Hand 0–2, scoring 3–4, 1 ops 5–10, 2 ops 11–20, 3 ops 21–31, 4 ops 32–35, played 36–38.
-      expect(dividers()).toEqual(['2:value', '4:value', '10:value', '20:value', '31:value', '35:played'])
+      // Hand 0–2 (1, 2 and 4 ops), scoring 3–4, 1 ops 5–10, 2 ops 11–20, 3 ops 21–31, 4 ops 32–35, played 36–38.
+      expect(dividers()).toEqual(['0:value', '1:value', '2:hand', '4:value', '10:value', '20:value', '31:value', '35:played'])
       expect(names(2, 36)).toEqual([expect.stringContaining('Zakaz prób jądrowych'), expect.stringContaining('Kulminacja napięć w Azji')])
     })
 
