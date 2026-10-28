@@ -256,13 +256,13 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                   className="col-span-7 grid h-4 grid-cols-subgrid items-center text-right"
                   aria-label={shuttle ? copy.cards.withInPlay(label) : label}
                 >
-                  <span className="grid w-4 place-items-center mr-1.5">{STATE_ICON[state]}</span>
+                  <span className="mr-2.5 grid w-4 place-items-center">{STATE_ICON[state]}</span>
                   <span className={`w-[2ch] ${SIDE_TEXT.ussr}`}>{ussr}</span>
-                  <span className="text-line-strong">|</span>
+                  <span className="px-1 text-line-strong">|</span>
                   <span className={`w-[2ch] ${SIDE_TEXT.us}`}>{us}</span>
-                  <span className="text-line-strong">|</span>
+                  <span className="px-1 text-line-strong">|</span>
                   <span className={`w-[2ch] ${SIDE_TEXT.neutral}`}>{neutral}</span>
-                  <span className="ml-1.5 grid w-4 place-items-center">{shuttle && STATE_ICON.in_play}</span>
+                  <span className="ml-2.5 grid w-4 place-items-center">{shuttle && STATE_ICON.in_play}</span>
                 </div>
               )
             })}
