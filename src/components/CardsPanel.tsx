@@ -106,6 +106,12 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       ? -1
       : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
+  // Among the cards still to come, a thicker line closes each ops value.
+  const available = (id: number) => cardState(cards, id) === 'available'
+  const groupEnd = (i: number) => {
+    const [card, next] = [shown[i], shown[i + 1]]
+    return next !== undefined && available(card.id) && available(next.id) && next.value !== card.value
+  }
 
   function nextTurn() {
     // Going back the turn is what takes its reshuffle back.
@@ -372,7 +378,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             onClose={() => setOpenId(null)}
             onChange={(state) => change(card.id, card.name, state)}
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
-            groupEnd={i < shown.length - 1 && shown[i + 1].value !== card.value}
+            groupEnd={groupEnd(i)}
           />
         ))}
         {shown.length === 0 && (

@@ -275,13 +275,22 @@ describe('Karty: counts', () => {
 })
 
 describe('Karty: filters and order', () => {
-  it('closes each ops value with a thicker line', async () => {
+  it('closes each ops value with a thicker line, among available cards only', async () => {
     await setup()
     // The three scoring cards, then the 1-ops cards from Blokada on.
     expect(rows()[1]).not.toHaveAttribute('data-group-end')
     expect(rows()[2]).toHaveAttribute('data-group-end', 'true')
     expect(rows()[3]).toHaveTextContent('Blokada')
     expect(rows().at(-1)).not.toHaveAttribute('data-group-end')
+  })
+
+  it('draws no thicker line between played cards', async () => {
+    const user = await setup()
+    // Played last, in checklist order: a scoring card, then Blokada.
+    await discard(user, 'Kulminacja napięć w Azji')
+    await discard(user, 'Blokada')
+    const played = rows().filter((li) => li.dataset.state === 'discarded')
+    expect(played.map((li) => li.dataset.groupEnd)).toEqual([undefined, undefined])
   })
 
   it('combines groups: USA + 4 shows only US 4-ops cards', async () => {
