@@ -390,12 +390,12 @@ describe('Dice EV', () => {
     user.click(within(screen.getByRole('listbox', { name: copy.dice.wheel(player) })).getByRole('option', { name: label }))
   const add = (player: string) => screen.getByRole('button', { name: copy.dice.submit(player) })
 
-  it('offers 1 to 6', () => {
+  it('offers 6 to 1, highest on top', () => {
     setup()
     const options = within(screen.getByRole('listbox', { name: copy.dice.wheel('ZSRR') }))
       .getAllByRole('option')
       .map((o) => o.textContent)
-    expect(options).toEqual(['1', '2', '3', '4', '5', '6'])
+    expect(options).toEqual(['6', '5', '4', '3', '2', '1'])
   })
 
   it('uses the same checkmark button as Success Rolls, with no text', () => {

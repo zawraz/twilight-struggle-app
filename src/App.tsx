@@ -16,7 +16,8 @@ import { useToast } from './lib/useToast'
 
 // −5…+5 without 0, highest on top.
 export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
-export const DIE_VALUES = [1, 2, 3, 4, 5, 6] as const
+// 6…1, highest on top like the success wheel.
+export const DIE_VALUES = [6, 5, 4, 3, 2, 1] as const
 
 const TABS = [
   { id: 'cards', label: copy.tabs.cards, icon: <PlayingCardsFan className="size-5" aria-hidden="true" /> },
