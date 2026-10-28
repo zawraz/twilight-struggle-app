@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { LONG_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
+import { SUBMIT_COOLDOWN_MS } from './components/RollTracker'
 import { copy } from './copy'
 import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
 import { CARDS } from './lib/cards'
@@ -34,8 +35,14 @@ async function setup(saved?: CardsState) {
 }
 
 async function nextTurns(user: User, times: number) {
-  for (let i = 0; i < times; i++) await user.click(screen.getByRole('button', { name: copy.cards.nextTurn }))
+  for (let i = 0; i < times; i++) {
+    // Right after a new turn the button takes it back; wait that out first.
+    if (screen.queryByRole('button', { name: copy.cards.undoTurn })) act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
+    await user.click(screen.getByRole('button', { name: copy.cards.nextTurn }))
+  }
 }
+
+const openFilters = (user: User) => user.click(screen.getByRole('button', { name: copy.cards.filters }))
 
 async function discard(user: User, name: string) {
   await user.click(rowButton(name))
@@ -72,7 +79,27 @@ describe('Karty: turns', () => {
     expect(rows()).toHaveLength(39)
     expect(rows()[0]).toHaveTextContent('Kulminacja napięć na Bliskim Wschodzie')
     expect(rows()[38]).toHaveTextContent('Zakaz prób jądrowych')
-    expect(screen.getByRole('button', { name: copy.cards.previousTurn })).toBeDisabled()
+  })
+
+  it('the next-turn button takes the turn back for a while', async () => {
+    const user = await setup()
+    await nextTurns(user, 1)
+    expect(turn()).toHaveTextContent('2')
+    await user.click(screen.getByRole('button', { name: copy.cards.undoTurn }))
+    expect(turn()).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeEnabled()
+
+    await nextTurns(user, 1)
+    act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
+    expect(screen.queryByRole('button', { name: copy.cards.undoTurn })).not.toBeInTheDocument()
+    expect(turn()).toHaveTextContent('2')
+  })
+
+  it('playing a card ends the window to take the turn back', async () => {
+    const user = await setup()
+    await nextTurns(user, 1)
+    await discard(user, 'Blokada')
+    expect(screen.queryByRole('button', { name: copy.cards.undoTurn })).not.toBeInTheDocument()
   })
 
   it('brings in Mid War on turn 4 and Late War on turn 8', async () => {
@@ -170,6 +197,7 @@ describe('Karty: changing a card', () => {
     expect(counts(copy.cards.states.discarded)).toHaveAccessibleName(/w grze: Dyplomacja Wahadłowa$/)
     expect(rows()[0]).toHaveTextContent(name)
     // Still on top with the order chips off.
+    await openFilters(user)
     await user.click(screen.getByRole('button', { name: copy.cards.playedLast }))
     await user.click(screen.getByRole('button', { name: copy.cards.handFirst }))
     expect(rows()[0]).toHaveTextContent(name)
@@ -249,7 +277,7 @@ describe('Karty: counts', () => {
 describe('Karty: filters and order', () => {
   it('combines groups: USA + 4 shows only US 4-ops cards', async () => {
     const user = await setup()
-    await user.click(screen.getByRole('button', { name: new RegExp(copy.cards.filters) }))
+    await openFilters(user)
     await user.click(within(screen.getByRole('group', { name: 'Strona' })).getByRole('button', { name: 'USA' }))
     await user.click(screen.getByRole('button', { name: copy.cards.ops(4) }))
     expect(rows().map((li) => li.textContent)).toEqual([
@@ -268,6 +296,7 @@ describe('Karty: filters and order', () => {
   it('puts cards in hand on top until turned off', async () => {
     const last = 'Zakaz prób jądrowych'
     const user = await setup(at({ inHand: [idOf(last)] }))
+    await openFilters(user)
     const handFirst = screen.getByRole('button', { name: copy.cards.handFirst })
     expect(handFirst).toHaveAttribute('aria-pressed', 'true')
     expect(rows()[0]).toHaveTextContent(last)
@@ -278,6 +307,7 @@ describe('Karty: filters and order', () => {
 
   it('moves played cards to the bottom until turned off', async () => {
     const user = await setup()
+    await openFilters(user)
     const playedLast = screen.getByRole('button', { name: copy.cards.playedLast })
     expect(playedLast).toHaveAttribute('aria-pressed', 'true')
     await discard(user, 'Kulminacja napięć w Azji')
@@ -416,7 +446,7 @@ describe('Karty: event picker', () => {
     expect(screen.getByText(copy.cards.pickTitle[108])).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /anuluj/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
-    expect(screen.getByRole('button', { name: copy.cards.previousTurn })).toBeDisabled()
+    expect(screen.getByRole('button', { name: copy.cards.filters })).toBeDisabled()
     expect(rows()).toHaveLength(86)
 
     const names = early.slice(0, 6).map(nameOf)

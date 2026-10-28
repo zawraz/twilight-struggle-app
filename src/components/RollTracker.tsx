@@ -213,7 +213,7 @@ function PlayerColumn({
   )
 }
 
-function UndoIcon({ className }: { className: string }) {
+export function UndoIcon({ className }: { className: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path

@@ -44,7 +44,8 @@ export const copy = {
     turn: 'Tura',
     turnOf: (n: number) => `Tura ${n} z 10`,
     nextTurn: 'Następna tura',
-    previousTurn: 'Poprzednia tura',
+    /** The next-turn button for a while after a new turn: a tap takes it back. */
+    undoTurn: 'Cofnij turę',
     reshuffled: (n: number) => `Przetasowano: wraca ${cards(n)}`,
     deckRanOut: 'Talia wyczerpana, nie ma czego przetasować',
     deck: 'Talia',
@@ -73,7 +74,7 @@ export const copy = {
     sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     handFirst: 'Na ręce na górę',
