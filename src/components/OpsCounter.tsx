@@ -35,7 +35,8 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
       <span className={`font-condensed text-xs font-semibold uppercase tracking-[0.08em] ${tone.text}`}>
         {player.label}
       </span>
-      <div className="flex w-full items-center justify-between gap-2 short-landscape:w-auto short-landscape:flex-1">
+      {/* As wide as a roll section's wheel and button (gap included), so the buttons line up with theirs. */}
+      <div className="flex w-[calc(var(--wheel-width)*2_+_var(--spacing)*1.5)] items-center justify-between gap-2 min-[360px]:w-[calc(var(--wheel-width)*2_+_var(--spacing)*3)] short-landscape:w-auto short-landscape:flex-1">
         <div className="relative">
           {minus.armed && <ConfirmCaption />}
           <button
@@ -44,7 +45,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={minus.armed}
             disabled={locked || count === 0}
             onClick={handleMinus}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
+            className={`grid size-(--wheel-item) place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
               minus.armed ? tone.soft : tone.fill
             }`}
           >
@@ -67,7 +68,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={plus.armed}
             onClick={handlePlus}
             disabled={locked}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
+            className={`grid size-(--wheel-item) place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${tone.border} ${
               plus.armed ? tone.soft : tone.fill
             }`}
           >
