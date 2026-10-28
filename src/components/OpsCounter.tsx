@@ -44,7 +44,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={minus.armed}
             disabled={locked || count === 0}
             onClick={handleMinus}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${
+            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
               minus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
             }`}
           >
@@ -67,7 +67,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
             data-armed={plus.armed}
             onClick={handlePlus}
             disabled={locked}
-            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${
+            className={`grid size-12 place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors ${locked ? 'opacity-20 grayscale' : 'disabled:opacity-40'} ${
               plus.armed ? 'border-danger text-danger' : 'border-line-strong text-ink'
             }`}
           >

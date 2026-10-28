@@ -507,6 +507,14 @@ describe('header: End and New Game', () => {
     expect(screen.getByRole('button', { name: copy.fourOps.remove('ZSRR') })).toBeDisabled()
     expect(screen.getByRole('button', { name: copy.success.submit('USA') })).toBeDisabled()
     expect(screen.getByRole('button', { name: copy.dice.submit('USA') })).toBeDisabled()
+    // The wheels lock too: greyed out, and a tap on another value does nothing.
+    const wheel = screen.getByRole('listbox', { name: copy.dice.wheel('USA') })
+    expect(wheel).toHaveAttribute('aria-disabled', 'true')
+    await user.click(within(wheel).getByRole('option', { name: '4' }))
+    expect(within(wheel).getByRole('option', { selected: true })).toHaveTextContent('1')
+    // The four-ops counts and each summary stay at full strength.
+    expect(opsCount('ZSRR')).toHaveTextContent('2')
+    expect(screen.getByRole('status', { name: copy.success.resultFor('USA') })).toHaveTextContent('+1')
   })
 
   it('resets everything on a single New Game tap', async () => {

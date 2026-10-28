@@ -15,13 +15,15 @@ interface WheelPickerProps {
   label: string
   tone: PlayerId
   format?: (value: number) => string
+  /** Locked: shown heavily greyed out and takes no input. */
+  disabled?: boolean
 }
 
 const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** A vertical, scroll-snapping value wheel. Scroll, tap an option, or use the arrow keys. */
-export function WheelPicker({ values, value, onChange, label, tone, format = String }: WheelPickerProps) {
+export function WheelPicker({ values, value, onChange, label, tone, format = String, disabled = false }: WheelPickerProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const settleTimer = useRef<number | undefined>(undefined)
   const mounted = useRef(false)
@@ -69,6 +71,7 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
 
   const select = (i: number, scrolled = false) => {
     window.clearTimeout(settleTimer.current)
+    if (disabled) return
     const next = values[Math.min(values.length - 1, Math.max(0, i))]
     if (next === value) return
     fromScroll.current = scrolled
@@ -107,7 +110,9 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
   }
 
   return (
-    <div className="relative w-(--wheel-width) shrink-0" style={{ height: `calc(var(--wheel-item) * ${VISIBLE_ITEMS})` }}>
+    <div
+      className={`relative w-(--wheel-width) shrink-0 transition-opacity ${disabled ? 'pointer-events-none opacity-20 grayscale' : ''}`}
+      style={{ height: `calc(var(--wheel-item) * ${VISIBLE_ITEMS})` }}>
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-x-0 top-1/2 h-(--wheel-item) -translate-y-1/2 rounded-counter border-2 bg-surface-sunken ${TONE[tone].border}`}
@@ -117,12 +122,13 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
         role="listbox"
         aria-label={label}
         aria-activedescendant={`${baseId}-${index}`}
-        tabIndex={0}
+        aria-disabled={disabled || undefined}
+        tabIndex={disabled ? -1 : 0}
         onScroll={handleScroll}
         onKeyDown={handleKeyDown}
         onTouchStart={handleUserScrollStart}
         onWheel={handleUserScrollStart}
-        className="no-scrollbar relative h-full snap-y snap-mandatory overflow-y-scroll overscroll-contain rounded-counter"
+        className={`no-scrollbar relative h-full snap-y snap-mandatory overscroll-contain rounded-counter ${disabled ? 'overflow-y-hidden' : 'overflow-y-scroll'}`}
         style={{
           paddingBlock: 'var(--wheel-item)',
           maskImage: 'linear-gradient(transparent, #000 35%, #000 65%, transparent)',

@@ -135,7 +135,7 @@ function PlayerColumn({
           </span>
           {revealed ? (
             <span className="flex items-baseline gap-1.5">
-              <span className="font-condensed text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink">
                 {text.result}
               </span>
               <output
@@ -157,6 +157,7 @@ function PlayerColumn({
             label={text.wheel(player.label)}
             tone={player.id}
             format={formatValue}
+            disabled={revealed}
           />
           <button
             type="button"
@@ -165,7 +166,7 @@ function PlayerColumn({
             onClick={cooling ? undo : submit}
             disabled={revealed}
             className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
-              cooling ? tone.soft : `${tone.fill} ${revealed ? 'opacity-40' : ''}`
+              cooling ? tone.soft : `${tone.fill} ${revealed ? 'opacity-20 grayscale' : ''}`
             }`}
           >
             {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
