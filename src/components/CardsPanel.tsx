@@ -202,36 +202,35 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   return (
     <div className={`grid min-h-0 gap-2 ${pending !== null ? 'grid-rows-[auto_auto_1fr]' : 'grid-rows-[auto_1fr]'}`}>
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
-        {/* Four blocks spaced evenly: the turn and its button, the counts, the deck, the filters. */}
+        {/* Four blocks spaced evenly: the filters, the deck, the counts, the turn and its button. */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <div className="flex items-baseline gap-1.5" aria-label={copy.cards.turnOf(cards.turn)} role="status">
-              <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
-                {copy.cards.turn}
+          <button
+            type="button"
+            aria-label={copy.cards.filters}
+            aria-pressed={filtersShown}
+            onClick={() => setFiltersShown((s) => !s)}
+            disabled={pending !== null}
+            className={`relative grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
+              filtersShown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
+            }`}
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+            {activeFilters > 0 && (
+              <span
+                aria-hidden="true"
+                className="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full border border-surface-raised bg-gold font-mono text-[10px] leading-none font-bold text-on-gold tabular-nums"
+              >
+                {activeFilters}
               </span>
-              <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
-            </div>
-            <button
-              type="button"
-              aria-label={turnCooling ? copy.cards.undoTurn : copy.cards.nextTurn}
-              data-cooling={turnCooling}
-              onClick={turnCooling ? previousTurn : nextTurn}
-              disabled={!turnCooling && (cards.turn >= LAST_TURN || pending !== null)}
-              className={`relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-counter border-2 transition-colors disabled:opacity-30 ${
-                turnCooling ? 'border-gold text-gold-text' : 'border-line-strong text-ink'
-              }`}
-            >
-              {turnCooling ? <UndoIcon className="size-4" /> : <ChevronRight className="size-5" aria-hidden="true" />}
-              {turnCooling && (
-                <span
-                  aria-hidden="true"
-                  style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
-                  className="absolute inset-x-0 bottom-0 h-1 origin-left animate-drain bg-gold motion-reduce:hidden"
-                />
-              )}
-            </button>
+            )}
+          </button>
+          <div className="flex items-baseline gap-1.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
+            <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              {copy.cards.deck}
+            </span>
+            <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
           </div>
-          {/* Stacked, to fit between the turn and the deck; one grid, so each side's numbers line up right-aligned.
+          {/* Stacked, to fit between the deck and the turn; one grid, so each side's numbers line up right-aligned.
               Each number gets room for two digits and the Shuttle Diplomacy pin always has its place, so nothing shifts. */}
           <div
             role="group"
@@ -263,32 +262,33 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               )
             })}
           </div>
-          <div className="flex items-baseline gap-1.5" aria-label={copy.cards.deckCount(cards.deck)} role="status">
-            <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
-              {copy.cards.deck}
-            </span>
-            <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
-          </div>
-          <button
-            type="button"
-            aria-label={copy.cards.filters}
-            aria-pressed={filtersShown}
-            onClick={() => setFiltersShown((s) => !s)}
-            disabled={pending !== null}
-            className={`relative grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
-              filtersShown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
-            }`}
-          >
-            <SlidersHorizontal className="size-4" aria-hidden="true" />
-            {activeFilters > 0 && (
-              <span
-                aria-hidden="true"
-                className="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full border border-surface-raised bg-gold font-mono text-[10px] leading-none font-bold text-on-gold tabular-nums"
-              >
-                {activeFilters}
+          <div className="flex items-center gap-1">
+            <div className="flex items-baseline gap-1.5" aria-label={copy.cards.turnOf(cards.turn)} role="status">
+              <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                {copy.cards.turn}
               </span>
-            )}
-          </button>
+              <span className="w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
+            </div>
+            <button
+              type="button"
+              aria-label={turnCooling ? copy.cards.undoTurn : copy.cards.nextTurn}
+              data-cooling={turnCooling}
+              onClick={turnCooling ? previousTurn : nextTurn}
+              disabled={!turnCooling && (cards.turn >= LAST_TURN || pending !== null)}
+              className={`relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-counter border-2 transition-colors disabled:opacity-30 ${
+                turnCooling ? 'border-gold text-gold-text' : 'border-line-strong text-ink'
+              }`}
+            >
+              {turnCooling ? <UndoIcon className="size-4" /> : <ChevronRight className="size-5" aria-hidden="true" />}
+              {turnCooling && (
+                <span
+                  aria-hidden="true"
+                  style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
+                  className="absolute inset-x-0 bottom-0 h-1 origin-left animate-drain bg-gold motion-reduce:hidden"
+                />
+              )}
+            </button>
+          </div>
         </div>
         {filtersShown && pending === null && (
           <div className="grid gap-1.5 border-t border-line pt-2">
