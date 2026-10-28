@@ -9,7 +9,7 @@ interface GameActionProps {
   onNewGame: () => void
 }
 
-const BUTTON = 'grid size-8 place-items-center rounded-counter border-2 transition-colors'
+const BUTTON = 'grid size-10 shrink-0 place-items-center rounded-counter border-2 transition-colors'
 const ICON = <Power className="size-5" aria-hidden="true" />
 
 /**
@@ -30,7 +30,7 @@ function EndButton({ onEnd }: { onEnd: () => void }) {
   const { armed, tap } = useConfirmTap(onEnd)
   return (
     <div className="relative shrink-0">
-      {armed && <ConfirmCaption placement="left" />}
+      {armed && <ConfirmCaption placement="right" />}
       <button
         type="button"
         aria-label={copy.end}

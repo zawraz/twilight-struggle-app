@@ -41,12 +41,7 @@ export default function App() {
   return (
     <div className="mx-auto grid h-full max-w-3xl grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
       <header className="relative flex flex-col gap-1.5 short-landscape:gap-1">
-        <div className="flex items-center px-1">
-          <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
-            {copy.appTitle}
-          </h1>
-          {/* Auto margins centre the pill between the title and the action. */}
-          <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} className="mx-auto px-2" />
+        <div className="flex items-center gap-2 px-1">
           <GameAction
             ended={game.ended}
             onEnd={() => dispatch({ type: 'end' })}
@@ -56,6 +51,10 @@ export default function App() {
               dismissToast()
             }}
           />
+          <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
+            {copy.appTitle}
+          </h1>
+          <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} className="ml-auto" />
         </div>
         {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
         <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">

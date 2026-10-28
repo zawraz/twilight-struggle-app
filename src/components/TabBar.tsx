@@ -16,7 +16,11 @@ interface TabBarProps<Id extends string> {
   className?: string
 }
 
-/** The header's views, as icons joined into one segmented pill. Arrow keys, Home and End move between tabs, as in any tablist. */
+/**
+ * The header's views, as icons joined into one segmented pill. A tap anywhere on the pill moves on:
+ * tapping the selected tab selects the next one, so with two tabs any tap toggles.
+ * Arrow keys, Home and End move between tabs, as in any tablist.
+ */
 export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, className = '' }: TabBarProps<Id>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -52,9 +56,9 @@ export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, cl
             title={tab.label}
             aria-selected={selected}
             tabIndex={selected ? 0 : -1}
-            onClick={() => onSelect(tab.id)}
+            onClick={() => onSelect(selected ? tabs[(index + 1) % tabs.length].id : tab.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`grid h-8 w-16 place-items-center border-y-2 transition-colors first:rounded-l-counter first:border-l-2 last:rounded-r-counter last:border-r-2 ${
+            className={`grid h-10 w-18 place-items-center border-y-2 transition-colors first:rounded-l-counter first:border-l-2 last:rounded-r-counter last:border-r-2 ${
               selected ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
             }`}
           >

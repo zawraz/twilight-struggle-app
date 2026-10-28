@@ -545,6 +545,14 @@ describe('header tabs', () => {
     expect(screen.queryByRole('region', { name: copy.fourOps.title })).not.toBeInTheDocument()
   })
 
+  it('toggles when the selected tab is tapped', async () => {
+    const { user } = setup()
+    await user.click(tab('Dziennik'))
+    expect(tab('Karty')).toHaveAttribute('aria-selected', 'true')
+    await user.click(tab('Karty'))
+    expect(tab('Dziennik')).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('keeps the log as it was after a round trip', async () => {
     const { user } = setup()
     const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })
