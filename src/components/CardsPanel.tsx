@@ -361,7 +361,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
         aria-label={copy.cards.list}
         className="min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised"
       >
-        {shown.map((card) => (
+        {shown.map((card, i) => (
           <CardRow
             key={card.id}
             card={card}
@@ -372,6 +372,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             onClose={() => setOpenId(null)}
             onChange={(state) => change(card.id, card.name, state)}
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
+            groupEnd={i < shown.length - 1 && shown[i + 1].value !== card.value}
           />
         ))}
         {shown.length === 0 && (

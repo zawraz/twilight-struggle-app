@@ -24,6 +24,8 @@ interface CardRowProps {
   onChange: (state: CardState) => void
   /** An event's picker is open: the row is a checkbox, and nothing else moves it. */
   pick?: { checked: boolean; onToggle: () => void }
+  /** The next card down has another ops value: a thicker line closes this group. */
+  groupEnd?: boolean
 }
 
 const DIM: Record<CardState, string> = { available: '', in_play: '', discarded: 'opacity-55', removed: 'opacity-25' }
@@ -41,7 +43,7 @@ interface Gesture {
  * or right to remove; long-press a discarded or removed card to restore it. Shuttle Diplomacy swipes
  * right into play instead, and left from there to the discard pile.
  */
-export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick }: CardRowProps) {
+export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick, groupEnd = false }: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
   const longPress = useRef<number | undefined>(undefined)
@@ -127,7 +129,8 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
   return (
     <li
       data-state={state}
-      className="relative overflow-hidden border-b border-line last:border-b-0"
+      data-group-end={groupEnd || undefined}
+      className={`relative overflow-hidden last:border-b-0 ${groupEnd ? 'border-b-2 border-line-strong' : 'border-b border-line'}`}
       onContextMenu={(event) => event.preventDefault()}
     >
       {/* What the swipe will do, revealed behind the row and following its edge. */}

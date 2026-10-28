@@ -275,6 +275,15 @@ describe('Karty: counts', () => {
 })
 
 describe('Karty: filters and order', () => {
+  it('closes each ops value with a thicker line', async () => {
+    await setup()
+    // The three scoring cards, then the 1-ops cards from Blokada on.
+    expect(rows()[1]).not.toHaveAttribute('data-group-end')
+    expect(rows()[2]).toHaveAttribute('data-group-end', 'true')
+    expect(rows()[3]).toHaveTextContent('Blokada')
+    expect(rows().at(-1)).not.toHaveAttribute('data-group-end')
+  })
+
   it('combines groups: USA + 4 shows only US 4-ops cards', async () => {
     const user = await setup()
     await openFilters(user)
