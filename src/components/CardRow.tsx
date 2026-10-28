@@ -130,7 +130,7 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
     <li
       data-state={state}
       data-group-end={groupEnd || undefined}
-      className={`relative overflow-hidden last:border-b-0 ${groupEnd ? 'border-b-2 border-line-strong' : 'border-b border-line'}`}
+      className={`relative overflow-hidden last:border-b-0 ${groupEnd ? 'border-b-2 border-line' : 'border-b border-line'}`}
       onContextMenu={(event) => event.preventDefault()}
     >
       {/* What the swipe will do, revealed behind the row and following its edge. */}
