@@ -769,6 +769,19 @@ describe('Karty: event picker', () => {
     expect(inHandIcon(nameOf(early[20]))).not.toBeNull()
   })
 
+  it('Ask Not counts its 4 Ops discards for the USA, and takes them back on undo', async () => {
+    const opsCount = (player: string) => screen.getByRole('status', { name: copy.fourOps.count(player), hidden: true })
+    const user = await setup(at({ turn: 5, deck: 20 }))
+    await play(user, ASK_NOT)
+    for (const name of ['NATO', 'Zakaz prób jądrowych', 'Blokada']) await user.click(pick(name))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(opsCount('USA')).toHaveTextContent('2')
+    expect(opsCount('ZSRR')).toHaveTextContent('0')
+
+    await user.click(screen.getByRole('button', { name: copy.undo }))
+    expect(opsCount('USA')).toHaveTextContent('0')
+  })
+
   it('SALT lists only non-scoring discarded cards and puts the pick in hand', async () => {
     const user = await setup(at({ turn: 5, deck: 20, states: discarded([idOf('Kulminacja napięć w Azji'), idOf('Blokada')]) }))
     await play(user, SALT)

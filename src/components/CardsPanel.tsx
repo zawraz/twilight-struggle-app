@@ -283,11 +283,28 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       const taken = inPlay.find((card) => card.id === picks[0])
       text = taken ? copy.cards.toHand(taken.name) : copy.cards.nothingTaken
     }
+    // Ask Not's discards come from the US hand: each 4 Ops card among them counts as one the US played.
+    const usFourOps =
+      pending === ASK_NOT && onFourOps ? picks.filter((id) => inPlay.find((card) => card.id === id)?.value === 4).length : 0
+    const moveUsFourOps = (by: 1 | -1) => {
+      for (let i = 0; i < usFourOps; i++) onFourOps?.('us', by)
+    }
     dispatch({ type: 'resolveEvent', picked: picks })
+    moveUsFourOps(1)
     setPicks([])
     eventStart.current = null
     // After a reload there is no snapshot to go back to.
-    notify(start ? { text, undo: () => dispatch({ type: 'restore', state: start }) } : { text })
+    notify(
+      start
+        ? {
+            text,
+            undo: () => {
+              dispatch({ type: 'restore', state: start })
+              moveUsFourOps(-1)
+            },
+          }
+        : { text },
+    )
   }
 
   /** Opens a screen, sliding it in from its tab's side: from `from` px off, the list's edge by default. */
