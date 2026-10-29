@@ -32,7 +32,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
 
   return (
     <div className="flex flex-col items-center gap-1 short-landscape:flex-row short-landscape:gap-3">
-      <span className={`font-condensed text-xs font-semibold uppercase tracking-[0.08em] ${tone.text}`}>
+      <span className={`font-stencil text-base leading-none font-extrabold uppercase tracking-[0.04em] ${tone.text}`}>
         {player.label}
       </span>
       {/* As wide as a roll section's wheel and button (gap included), so the buttons line up with theirs. */}

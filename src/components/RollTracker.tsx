@@ -79,7 +79,7 @@ export function RollTracker({
         />
       ))}
       <span
-        className={`col-span-3 row-start-2 pt-2 pb-1.5 text-center font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
+        className={`col-span-3 row-start-2 pt-2 pb-1.5 text-center font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
       >
         {copy.lastRolls}
       </span>
@@ -148,7 +148,7 @@ function PlayerColumn({
       >
         {/* Name, label and value share one baseline; the row stays centred over the button. */}
         <div className="flex flex-wrap content-end items-baseline justify-center gap-x-2 self-end pb-1.5 short:pb-1 tiny:pb-0.5">
-          <span className={`font-condensed text-xs font-semibold uppercase tracking-[0.08em] ${tone.text}`}>
+          <span className={`font-stencil text-base leading-none font-extrabold uppercase tracking-[0.04em] ${tone.text}`}>
             {player.label}
           </span>
           {revealed ? (
