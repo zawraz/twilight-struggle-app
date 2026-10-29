@@ -31,7 +31,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
   const tone = TONE[player.id]
 
   return (
-    <div className="flex flex-col items-center gap-1 short-landscape:flex-row short-landscape:gap-3">
+    <div className="flex flex-col items-center justify-center gap-1 short-landscape:flex-row short-landscape:gap-3">
       <span className={`font-stencil text-base leading-none font-extrabold uppercase tracking-[0.04em] ${tone.text}`}>
         {player.label}
       </span>

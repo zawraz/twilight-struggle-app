@@ -48,10 +48,11 @@ export function RollTracker({
   return (
     // Row 1: one shared wheel, each player's button on their side of it. Rows 2–3: one shared log caption,
     // then each player's values under their button.
+    // The wheel's rows take what the body has left after the caption (h-7, h-5 when short) and the log (h-5).
     <Section
       title={text.title}
       columnsClassName="grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
-      bodyClassName="grid-rows-[minmax(0,1fr)_auto_auto] gap-y-0"
+      bodyClassName="grid-rows-[minmax(0,1fr)_auto_auto] gap-y-0 [container-type:size] [--wheel-row:min(var(--wheel-row-max),calc((100cqh_-_48px)/3))] short:[--wheel-row:min(var(--wheel-row-max),calc((100cqh_-_40px)/3))]"
     >
       <div className="col-start-2 row-start-1 self-center">
         <WheelPicker
@@ -79,7 +80,7 @@ export function RollTracker({
         />
       ))}
       <span
-        className={`col-span-3 row-start-2 pt-2 pb-1.5 text-center font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
+        className={`col-span-3 row-start-2 flex h-7 items-end justify-center pb-1.5 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted short:h-5 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
       >
         {copy.lastRolls}
       </span>

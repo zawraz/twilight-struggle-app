@@ -73,7 +73,7 @@ export default function App() {
       <main className="grid min-h-0">
         <div
           {...panel('log')}
-          className="grid min-h-0 grid-rows-[auto_1fr_1fr] gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1"
+          className="grid min-h-0 grid-rows-3 gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1"
         >
           <Section title={copy.fourOps.title} className="short-landscape:col-span-2">
             {PLAYERS.map((player) => (

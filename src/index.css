@@ -32,14 +32,12 @@
   color-scheme: dark;
 }
 
-/* A roll section's confirm button (also a 4 Ops button): its height and width.
-   As large as the screen allows: the wheel, the player row and the log must fit each roll section. */
+/* A roll section's confirm button (also a 4 Ops button): its height and width. */
 :root {
   --wheel-item: 48px;
   --wheel-width: 76px;
-  /* The shared value wheel: one row's height and its width. Its three rows take the height the player row
-     and the button stack into beside it. */
-  --wheel-row: calc(var(--wheel-item) + 12px);
+  /* The shared value wheel: its largest row height and its width. A roll section shrinks the rows to fit. */
+  --wheel-row-max: calc(var(--wheel-item) + 12px);
   --wheel-wide: calc(var(--wheel-width) * 1.5);
 }
 @media (max-width: 374px) {
@@ -58,14 +56,12 @@
   :root {
     --wheel-item: 36px;
     --wheel-width: 60px;
-    --wheel-row: calc(var(--wheel-item) + 8px);
   }
 }
 @media (max-height: 600px) {
   :root {
     --wheel-item: 32px;
     --wheel-width: 56px;
-    --wheel-row: calc(var(--wheel-item) + 4px);
   }
 }
 
