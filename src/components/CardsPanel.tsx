@@ -1,4 +1,15 @@
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronRight, Layers, Pin, Play, SlidersHorizontal, X } from 'lucide-react'
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  ChevronRight,
+  Layers,
+  PanelBottom,
+  Pin,
+  Play,
+  SlidersHorizontal,
+  Square,
+  X,
+} from 'lucide-react'
 import { useRef, useState, type Dispatch, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
@@ -27,6 +38,7 @@ import { CardRow, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
 import { PlayerPicker } from './PlayerPicker'
 import { SUBMIT_COOLDOWN_MS, UndoIcon } from './RollTracker'
+import { TabBar } from './TabBar'
 import { SIDE_TEXT } from './tone'
 
 /** Each count's mark, matching the marks on the card rows. */
@@ -42,6 +54,40 @@ const filterState = (state: CardState): CardState => (state === 'in_play' ? 'ava
 
 /** With played cards at the bottom: available first, then the played ones. A card in play is pinned above both. */
 const PLAYED_RANK: Record<CardState, number> = { available: 0, in_play: 0, discarded: 1, removed: 1 }
+
+/** The two halves of the list a two-screen view splits it into, each behind a footer tab. */
+type Pile = 'available' | 'played'
+const pileOf = (state: CardState): Pile => (PLAYED_RANK[state] === 0 ? 'available' : 'played')
+// Each tab shows its two states' marks split by a slash, in the tab's own colours.
+const PILES = [
+  {
+    id: 'available',
+    label: copy.cards.piles.available,
+    icon: (
+      <>
+        <Layers className="size-4" aria-hidden="true" />
+        <span aria-hidden="true" className="font-mono text-xs opacity-60">
+          /
+        </span>
+        <Pin className="size-4" strokeWidth={2.5} aria-hidden="true" />
+      </>
+    ),
+  },
+  {
+    id: 'played',
+    label: copy.cards.piles.played,
+    icon: (
+      <>
+        <Play className="size-3.5" aria-hidden="true" />
+        <span aria-hidden="true" className="font-mono text-xs opacity-60">
+          /
+        </span>
+        <X className="size-4" strokeWidth={3} aria-hidden="true" />
+      </>
+    ),
+  },
+] as const
+const PILE_ID = 'pile'
 
 interface Filters {
   player: CardSide[]
@@ -78,6 +124,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
   const [handFirst, setHandFirst] = useState(true)
+  const [multiScreen, setMultiScreen] = useState(false)
+  const [pile, setPile] = useState<Pile>('available')
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
@@ -92,6 +140,10 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length + filters.value.length
+  // A picker lists every card it can pick on one screen, wherever they lie.
+  const split = multiScreen && pending === null
+  // Two screens already keep the played cards apart, so their own screen reads as with Zagrane on.
+  const sinkPlayed = playedLast || multiScreen
 
   const matches = <T,>(selected: readonly T[], value: T) => selected.length === 0 || selected.includes(value)
   // A picker needs every card it can pick, whatever the filters say.
@@ -101,14 +153,15 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       matches(phaseFilter, card.phase) &&
       // Shuttle Diplomacy in play is still to be played on, so Dostępne keeps it.
       matches(filters.state, filterState(cardState(cards, card.id))) &&
-      matches(filters.value, card.value),
+      matches(filters.value, card.value) &&
+      (!split || pileOf(cardState(cards, card.id)) === pile),
   )
   // Stable sort: a card in play pinned on top whatever the order chips say, then cards in hand,
   // then the rest available, then played ones, each in checklist order.
   const rank = (id: number) =>
     cardState(cards, id) === 'in_play'
       ? -1
-      : (playedLast ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
+      : (sinkPlayed ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
   // The list falls into the blocks the order puts together: the card in play, the hand, the rest,
   // and the played cards. A thicker line closes each block and, in the hand and the rest, each ops value;
@@ -116,7 +169,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const block = (id: number) => {
     const state = cardState(cards, id)
     if (state === 'in_play') return 'in_play'
-    if (playedLast && state !== 'available') return 'played'
+    if (sinkPlayed && state !== 'available') return 'played'
     if (handFirst && isInHand(cards, id)) return 'hand'
     return 'rest'
   }
@@ -211,6 +264,11 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     notify(start ? { text, undo: () => dispatch({ type: 'restore', state: start }) } : { text })
   }
 
+  function showPile(id: Pile) {
+    setOpenId(null)
+    setPile(id)
+  }
+
   const toggle = <K extends keyof Filters>(group: K, value: Filters[K][number]) =>
     setFilters((prev) => {
       const selected = prev[group] as Filters[K][number][]
@@ -221,7 +279,11 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     })
 
   return (
-    <div className={`grid min-h-0 gap-2 ${pending !== null ? 'grid-rows-[auto_auto_1fr]' : 'grid-rows-[auto_1fr]'}`}>
+    <div
+      className={`grid min-h-0 gap-2 ${
+        pending !== null ? 'grid-rows-[auto_auto_1fr]' : split ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr]'
+      }`}
+    >
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
         {/* Mirrored around the counts: the filters and the deck on the left, the turn and its button on the right.
             The outer columns share the space left over equally, so the counts sit dead centre,
@@ -370,11 +432,24 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                 </Chip>
               ))}
             </ChipGroup>
-            <ChipGroup label={copy.cards.filterGroups.order}>
-              <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)} label={copy.cards.playedLast}>
-                <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
-                {copy.cards.playedLastShort}
+            <ChipGroup label={copy.cards.filterGroups.screen}>
+              <Chip pressed={!multiScreen} onClick={() => setMultiScreen(false)} label={copy.cards.singleScreen}>
+                <Square className="size-4" aria-hidden="true" />
+                {copy.cards.singleScreenShort}
               </Chip>
+              <Chip pressed={multiScreen} onClick={() => setMultiScreen(true)} label={copy.cards.multiScreen}>
+                <PanelBottom className="size-4" aria-hidden="true" />
+                {copy.cards.multiScreenShort}
+              </Chip>
+            </ChipGroup>
+            <ChipGroup label={copy.cards.filterGroups.order}>
+              {/* Two screens put the played cards on their own already. */}
+              {!multiScreen && (
+                <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)} label={copy.cards.playedLast}>
+                  <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
+                  {copy.cards.playedLastShort}
+                </Chip>
+              )}
               <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)} label={copy.cards.handFirst}>
                 <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
                 {copy.cards.handFirstShort}
@@ -397,6 +472,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
 
       <ul
         aria-label={copy.cards.list}
+        id={split ? `${PILE_ID}-panel-${pile}` : undefined}
         className="min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised"
       >
         {shown.map((card, i) => (
@@ -419,6 +495,16 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
           </li>
         )}
       </ul>
+
+      {split && (
+        <TabBar
+          tabs={PILES}
+          active={pile}
+          onSelect={showPile}
+          idPrefix={PILE_ID}
+          stretch
+        />
+      )}
 
       {asking && <PlayerPicker cardName={asking.name} onPick={playedBy} onCancel={() => setAsking(null)} />}
     </div>

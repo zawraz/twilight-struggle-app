@@ -75,13 +75,20 @@ export const copy = {
     sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ', screen: 'Ekran' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     handFirst: 'Na ręce na górę',
     /** The order chips' visible labels: their arrows say which way. */
     playedLastShort: 'Zagrane',
     handFirstShort: 'Na ręce',
+    singleScreen: 'Jeden ekran',
+    multiScreen: 'Dwa ekrany',
+    /** The screen chips' visible labels: their icons show the footer or its absence. */
+    singleScreenShort: 'Jeden',
+    multiScreenShort: 'Dwa',
+    /** The footer tabs of the two-screen mode, each showing one half of the list; not shown, the tabs carry icons. */
+    piles: { available: 'Dostępne / W grze', played: 'Odrzucone / Usunięte' },
     list: 'Karty',
     noMatches: 'Brak kart',
     scoring: '–',

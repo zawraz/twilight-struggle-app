@@ -14,6 +14,8 @@ interface TabBarProps<Id extends string> {
   /** Id prefix shared with the panels: tab `${idPrefix}-tab-${id}` controls `${idPrefix}-panel-${id}`. */
   idPrefix: string
   className?: string
+  /** Stretches the tabs to share the bar's width. */
+  stretch?: boolean
 }
 
 /**
@@ -21,7 +23,14 @@ interface TabBarProps<Id extends string> {
  * tapping the selected tab selects the next one, so with two tabs any tap toggles.
  * Arrow keys, Home and End move between tabs, as in any tablist.
  */
-export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, className = '' }: TabBarProps<Id>) {
+export function TabBar<Id extends string>({
+  tabs,
+  active,
+  onSelect,
+  idPrefix,
+  className = '',
+  stretch = false,
+}: TabBarProps<Id>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
   function onKeyDown(event: KeyboardEvent, index: number) {
@@ -58,7 +67,7 @@ export function TabBar<Id extends string>({ tabs, active, onSelect, idPrefix, cl
             tabIndex={selected ? 0 : -1}
             onClick={() => onSelect(selected ? tabs[(index + 1) % tabs.length].id : tab.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`grid h-10 w-18 place-items-center border-y-2 transition-colors first:rounded-l-counter first:border-l-2 last:rounded-r-counter last:border-r-2 ${
+            className={`flex h-10 items-center justify-center gap-1 border-y-2 ${stretch ? 'flex-1' : 'w-18'} transition-colors first:rounded-l-counter first:border-l-2 last:rounded-r-counter last:border-r-2 ${
               selected ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
             }`}
           >

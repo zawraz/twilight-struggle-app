@@ -404,6 +404,56 @@ describe('Karty: filters and order', () => {
     expect(rows()[38]).toHaveTextContent(last)
   })
 
+  describe('on two screens', () => {
+    const pileTab = (pile: 'available' | 'played') => screen.getByRole('tab', { name: copy.cards.piles[pile] })
+    const twoScreens = async (user: User) => {
+      await openFilters(user)
+      await user.click(screen.getByRole('button', { name: copy.cards.multiScreen }))
+    }
+
+    it('starts on one screen, with no footer tabs', async () => {
+      const user = await setup()
+      await openFilters(user)
+      expect(screen.getByRole('button', { name: copy.cards.singleScreen })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.queryByRole('tab', { name: copy.cards.piles.available })).not.toBeInTheDocument()
+    })
+
+    it('splits the list between the footer tabs: available and in play, then played', async () => {
+      const shuttle = idOf('Dyplomacja Wahadłowa')
+      const user = await setup(
+        at({ turn: 4, states: { [shuttle]: 'in_play', [idOf('Blokada')]: 'discarded', [idOf('NATO')]: 'removed' } }),
+      )
+      await twoScreens(user)
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+      expect(rows()[0]).toHaveTextContent('Dyplomacja Wahadłowa')
+      expect(rows().every((li) => ['available', 'in_play'].includes(li.dataset.state!))).toBe(true)
+
+      await user.click(pileTab('played'))
+      expect(rows().map((li) => li.dataset.state).sort()).toEqual(['discarded', 'removed'])
+      expect(rows().map((li) => li.dataset.divider)).toEqual([undefined, undefined])
+
+      await user.click(screen.getByRole('button', { name: copy.cards.singleScreen }))
+      expect(screen.queryByRole('tab', { name: copy.cards.piles.played })).not.toBeInTheDocument()
+      expect(rows().some((li) => li.dataset.state === 'available')).toBe(true)
+    })
+
+    it('a discarded card leaves for the other tab', async () => {
+      const user = await setup()
+      await twoScreens(user)
+      await discard(user, 'Blokada')
+      expect(rows()).toHaveLength(38)
+      await user.click(pileTab('played'))
+      expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Blokada')])
+    })
+
+    it('hides the Zagrane order chip, which has nothing left to do', async () => {
+      const user = await setup()
+      await twoScreens(user)
+      expect(screen.queryByRole('button', { name: copy.cards.playedLast })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: copy.cards.handFirst })).toBeInTheDocument()
+    })
+  })
+
   it('moves played cards to the bottom until turned off', async () => {
     const user = await setup()
     await openFilters(user)
