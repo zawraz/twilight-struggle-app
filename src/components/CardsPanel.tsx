@@ -49,6 +49,14 @@ const STATE_ICON: Record<CardState, ReactNode> = {
   removed: <X className="size-4 text-ink-muted" strokeWidth={3} aria-hidden="true" />,
 }
 
+/** Each state chip's mark: the counts' marks, in the chip's own colour so they read on gold too. */
+const STATE_CHIP_ICON: Record<CardState, ReactNode> = {
+  available: <Layers className="size-4" aria-hidden="true" />,
+  in_play: <Pin className="size-4" strokeWidth={2.5} aria-hidden="true" />,
+  discarded: <Play className="size-3.5" aria-hidden="true" />,
+  removed: <X className="size-4" strokeWidth={3} aria-hidden="true" />,
+}
+
 /** The state filter a card answers to: a card in play counts as available. */
 const filterState = (state: CardState): CardState => (state === 'in_play' ? 'available' : state)
 
@@ -460,7 +468,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             <ChipGroup label={copy.cards.filterGroups.state}>
               {CARD_STATES.map((state) => (
                 <Chip key={state} pressed={filters.state.includes(state)} onClick={() => toggle('state', state)}>
-                  {copy.cards.states[state]}
+                  {STATE_CHIP_ICON[state]}
+                  <span className="sr-only">{copy.cards.states[state]}</span>
                   {state === 'available' && cardState(cards, SHUTTLE_DIPLOMACY) === 'in_play' && (
                     <Pin
                       className={`size-3.5 ${filters.state.includes(state) ? '' : 'text-go'}`}
