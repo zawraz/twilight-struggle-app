@@ -835,4 +835,23 @@ describe('Karty: saved progress', () => {
     expect(turn()).toHaveTextContent('1')
     expect(stateOf('Blokada')).toBe('available')
   })
+
+  it('keeps the filter panel as it was left, through a reload and New Game', async () => {
+    const user = await setup() // one screen
+    const side = () => within(screen.getByRole('group', { name: copy.cards.filterGroups.player }))
+    await openFilters(user)
+    await user.click(side().getByRole('button', { name: 'USA' }))
+
+    document.body.replaceChildren()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    await openFilters(user)
+    expect(side().getByRole('button', { name: 'USA' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: copy.cards.singleScreen })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Zakończ grę' }))
+    await user.click(screen.getByRole('button', { name: 'Zakończ grę' }))
+    await user.click(screen.getByRole('button', { name: 'Nowa gra' }))
+    expect(side().getByRole('button', { name: 'USA' })).toHaveAttribute('aria-pressed', 'true')
+  })
 })

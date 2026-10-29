@@ -11,7 +11,7 @@ import {
   Square,
   X,
 } from 'lucide-react'
-import { useRef, useState, type Dispatch, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type PointerEvent, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
   ASK_NOT,
@@ -31,7 +31,8 @@ import {
   type CardsState,
   type CardState,
 } from '../lib/cardGame'
-import { CARD_SIDES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
+import { CARD_SIDES, PHASES, phaseStarted, type CardSide } from '../lib/cards'
+import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
@@ -103,14 +104,6 @@ type Screen = Pile | 'hand'
 const SCREENS: readonly Screen[] = ['available', 'played', 'hand']
 const HAND_TAB = { id: 'hand', label: copy.cards.handScreen, icon: <Hand className="size-4" aria-hidden="true" /> } as const
 
-interface Filters {
-  player: CardSide[]
-  phase: Phase[]
-  state: CardState[]
-}
-
-const NO_FILTERS: Filters = { player: [], phase: [], state: [] }
-
 interface CardsPanelProps {
   cards: CardsState
   dispatch: Dispatch<CardsAction>
@@ -133,14 +126,19 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [openId, setOpenId] = useState<number | null>(null)
   // A 4 Ops card waiting to hear who played it.
   const [asking, setAsking] = useState<Play | null>(null)
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS)
+  // The filter panel's choices start as they were left, even after the app was closed.
+  const [savedView] = useState(() => loadView())
+  const [filters, setFilters] = useState<Filters>(savedView.filters)
   const [filtersShown, setFiltersShown] = useState(false)
-  const [playedLast, setPlayedLast] = useState(true)
+  const [playedLast, setPlayedLast] = useState(savedView.playedLast)
   const [handView, setHandView] = useState(false)
-  const [multiScreen, setMultiScreen] = useState(true)
+  const [multiScreen, setMultiScreen] = useState(savedView.multiScreen)
   const [pile, setPile] = useState<Pile>('available')
-  const [swipeScreens, setSwipeScreens] = useState(false)
-  const [dimPlayed, setDimPlayed] = useState(true)
+  const [swipeScreens, setSwipeScreens] = useState(savedView.swipeScreens)
+  const [dimPlayed, setDimPlayed] = useState(savedView.dimPlayed)
+  useEffect(() => {
+    saveView({ filters, playedLast, multiScreen, swipeScreens, dimPlayed })
+  }, [filters, playedLast, multiScreen, swipeScreens, dimPlayed])
   // Where a sideways swipe across the list began, to move between its two screens;
   // decided past the slop, as on a row: a swipe, or a scroll the browser owns.
   const listSwipe = useRef<{ pointerId: number; x: number; y: number; mode: 'press' | 'swipe' } | null>(null)
