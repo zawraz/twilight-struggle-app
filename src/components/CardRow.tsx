@@ -222,9 +222,9 @@ export function CardRow({
             </span>
           )}
           <span className={`flex min-w-0 flex-1 items-center gap-1 ${faded}`}>
-            <span className={`min-w-0 truncate text-sm ${SIDE_NAME_TEXT[card.player]}`}>{card.name}</span>
+            <span className={`min-w-0 truncate text-[15px] ${SIDE_NAME_TEXT[card.player]}`}>{card.name}</span>
             {card.isPermanent && (
-              <span className="shrink-0 font-mono text-sm text-ink-muted" title={copy.cards.permanent}>
+              <span className="shrink-0 font-mono text-[15px] text-ink-muted" title={copy.cards.permanent}>
                 *<span className="sr-only">{copy.cards.permanent}</span>
               </span>
             )}
@@ -234,10 +234,10 @@ export function CardRow({
             )}
           </span>
           <span className={`flex shrink-0 items-baseline gap-2 ${faded}`}>
-            <span className={`w-8 text-right font-condensed text-xs font-semibold uppercase tracking-[0.06em] ${SIDE_TEXT[card.player]}`}>
+            <span className={`w-9 text-right font-condensed text-[13px] font-semibold uppercase tracking-[0.06em] ${SIDE_TEXT[card.player]}`}>
               {copy.cards.sides[card.player]}
             </span>
-            <span className="w-3 text-right font-mono text-sm tabular-nums" aria-label={copy.cards.ops(card.value)}>
+            <span className="w-3 text-right font-mono text-[15px] tabular-nums" aria-label={copy.cards.ops(card.value)}>
               {card.value === 0 ? copy.cards.scoring : card.value}
             </span>
           </span>
