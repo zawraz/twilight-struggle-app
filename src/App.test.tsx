@@ -515,8 +515,8 @@ describe('header: End and New Game', () => {
 
     expect(within(header()).queryByRole('button', { name: 'Zakończ grę' })).not.toBeInTheDocument()
     expect(within(header()).getByRole('button', { name: 'Nowa gra' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: copy.fourOps.add('ZSRR') })).toBeDisabled()
-    expect(screen.getByRole('button', { name: copy.fourOps.remove('ZSRR') })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: copy.fourOps.add('ZSRR') })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.fourOps.remove('ZSRR') })).not.toBeInTheDocument()
     // The results stand where the confirm buttons were.
     expect(screen.queryByRole('button', { name: copy.success.submit('USA') })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: copy.dice.submit('USA') })).not.toBeInTheDocument()
