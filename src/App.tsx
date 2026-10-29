@@ -75,7 +75,7 @@ export default function App() {
           {...panel('log')}
           className="grid min-h-0 grid-rows-3 gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1"
         >
-          <Section title={copy.fourOps.title} className="short-landscape:col-span-2">
+          <Section title={copy.fourOps.title} className="short-landscape:col-span-2" balanced>
             {PLAYERS.map((player) => (
               <OpsCounter
                 key={player.id}
