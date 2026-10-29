@@ -402,7 +402,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               aria-label={copy.cards.deckCount(cards.deck)}
               role="status"
             >
-              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
                 {copy.cards.deck}
               </span>
               <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
@@ -444,7 +444,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
           </div>
           <div className="flex items-center gap-3">
             <div className="relative flex-1" aria-label={copy.cards.turnOf(cards.turn)} role="status">
-              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-condensed text-[10px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
                 {copy.cards.turn}
               </span>
               <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
@@ -657,7 +657,7 @@ function HandButton({
 function ChipGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
-      <span className="w-12 font-condensed text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{label}</span>
+      <span className="w-14 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">{label}</span>
       {children}
     </div>
   )
@@ -668,7 +668,7 @@ function ClearFilters({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="ml-auto px-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted underline"
+      className="ml-auto px-1 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted underline"
     >
       {copy.cards.clearFilters}
     </button>
@@ -692,7 +692,7 @@ function Chip({
       aria-pressed={pressed}
       aria-label={label}
       onClick={onClick}
-      className={`flex h-8 min-w-8 items-center justify-center gap-1 rounded-counter border-2 px-2 font-condensed text-xs font-semibold uppercase tracking-[0.06em] transition-colors ${
+      className={`flex h-8 min-w-8 items-center justify-center gap-1 rounded-counter border-2 px-2 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] transition-colors ${
         pressed ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
       }`}
     >
