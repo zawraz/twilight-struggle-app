@@ -93,6 +93,8 @@ export const copy = {
     swipeScreensShort: 'Ekrany',
     /** The footer tabs of the two-screen mode, each showing one half of the list; not shown, the tabs carry icons. */
     piles: { available: 'Dostępne / W grze', played: 'Odrzucone / Usunięte' },
+    /** Swiping between the screens, the hand is a third one, after both halves of the list. */
+    handScreen: 'Karty na ręce',
     list: 'Karty',
     noMatches: 'Brak kart',
     scoring: '–',

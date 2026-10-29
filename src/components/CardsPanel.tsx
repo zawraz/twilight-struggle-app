@@ -96,6 +96,11 @@ const PILES = [
   },
 ] as const
 const PILE_ID = 'pile'
+/** What the list shows on two screens: one of the piles, or the hand over them. */
+type Screen = Pile | 'hand'
+/** The screens in the footer's order, left to right. */
+const SCREENS: readonly Screen[] = ['available', 'played', 'hand']
+const HAND_TAB = { id: 'hand', label: copy.cards.handScreen, icon: <Hand className="size-4" aria-hidden="true" /> } as const
 
 interface Filters {
   player: CardSide[]
@@ -157,10 +162,16 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const hand = inPlay.filter((card) => isInHand(cards, card.id))
   // Once the last card leaves the hand there is nothing left to show: back to the whole list.
   const showHand = handView && hand.length > 0 && pending === null
-  // A picker lists every card it can pick on one screen, wherever they lie; so does the hand.
-  const split = multiScreen && pending === null && !showHand
-  // Swiping between the screens takes the swipe from the cards.
-  const screenSwipe = split && swipeScreens
+  // A picker lists every card it can pick on one screen, wherever they lie.
+  const screens = multiScreen && pending === null
+  // The hand shows all of itself, whichever pile its cards lie in.
+  const split = screens && !showHand
+  const current: Screen = showHand ? 'hand' : pile
+  // Swiping between the screens takes the swipe from the cards; the hand is a screen of its own then.
+  const screenSwipe = screens && swipeScreens
+  // The screens a swipe goes through, in the footer's order: the hand only while there is one.
+  const order = SCREENS.filter((id) => id !== 'hand' || hand.length > 0)
+  const step = (by: 1 | -1) => order[(order.indexOf(current) + by + order.length) % order.length]
   // Two screens already keep the played cards apart, so their own screen reads as with Zagrane on.
   const sinkPlayed = playedLast || multiScreen
 
@@ -280,13 +291,14 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   }
 
   /** Opens a screen, sliding it in from its tab's side: from `from` px off, the list's edge by default. */
-  function showPile(id: Pile, from?: number) {
+  function showScreen(id: Screen, from?: number) {
     setOpenId(null)
-    if (id === pile) return
-    setPile(id)
+    if (id === current) return
+    setHandView(id === 'hand')
+    if (id !== 'hand') setPile(id)
     const width = listRef.current?.clientWidth ?? 0
-    // The played cards' tab is on the right, so they come in from the right.
-    setSlide({ x: from ?? (id === 'played' ? width : -width), held: true })
+    // A tab further right comes in from the right.
+    setSlide({ x: from ?? (SCREENS.indexOf(id) > SCREENS.indexOf(current) ? width : -width), held: true })
     // Once that lands, ease into place.
     requestAnimationFrame(() => requestAnimationFrame(() => setSlide({ x: 0, held: false })))
   }
@@ -308,9 +320,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       g.mode = 'swipe'
       ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
     }
-    // Past the outer screens there is nothing to show: the list only gives a little.
-    const edge = dx > 0 ? pile === 'available' : pile === 'played'
-    setSlide({ x: edge ? dx / 4 : dx, held: true })
+    setSlide({ x: dx, held: true })
   }
 
   function endListSwipe(event: PointerEvent) {
@@ -319,10 +329,10 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     if (!g || g.pointerId !== event.pointerId || g.mode !== 'swipe') return
     const dx = event.type === 'pointercancel' ? 0 : event.clientX - g.x
     const width = listRef.current?.clientWidth ?? 0
-    // Left to the played cards on the right-hand tab, right back to the available ones;
+    // Left to the next screen, right to the one before, round from the last to the first;
     // the new screen comes in right behind the one leaving.
-    if (dx <= -SWIPE_COMMIT_PX && pile === 'available') showPile('played', width + dx)
-    else if (dx >= SWIPE_COMMIT_PX && pile === 'played') showPile('available', dx - width)
+    if (dx <= -SWIPE_COMMIT_PX) showScreen(step(1), width + dx)
+    else if (dx >= SWIPE_COMMIT_PX) showScreen(step(-1), dx - width)
     else setSlide({ x: 0, held: false })
   }
 
@@ -339,7 +349,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     <div
       // Clipped at the sides, so a screen sliding in or out doesn't show past them.
       className={`grid min-h-0 gap-2 overflow-x-clip ${
-        pending !== null ? 'grid-rows-[auto_auto_1fr]' : split ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr]'
+        pending !== null ? 'grid-rows-[auto_auto_1fr]' : screens ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr]'
       }`}
     >
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
@@ -349,23 +359,20 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             The deck and turn numbers carry their labels on top, to keep the row narrow; the labels hang
             above the numbers so the numbers, not number and label together, centre on the row. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          {/* The space between the buttons is the hand button's own, so the deck starts right at the filters. */}
+          {/* The space between the buttons is the hand button's own, so the deck starts right at the filters.
+              On two screens the hand moves to the footer. */}
           <div className="flex items-center">
-            <button
-              type="button"
-              aria-label={copy.cards.showHand}
-              aria-pressed={showHand}
-              onClick={() => {
-                setOpenId(null)
-                setHandView(!showHand)
-              }}
-              disabled={hand.length === 0 || pending !== null}
-              className={`mr-1.5 grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
-                showHand ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
-              }`}
-            >
-              <Hand className="size-4" aria-hidden="true" />
-            </button>
+            {!multiScreen && (
+              <HandButton
+                shown={showHand}
+                onClick={() => {
+                  setOpenId(null)
+                  setHandView(!showHand)
+                }}
+                disabled={hand.length === 0 || pending !== null}
+                className="mr-1.5 size-9"
+              />
+            )}
             <button
               type="button"
               aria-label={copy.cards.filters}
@@ -539,7 +546,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
 
       <ul
         aria-label={copy.cards.list}
-        id={split ? `${PILE_ID}-panel-${pile}` : undefined}
+        id={screens ? `${PILE_ID}-panel-${current}` : undefined}
         // The browser keeps the vertical scroll; a sideways swipe is left to move between the screens.
         {...(screenSwipe && {
           onPointerDown: startListSwipe,
@@ -575,18 +582,69 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
         )}
       </ul>
 
-      {split && (
+      {/* Swiping between the screens leaves the footer nothing to do but show which one is up:
+          the slimmest bar of the tabs, the hand its third, greyed out while there is none. */}
+      {screenSwipe && (
         <TabBar
-          tabs={PILES}
-          active={pile}
-          onSelect={showPile}
+          tabs={[...PILES, { ...HAND_TAB, disabled: hand.length === 0 }]}
+          active={current}
+          onSelect={showScreen}
           idPrefix={PILE_ID}
           stretch
+          size="slim"
         />
+      )}
+
+      {/* Swiping the cards, the footer keeps the hand beside the tabs; while it's up neither tab is. */}
+      {screens && !screenSwipe && (
+        <div className="flex gap-2">
+          <TabBar
+            tabs={PILES}
+            active={showHand ? null : pile}
+            onSelect={showScreen}
+            idPrefix={PILE_ID}
+            className="flex-1"
+            stretch
+            size="tall"
+          />
+          <HandButton
+            shown={showHand}
+            onClick={() => showScreen(showHand ? pile : 'hand')}
+            disabled={hand.length === 0 || pending !== null}
+            className="h-12.5 w-16"
+          />
+        </div>
       )}
 
       {asking && <PlayerPicker cardName={asking.name} onPick={playedBy} onCancel={() => setAsking(null)} />}
     </div>
+  )
+}
+
+function HandButton({
+  shown,
+  onClick,
+  disabled,
+  className,
+}: {
+  shown: boolean
+  onClick: () => void
+  disabled: boolean
+  className: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={copy.cards.showHand}
+      aria-pressed={shown}
+      onClick={onClick}
+      disabled={disabled}
+      className={`grid shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${className} ${
+        shown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
+      }`}
+    >
+      <Hand className="size-4" aria-hidden="true" />
+    </button>
   )
 }
 

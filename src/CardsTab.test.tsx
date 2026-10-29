@@ -473,6 +473,11 @@ describe('Karty: filters and order', () => {
       swipe('NATO', SWIPE_COMMIT_PX + 10)
       expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
       expect(rows()).toHaveLength(38)
+      // Either way goes to the other screen.
+      swipe('Blokada', SWIPE_COMMIT_PX + 10)
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
+      swipe('NATO', -SWIPE_COMMIT_PX - 10)
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
       expect(stateOf('Blokada')).toBe('available')
       // A short swipe stays put, and isn't a tap either: the row stays shut.
       swipe('Blokada', -SWIPE_COMMIT_PX / 2)
@@ -480,7 +485,7 @@ describe('Karty: filters and order', () => {
       expect(rowButton('Blokada')).toHaveAttribute('aria-expanded', 'false')
     })
 
-    it('the list follows the finger, giving only a little past the outer screens', async () => {
+    it('the list follows the finger, either way', async () => {
       const user = await setup()
       await twoScreens(user)
       await user.click(screen.getByRole('button', { name: copy.cards.swipeScreens }))
@@ -488,13 +493,57 @@ describe('Karty: filters and order', () => {
       fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 200, clientY: 10 })
       fireEvent.pointerMove(surface, { pointerId: 1, clientX: 160, clientY: 10 })
       expect(list().style.transform).toBe('translateX(-40px)')
-      // Nothing left of the first screen.
       fireEvent.pointerMove(surface, { pointerId: 1, clientX: 240, clientY: 10 })
-      expect(list().style.transform).toBe('translateX(10px)')
+      expect(list().style.transform).toBe('translateX(40px)')
       // Let go short of a swipe: it eases back into place.
       fireEvent.pointerUp(surface, { pointerId: 1, clientX: 240, clientY: 10 })
       expect(list().style.transform).toBe('')
       expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+    })
+
+    it('swiping cards, the hand moves to the footer and leaves neither tab up', async () => {
+      const user = await setup(at({ inHand: [idOf('Nasser')] }))
+      await twoScreens(user)
+      const showHand = screen.getByRole('button', { name: copy.cards.showHand })
+      expect(showHand.closest('section')).toBeNull()
+      await user.click(showHand)
+      expect(showHand).toHaveAttribute('aria-pressed', 'true')
+      expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Nasser')])
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'false')
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'false')
+      // A tab takes the list back to its pile.
+      await user.click(pileTab('played'))
+      expect(showHand).toHaveAttribute('aria-pressed', 'false')
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
+
+      await user.click(showHand)
+      await discard(user, 'Nasser')
+      expect(showHand).toBeDisabled()
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
+    })
+
+    it('swiping screens, the hand is a third screen, there only while the hand holds a card', async () => {
+      const handTab = () => screen.getByRole('tab', { name: copy.cards.handScreen })
+      const user = await setup(at({ inHand: [idOf('Nasser')], states: { [idOf('NATO')]: 'discarded' } }))
+      await twoScreens(user)
+      await user.click(screen.getByRole('button', { name: copy.cards.swipeScreens }))
+      expect(screen.queryByRole('button', { name: copy.cards.showHand })).not.toBeInTheDocument()
+      swipe('Blokada', -SWIPE_COMMIT_PX - 10)
+      swipe('NATO', -SWIPE_COMMIT_PX - 10)
+      expect(handTab()).toHaveAttribute('aria-selected', 'true')
+      expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Nasser')])
+      // Round from the last screen to the first, and back.
+      swipe('Nasser', -SWIPE_COMMIT_PX - 10)
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+      swipe('Blokada', SWIPE_COMMIT_PX + 10)
+      expect(handTab()).toHaveAttribute('aria-selected', 'true')
+
+      await user.click(pileTab('available'))
+      await discard(user, 'Nasser')
+      expect(handTab()).toBeDisabled()
+      // With the hand empty, swipes skip it.
+      swipe('Blokada', SWIPE_COMMIT_PX + 10)
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
     })
 
     it('hides the order row, which has nothing left to do, but keeps a way to clear the filters', async () => {
