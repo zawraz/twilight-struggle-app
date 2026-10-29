@@ -24,13 +24,27 @@ const nameOf = (id: number) => CARDS.find((c) => c.id === id)!.name
 const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
 const inHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.inHand })
 
-/** Opens the Karty tab, on a saved game when given one. */
-async function setup(saved?: CardsState) {
+/** Opens the Karty tab as it first shows, on a saved game when given one. */
+async function open(saved?: CardsState) {
   if (saved) localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(saved))
   vi.useFakeTimers({ shouldAdvanceTime: true })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(<App />)
   await user.click(screen.getByRole('tab', { name: 'Karty' }))
+  return user
+}
+
+/** Puts the whole list together on one screen, which most of these are about. */
+async function oneScreen(user: User) {
+  await openFilters(user)
+  await user.click(screen.getByRole('button', { name: copy.cards.singleScreen }))
+  await openFilters(user)
+}
+
+/** Opens the Karty tab on one screen, on a saved game when given one. */
+async function setup(saved?: CardsState) {
+  const user = await open(saved)
+  await oneScreen(user)
   return user
 }
 
@@ -416,10 +430,15 @@ describe('Karty: filters and order', () => {
       await user.click(screen.getByRole('button', { name: copy.cards.multiScreen }))
     }
 
-    it('starts on one screen, with no footer tabs', async () => {
-      const user = await setup()
+    it('starts on two screens, swiping cards and dimming the played ones', async () => {
+      const user = await open()
       await openFilters(user)
-      expect(screen.getByRole('button', { name: copy.cards.singleScreen })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: copy.cards.multiScreen })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: copy.cards.swipeCards })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: copy.cards.dimPlayed })).toHaveAttribute('aria-pressed', 'true')
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+      // One screen has no footer tabs.
+      await user.click(screen.getByRole('button', { name: copy.cards.singleScreen }))
       expect(screen.queryByRole('tab', { name: copy.cards.piles.available })).not.toBeInTheDocument()
     })
 
@@ -544,6 +563,22 @@ describe('Karty: filters and order', () => {
       // With the hand empty, swipes skip it.
       swipe('Blokada', SWIPE_COMMIT_PX + 10)
       expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
+    })
+
+    it('can stop dimming the played cards, there only', async () => {
+      const user = await setup(at({ states: { [idOf('NATO')]: 'discarded' } }))
+      const dimmed = () => rowButton('NATO').querySelector('.opacity-55')
+      expect(dimmed()).not.toBeNull()
+      await twoScreens(user)
+      const dim = screen.getByRole('button', { name: copy.cards.dimPlayed })
+      expect(dim).toHaveAttribute('aria-pressed', 'true')
+      await user.click(dim)
+      await user.click(pileTab('played'))
+      expect(dimmed()).toBeNull()
+      // One screen keeps them dimmed, the played cards being among the rest there.
+      await user.click(screen.getByRole('button', { name: copy.cards.singleScreen }))
+      expect(screen.queryByRole('button', { name: copy.cards.dimPlayed })).not.toBeInTheDocument()
+      expect(dimmed()).not.toBeNull()
     })
 
     it('hides the order row, which has nothing left to do, but keeps a way to clear the filters', async () => {
@@ -790,6 +825,7 @@ describe('Karty: saved progress', () => {
     unmount()
     render(<App />)
     await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    await oneScreen(user)
     expect(turn()).toHaveTextContent('2')
     expect(stateOf('Blokada')).toBe('discarded')
 

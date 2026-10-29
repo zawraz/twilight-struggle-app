@@ -28,6 +28,8 @@ interface CardRowProps {
   divider?: RowDivider
   /** Off, a sideways swipe leaves the row alone and goes to the list around it. */
   swipe?: boolean
+  /** Off, a discarded or removed card reads as clearly as an available one. */
+  dim?: boolean
 }
 
 export type RowDivider = 'value' | 'played'
@@ -63,6 +65,7 @@ export function CardRow({
   pick,
   divider,
   swipe = true,
+  dim = true,
 }: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
@@ -77,6 +80,7 @@ export function CardRow({
   const canPutInPlay = state === 'available' && staysInPlay(card.id)
   const canRemove = state !== 'removed' && card.isPermanent
   const canSwipeRight = canPutInPlay || canRemove
+  const faded = dim ? DIM[state] : ''
 
   useEffect(() => () => window.clearTimeout(longPress.current), [])
 
@@ -217,7 +221,7 @@ export function CardRow({
               {inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />}
             </span>
           )}
-          <span className={`flex min-w-0 flex-1 items-center gap-1 ${DIM[state]}`}>
+          <span className={`flex min-w-0 flex-1 items-center gap-1 ${faded}`}>
             <span className={`min-w-0 truncate text-sm ${SIDE_NAME_TEXT[card.player]}`}>{card.name}</span>
             {card.isPermanent && (
               <span className="shrink-0 font-mono text-sm text-ink-muted" title={copy.cards.permanent}>
@@ -229,7 +233,7 @@ export function CardRow({
               <TriangleAlert className="ml-auto size-4 shrink-0 text-gold-text" aria-label={copy.cards.important} role="img" />
             )}
           </span>
-          <span className={`flex shrink-0 items-baseline gap-2 ${DIM[state]}`}>
+          <span className={`flex shrink-0 items-baseline gap-2 ${faded}`}>
             <span className={`w-8 text-right font-condensed text-xs font-semibold uppercase tracking-[0.06em] ${SIDE_TEXT[card.player]}`}>
               {copy.cards.sides[card.player]}
             </span>

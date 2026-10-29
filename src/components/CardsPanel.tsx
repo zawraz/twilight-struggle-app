@@ -7,6 +7,7 @@ import {
   Pin,
   Play,
   SlidersHorizontal,
+  SunDim,
   Square,
   X,
 } from 'lucide-react'
@@ -136,9 +137,10 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
   const [handView, setHandView] = useState(false)
-  const [multiScreen, setMultiScreen] = useState(false)
+  const [multiScreen, setMultiScreen] = useState(true)
   const [pile, setPile] = useState<Pile>('available')
   const [swipeScreens, setSwipeScreens] = useState(false)
+  const [dimPlayed, setDimPlayed] = useState(true)
   // Where a sideways swipe across the list began, to move between its two screens;
   // decided past the slop, as on a row: a swipe, or a scroll the browser owns.
   const listSwipe = useRef<{ pointerId: number; x: number; y: number; mode: 'press' | 'swipe' } | null>(null)
@@ -532,11 +534,14 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                 {activeFilters > 0 && <ClearFilters onClick={() => setFilters(NO_FILTERS)} />}
               </ChipGroup>
             ) : (
-              activeFilters > 0 && (
-                <div className="flex">
-                  <ClearFilters onClick={() => setFilters(NO_FILTERS)} />
-                </div>
-              )
+              // The played cards' own screen already sets them apart, so their dimming can go.
+              <ChipGroup label={copy.cards.filterGroups.look}>
+                <Chip pressed={dimPlayed} onClick={() => setDimPlayed((s) => !s)} label={copy.cards.dimPlayed}>
+                  <SunDim className="size-4" aria-hidden="true" />
+                  {copy.cards.dimPlayedShort}
+                </Chip>
+                {activeFilters > 0 && <ClearFilters onClick={() => setFilters(NO_FILTERS)} />}
+              </ChipGroup>
             )}
           </div>
         )}
@@ -573,6 +578,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
             divider={divider(i)}
             swipe={!screenSwipe}
+            dim={!multiScreen || dimPlayed}
           />
         ))}
         {shown.length === 0 && (

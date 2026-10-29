@@ -76,7 +76,7 @@ export const copy = {
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
     showHand: 'Pokaż karty na ręce',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest', look: 'Karty' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     /** The order chip's visible label: its arrow says which way. */
@@ -91,6 +91,9 @@ export const copy = {
     /** The swipe chips' visible labels: what a sideways swipe moves. */
     swipeCardsShort: 'Karty',
     swipeScreensShort: 'Ekrany',
+    dimPlayed: 'Przyciemnij zagrane',
+    /** The dimming chip's visible label. */
+    dimPlayedShort: 'Przyciemnij',
     /** The footer tabs of the two-screen mode, each showing one half of the list; not shown, the tabs carry icons. */
     piles: { available: 'Dostępne / W grze', played: 'Odrzucone / Usunięte' },
     /** Swiping between the screens, the hand is a third one, after both halves of the list. */
