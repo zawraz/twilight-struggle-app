@@ -26,6 +26,8 @@ interface CardRowProps {
   pick?: { checked: boolean; onToggle: () => void }
   /** A thicker line under the row: the next card down has another ops value, is out of the hand, or is already played. */
   divider?: RowDivider
+  /** Off, a sideways swipe leaves the row alone and goes to the list around it. */
+  swipe?: boolean
 }
 
 export type RowDivider = 'value' | 'hand' | 'played'
@@ -51,7 +53,18 @@ interface Gesture {
  * or right to remove; long-press a discarded or removed card to restore it. Shuttle Diplomacy swipes
  * right into play instead, and left from there to the discard pile.
  */
-export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange, pick, divider }: CardRowProps) {
+export function CardRow({
+  card,
+  state,
+  inHand,
+  open,
+  onToggle,
+  onClose,
+  onChange,
+  pick,
+  divider,
+  swipe = true,
+}: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
   const longPress = useRef<number | undefined>(undefined)
@@ -96,8 +109,14 @@ export function CardRow({ card, state, inHand, open, onToggle, onClose, onChange
         return
       }
       if (Math.abs(moveX) <= SLOP_PX) return
-      g.mode = 'swipe'
       cancelLongPress()
+      if (!swipe) {
+        // The list's swipe, not the row's: and not a tap either.
+        g.mode = 'scroll'
+        swallowClick.current = true
+        return
+      }
+      g.mode = 'swipe'
       onClose()
       ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
     }

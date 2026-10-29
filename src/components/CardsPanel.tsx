@@ -10,7 +10,7 @@ import {
   Square,
   X,
 } from 'lucide-react'
-import { useRef, useState, type Dispatch, type ReactNode } from 'react'
+import { useRef, useState, type Dispatch, type PointerEvent, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
   ASK_NOT,
@@ -34,7 +34,7 @@ import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phas
 import { PLAYERS, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
-import { CardRow, type RowDivider } from './CardRow'
+import { CardRow, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
 import { PlayerPicker } from './PlayerPicker'
 import { SUBMIT_COOLDOWN_MS, UndoIcon } from './RollTracker'
@@ -126,6 +126,9 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [handFirst, setHandFirst] = useState(true)
   const [multiScreen, setMultiScreen] = useState(false)
   const [pile, setPile] = useState<Pile>('available')
+  const [swipeScreens, setSwipeScreens] = useState(false)
+  // Where a sideways swipe across the list began, to move between its two screens.
+  const listSwipe = useRef<{ pointerId: number; x: number; y: number } | null>(null)
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
@@ -142,6 +145,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length + filters.value.length
   // A picker lists every card it can pick on one screen, wherever they lie.
   const split = multiScreen && pending === null
+  // Swiping between the screens takes the swipe from the cards.
+  const screenSwipe = split && swipeScreens
   // Two screens already keep the played cards apart, so their own screen reads as with Zagrane on.
   const sinkPlayed = playedLast || multiScreen
 
@@ -267,6 +272,15 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   function showPile(id: Pile) {
     setOpenId(null)
     setPile(id)
+  }
+
+  function endListSwipe(event: PointerEvent) {
+    const start = listSwipe.current
+    listSwipe.current = null
+    if (!start || start.pointerId !== event.pointerId) return
+    const [dx, dy] = [event.clientX - start.x, event.clientY - start.y]
+    // Left to the played cards on the right-hand tab, right back to the available ones.
+    if (Math.abs(dx) >= SWIPE_COMMIT_PX && Math.abs(dx) > Math.abs(dy)) showPile(dx < 0 ? 'played' : 'available')
   }
 
   const toggle = <K extends keyof Filters>(group: K, value: Filters[K][number]) =>
@@ -442,6 +456,16 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                 {copy.cards.multiScreenShort}
               </Chip>
             </ChipGroup>
+            {multiScreen && (
+              <ChipGroup label={copy.cards.filterGroups.swipe}>
+                <Chip pressed={!swipeScreens} onClick={() => setSwipeScreens(false)} label={copy.cards.swipeCards}>
+                  {copy.cards.swipeCardsShort}
+                </Chip>
+                <Chip pressed={swipeScreens} onClick={() => setSwipeScreens(true)} label={copy.cards.swipeScreens}>
+                  {copy.cards.swipeScreensShort}
+                </Chip>
+              </ChipGroup>
+            )}
             <ChipGroup label={copy.cards.filterGroups.order}>
               {/* Two screens put the played cards on their own already. */}
               {!multiScreen && (
@@ -473,7 +497,15 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       <ul
         aria-label={copy.cards.list}
         id={split ? `${PILE_ID}-panel-${pile}` : undefined}
-        className="min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised"
+        // The browser keeps the vertical scroll; a sideways swipe is left to move between the screens.
+        {...(screenSwipe && {
+          onPointerDown: (event: PointerEvent) => {
+            if (event.button === 0) listSwipe.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+          },
+          onPointerUp: endListSwipe,
+          onPointerCancel: () => (listSwipe.current = null),
+        })}
+        className={`min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised ${screenSwipe ? 'touch-pan-y' : ''}`}
       >
         {shown.map((card, i) => (
           <CardRow
@@ -487,6 +519,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
             onChange={(state) => change(card.id, card.name, state)}
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
             divider={divider(i)}
+            swipe={!screenSwipe}
           />
         ))}
         {shown.length === 0 && (

@@ -50,12 +50,14 @@ async function discard(user: User, name: string) {
 }
 
 function swipe(name: string, dx: number) {
-  const surface = rowButton(name).parentElement!
+  // Held on to: the swipe may move the card off the screen.
+  const button = rowButton(name)
+  const surface = button.parentElement!
   fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 200, clientY: 10 })
   fireEvent.pointerMove(surface, { pointerId: 1, clientX: 200 + dx / 2, clientY: 10 })
   fireEvent.pointerMove(surface, { pointerId: 1, clientX: 200 + dx, clientY: 10 })
   fireEvent.pointerUp(surface, { pointerId: 1, clientX: 200 + dx, clientY: 10 })
-  fireEvent.click(rowButton(name))
+  fireEvent.click(button)
 }
 
 function longPress(name: string) {
@@ -444,6 +446,35 @@ describe('Karty: filters and order', () => {
       expect(rows()).toHaveLength(38)
       await user.click(pileTab('played'))
       expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Blokada')])
+    })
+
+    it('offers the swipe choice only on two screens, swiping cards at first', async () => {
+      const user = await setup()
+      await openFilters(user)
+      expect(screen.queryByRole('group', { name: copy.cards.filterGroups.swipe })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: copy.cards.multiScreen }))
+      expect(screen.getByRole('button', { name: copy.cards.swipeCards })).toHaveAttribute('aria-pressed', 'true')
+      swipe('Blokada', -SWIPE_COMMIT_PX - 10)
+      await user.click(pileTab('played'))
+      expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Blokada')])
+    })
+
+    it('swiping screens moves between the tabs and leaves the cards alone', async () => {
+      const user = await setup(at({ states: { [idOf('NATO')]: 'discarded' } }))
+      await twoScreens(user)
+      await user.click(screen.getByRole('button', { name: copy.cards.swipeScreens }))
+      swipe('Blokada', -SWIPE_COMMIT_PX - 10)
+      expect(pileTab('played')).toHaveAttribute('aria-selected', 'true')
+      expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('NATO')])
+
+      swipe('NATO', SWIPE_COMMIT_PX + 10)
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+      expect(rows()).toHaveLength(38)
+      expect(stateOf('Blokada')).toBe('available')
+      // A short swipe stays put, and isn't a tap either: the row stays shut.
+      swipe('Blokada', -SWIPE_COMMIT_PX / 2)
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+      expect(rowButton('Blokada')).toHaveAttribute('aria-expanded', 'false')
     })
 
     it('hides the Zagrane order chip, which has nothing left to do', async () => {

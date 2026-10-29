@@ -75,7 +75,7 @@ export const copy = {
     sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ', screen: 'Ekran' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ', screen: 'Ekran', swipe: 'Gest' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     handFirst: 'Na ręce na górę',
@@ -87,6 +87,11 @@ export const copy = {
     /** The screen chips' visible labels: their icons show the footer or its absence. */
     singleScreenShort: 'Jeden',
     multiScreenShort: 'Dwa',
+    swipeCards: 'Przesunięcie zmienia kartę',
+    swipeScreens: 'Przesunięcie zmienia ekran',
+    /** The swipe chips' visible labels: what a sideways swipe moves. */
+    swipeCardsShort: 'Karty',
+    swipeScreensShort: 'Ekrany',
     /** The footer tabs of the two-screen mode, each showing one half of the list; not shown, the tabs carry icons. */
     piles: { available: 'Dostępne / W grze', played: 'Odrzucone / Usunięte' },
     list: 'Karty',
