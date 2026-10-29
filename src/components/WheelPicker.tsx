@@ -1,8 +1,7 @@
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
-import type { PlayerId } from '../lib/players'
 import { TONE } from './tone'
 
-/** Row height when the page has no layout to measure (tests); on screen it follows --wheel-item. */
+/** Row height when the page has no layout to measure (tests); on screen it follows --wheel-row. */
 export const ITEM_HEIGHT = 32
 const VISIBLE_ITEMS = 3
 /** Wait for the scroll (and its snap) to settle before committing a value. */
@@ -13,7 +12,6 @@ interface WheelPickerProps {
   value: number
   onChange: (value: number) => void
   label: string
-  tone: PlayerId
   format?: (value: number) => string
   /** Locked: shown heavily greyed out and takes no input. */
   disabled?: boolean
@@ -22,8 +20,11 @@ interface WheelPickerProps {
 const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** A vertical, scroll-snapping value wheel. Scroll, tap an option, or use the arrow keys. */
-export function WheelPicker({ values, value, onChange, label, tone, format = String, disabled = false }: WheelPickerProps) {
+/**
+ * A vertical, scroll-snapping value wheel shared by both players. Scroll, tap an option, or use the arrow keys.
+ * Its frame is red on the ZSRR half and blue on the USA half, split like the Iron Curtain under the header.
+ */
+export function WheelPicker({ values, value, onChange, label, format = String, disabled = false }: WheelPickerProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const settleTimer = useRef<number | undefined>(undefined)
   const mounted = useRef(false)
@@ -111,12 +112,18 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
 
   return (
     <div
-      className={`relative w-(--wheel-width) shrink-0 transition-opacity ${disabled ? 'pointer-events-none opacity-20 grayscale' : ''}`}
-      style={{ height: `calc(var(--wheel-item) * ${VISIBLE_ITEMS})` }}>
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-x-0 top-1/2 h-(--wheel-item) -translate-y-1/2 rounded-counter border-2 bg-surface-sunken ${TONE[tone].border}`}
-      />
+      className={`relative w-(--wheel-wide) shrink-0 transition-opacity ${disabled ? 'pointer-events-none opacity-20 grayscale' : ''}`}
+      style={{ height: `calc(var(--wheel-row) * ${VISIBLE_ITEMS})` }}>
+      {/* The halves leave the header strip's gap (gap-1) between them. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 h-(--wheel-row) -translate-y-1/2">
+        <span className="absolute inset-0 rounded-counter bg-surface-sunken" />
+        <span
+          className={`absolute inset-y-0 left-0 right-[calc(50%_+_var(--spacing)/2)] rounded-l-counter border-2 border-r-0 ${TONE.ussr.border}`}
+        />
+        <span
+          className={`absolute inset-y-0 right-0 left-[calc(50%_+_var(--spacing)/2)] rounded-r-counter border-2 border-l-0 ${TONE.us.border}`}
+        />
+      </div>
       <div
         ref={listRef}
         role="listbox"
@@ -130,7 +137,7 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
         onWheel={handleUserScrollStart}
         className={`no-scrollbar relative h-full snap-y snap-mandatory overscroll-contain rounded-counter ${disabled ? 'overflow-y-hidden' : 'overflow-y-scroll'}`}
         style={{
-          paddingBlock: 'var(--wheel-item)',
+          paddingBlock: 'var(--wheel-row)',
           maskImage: 'linear-gradient(transparent, #000 35%, #000 65%, transparent)',
         }}
       >
@@ -141,10 +148,10 @@ export function WheelPicker({ values, value, onChange, label, tone, format = Str
             role="option"
             aria-selected={i === index}
             onClick={() => select(i)}
-            className={`flex h-(--wheel-item) snap-center items-center justify-center font-stencil font-extrabold tabular-nums select-none ${
+            className={`flex h-(--wheel-row) snap-center items-center justify-center font-stencil font-extrabold tabular-nums select-none ${
               i === index
-                ? 'text-[length:calc(var(--wheel-item)*0.75)] text-ink'
-                : 'text-[length:calc(var(--wheel-item)*0.56)] text-ink-muted'
+                ? 'text-[length:calc(var(--wheel-row)*0.75)] text-ink'
+                : 'text-[length:calc(var(--wheel-row)*0.56)] text-ink-muted'
             }`}
           >
             {format(v)}

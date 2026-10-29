@@ -142,7 +142,7 @@ describe('4 Ops Cards', () => {
 })
 
 describe('wheel picker', () => {
-  const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })
+  const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel })
   const selected = () => within(wheel()).getByRole('option', { selected: true })
 
   it('selects an option when tapped', async () => {
@@ -252,9 +252,9 @@ describe('wheel picker', () => {
 })
 
 describe('Success Rolls', () => {
-  const pick = (user: User, player: string, label: string) =>
+  const pick = (user: User, label: string) =>
     user.click(
-      within(screen.getByRole('listbox', { name: copy.success.wheel(player) })).getByRole('option', { name: label }),
+      within(screen.getByRole('listbox', { name: copy.success.wheel })).getByRole('option', { name: label }),
     )
   const confirm = (player: string) => screen.getByRole('button', { name: copy.success.submit(player) })
   const undo = (player: string) => screen.getByRole('button', { name: copy.success.undo(player) })
@@ -263,7 +263,7 @@ describe('Success Rolls', () => {
 
   it('offers only −5…+5 without 0', () => {
     setup()
-    const options = within(screen.getByRole('listbox', { name: copy.success.wheel('USA') }))
+    const options = within(screen.getByRole('listbox', { name: copy.success.wheel }))
       .getAllByRole('option')
       .map((o) => o.textContent)
     expect(options).toEqual(['+5', '+4', '+3', '+2', '+1', ...[1, 2, 3, 4, 5].map((n) => `${MINUS}${n}`)])
@@ -271,7 +271,7 @@ describe('Success Rolls', () => {
 
   it('turns the checkmark into an undo button for 5 seconds, showing the value just added', async () => {
     const { user } = setup()
-    await pick(user, 'ZSRR', '+3')
+    await pick(user, '+3')
     await user.click(confirm('ZSRR'))
 
     expect(undo('ZSRR')).toBeEnabled()
@@ -291,9 +291,9 @@ describe('Success Rolls', () => {
 
   it('takes the roll back when tapped again within 5 seconds', async () => {
     const { user } = setup()
-    await pick(user, 'ZSRR', '+3')
+    await pick(user, '+3')
     await submitRoll(user, confirm('ZSRR'))
-    await pick(user, 'ZSRR', `${MINUS}2`)
+    await pick(user, `${MINUS}2`)
     await user.click(confirm('ZSRR'))
     expect(logged('ZSRR')).toEqual(['+3', `${MINUS}2`])
 
@@ -338,9 +338,9 @@ describe('Success Rolls', () => {
 
   it('logs confirmed rolls but keeps the sum hidden until End', async () => {
     const { user } = setup()
-    await pick(user, 'ZSRR', '+3')
+    await pick(user, '+3')
     await submitRoll(user, confirm('ZSRR'))
-    await pick(user, 'ZSRR', `${MINUS}5`)
+    await pick(user, `${MINUS}5`)
     await submitRoll(user, confirm('ZSRR'))
 
     const entries = within(log('ZSRR')).getAllByRole('listitem').map((li) => li.textContent)
@@ -357,7 +357,7 @@ describe('Success Rolls', () => {
   it('shows only the last 3 rolls in the log but counts them all', async () => {
     const { user } = setup()
     for (const label of ['+5', '+4', '+3', '+2', `${MINUS}1`]) {
-      await pick(user, 'ZSRR', label)
+      await pick(user, label)
       await submitRoll(user, confirm('ZSRR'))
     }
 
@@ -370,13 +370,25 @@ describe('Success Rolls', () => {
     expect(screen.getByRole('status', { name: copy.success.resultFor('ZSRR') })).toHaveTextContent('+13')
   })
 
+  it('shares one wheel between the players, each button adding its value to its own side', async () => {
+    const { user } = setup()
+    expect(within(section(copy.success.title)).getAllByRole('listbox')).toHaveLength(1)
+    await pick(user, '+3')
+    await submitRoll(user, confirm('USA'))
+    await submitRoll(user, confirm('ZSRR'))
+    await pick(user, `${MINUS}2`)
+    await submitRoll(user, confirm('USA'))
+    expect(logged('ZSRR')).toEqual(['+3'])
+    expect(logged('USA')).toEqual(['+3', `${MINUS}2`])
+  })
+
   it('reveals each player sum on End', async () => {
     const { user } = setup()
-    await pick(user, 'ZSRR', '+3')
+    await pick(user, '+3')
     await submitRoll(user, confirm('ZSRR'))
-    await pick(user, 'ZSRR', `${MINUS}1`)
+    await pick(user, `${MINUS}1`)
     await submitRoll(user, confirm('ZSRR'))
-    await pick(user, 'USA', `${MINUS}4`)
+    await pick(user, `${MINUS}4`)
     await submitRoll(user, confirm('USA'))
 
     await endGame(user)
@@ -386,13 +398,13 @@ describe('Success Rolls', () => {
 })
 
 describe('Dice EV', () => {
-  const pick = (user: User, player: string, label: string) =>
-    user.click(within(screen.getByRole('listbox', { name: copy.dice.wheel(player) })).getByRole('option', { name: label }))
+  const pick = (user: User, label: string) =>
+    user.click(within(screen.getByRole('listbox', { name: copy.dice.wheel })).getByRole('option', { name: label }))
   const add = (player: string) => screen.getByRole('button', { name: copy.dice.submit(player) })
 
   it('offers 6 to 1, highest on top', () => {
     setup()
-    const options = within(screen.getByRole('listbox', { name: copy.dice.wheel('ZSRR') }))
+    const options = within(screen.getByRole('listbox', { name: copy.dice.wheel }))
       .getAllByRole('option')
       .map((o) => o.textContent)
     expect(options).toEqual(['6', '5', '4', '3', '2', '1'])
@@ -417,7 +429,7 @@ describe('Dice EV', () => {
 
   it('offers to undo for 5 seconds after adding', async () => {
     const { user } = setup()
-    await pick(user, 'USA', '5')
+    await pick(user, '5')
     await user.click(add('USA'))
     const undo = screen.getByRole('button', { name: copy.dice.undo('USA') })
     expect(undo).toHaveTextContent('5')
@@ -430,9 +442,9 @@ describe('Dice EV', () => {
 
   it('stores added rolls and reveals the average on End', async () => {
     const { user } = setup()
-    await pick(user, 'USA', '6')
+    await pick(user, '6')
     await submitRoll(user, add('USA'))
-    await pick(user, 'USA', '3')
+    await pick(user, '3')
     await submitRoll(user, add('USA'))
     await submitRoll(user, add('USA')) // 3 again
     expect(screen.queryByRole('status', { name: copy.dice.resultFor('USA') })).not.toBeInTheDocument()
@@ -508,7 +520,7 @@ describe('header: End and New Game', () => {
     expect(screen.getByRole('button', { name: copy.success.submit('USA') })).toBeDisabled()
     expect(screen.getByRole('button', { name: copy.dice.submit('USA') })).toBeDisabled()
     // The wheels lock too: greyed out, and a tap on another value does nothing.
-    const wheel = screen.getByRole('listbox', { name: copy.dice.wheel('USA') })
+    const wheel = screen.getByRole('listbox', { name: copy.dice.wheel })
     expect(wheel).toHaveAttribute('aria-disabled', 'true')
     await user.click(within(wheel).getByRole('option', { name: '6' }))
     expect(within(wheel).getByRole('option', { selected: true })).toHaveTextContent('4')
@@ -579,7 +591,7 @@ describe('header tabs', () => {
 
   it('keeps the log as it was after a round trip', async () => {
     const { user } = setup()
-    const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })
+    const wheel = () => screen.getByRole('listbox', { name: copy.success.wheel })
     await user.click(within(wheel()).getByRole('option', { name: '+4' }))
     await user.click(tab('Karty'))
     await user.click(tab('Dziennik'))
@@ -630,7 +642,7 @@ describe('saved progress', () => {
     const { user, unmount } = setup()
     await addFourOps(user, 'USA')
     await user.click(
-      within(screen.getByRole('listbox', { name: copy.success.wheel('ZSRR') })).getByRole('option', { name: '+4' }),
+      within(screen.getByRole('listbox', { name: copy.success.wheel })).getByRole('option', { name: '+4' }),
     )
     await submitRoll(user, screen.getByRole('button', { name: copy.success.submit('ZSRR') }))
     unmount()

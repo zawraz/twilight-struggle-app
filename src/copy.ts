@@ -21,7 +21,8 @@ export function cards(n: number): string {
 /** Text for one roll-tracking section; each function takes the side's label (ZSRR, USA). */
 export interface TrackerCopy {
   title: string
-  wheel: (side: string) => string
+  /** The one wheel both players submit from. */
+  wheel: string
   submit: (side: string) => string
   /** The same button while its cooldown runs: a tap takes the roll back. */
   undo: (side: string) => string
@@ -123,7 +124,7 @@ export const copy = {
 
   success: {
     title: 'Rzuty na sukces',
-    wheel: (side) => `Rzut na sukces: ${side}`,
+    wheel: 'Rzut na sukces',
     submit: (side) => `Potwierdź rzut na sukces: ${side}`,
     undo: (side) => `Cofnij rzut na sukces: ${side}`,
     log: (side) => `Ostatnie rzuty na sukces: ${side}`,
@@ -133,7 +134,7 @@ export const copy = {
 
   dice: {
     title: 'EV rzutów',
-    wheel: (side) => `Rzut kością: ${side}`,
+    wheel: 'Rzut kością',
     submit: (side) => `Potwierdź rzut kością: ${side}`,
     undo: (side) => `Cofnij rzut kością: ${side}`,
     log: (side) => `Ostatnie rzuty kością: ${side}`,

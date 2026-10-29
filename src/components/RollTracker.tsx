@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { copy, rolls, type TrackerCopy } from '../copy'
-import { PLAYERS, perPlayer, type PerPlayer, type Player, type PlayerId } from '../lib/players'
+import { PLAYERS, type PerPlayer, type Player, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import { Section } from './Section'
 import { WheelPicker } from './WheelPicker'
@@ -29,7 +29,7 @@ interface RollTrackerProps {
 }
 
 /**
- * Per-player roll entry: pick a value on the wheel and submit it to a muted log.
+ * Roll entry: pick a value on the shared wheel and submit it with a player's button to their muted log.
  * Each player's summary shows once the game is ended.
  */
 export function RollTracker({
@@ -43,19 +43,32 @@ export function RollTracker({
   onUndo,
   revealed,
 }: RollTrackerProps) {
-  const [selected, setSelected] = useState(() => perPlayer(() => initialValue))
+  const [selected, setSelected] = useState(initialValue)
 
   return (
-    // Row 1: each player's wheel and button. Rows 2–3: one shared log caption, then each player's values under their column.
-    <Section title={text.title} bodyClassName="grid-rows-[minmax(0,1fr)_auto_auto] gap-y-0">
+    // Row 1: one shared wheel, each player's button on their side of it. Rows 2–3: one shared log caption,
+    // then each player's values under their button.
+    <Section
+      title={text.title}
+      columnsClassName="grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+      bodyClassName="grid-rows-[minmax(0,1fr)_auto_auto] gap-y-0"
+    >
+      <div className="col-start-2 row-start-1 self-center">
+        <WheelPicker
+          values={values}
+          value={selected}
+          onChange={setSelected}
+          label={text.wheel}
+          format={formatValue}
+          disabled={revealed}
+        />
+      </div>
       {PLAYERS.map((player, column) => (
         <PlayerColumn
           key={player.id}
           column={column}
           player={player}
-          values={values}
-          value={selected[player.id]}
-          onSelect={(v) => setSelected((prev) => ({ ...prev, [player.id]: v }))}
+          value={selected}
           entries={entries[player.id]}
           onSubmit={(v) => onSubmit(player.id, v)}
           onUndo={() => onUndo(player.id)}
@@ -66,7 +79,7 @@ export function RollTracker({
         />
       ))}
       <span
-        className={`col-span-2 row-start-2 pt-2 pb-1.5 text-center font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
+        className={`col-span-3 row-start-2 pt-2 pb-1.5 text-center font-condensed text-[11px] leading-3 font-semibold uppercase tracking-[0.08em] text-ink-muted short:pt-1 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
       >
         {copy.lastRolls}
       </span>
@@ -75,28 +88,26 @@ export function RollTracker({
 }
 
 interface PlayerColumnProps
-  extends Pick<RollTrackerProps, 'text' | 'values' | 'formatValue' | 'summarize'> {
-  /** 0 or 1: the grid column this player's controls and log sit in. */
+  extends Pick<RollTrackerProps, 'text' | 'formatValue' | 'summarize'> {
+  /** 0 or 1: the ZSRR side (left of the wheel) or the USA side (right of it). */
   column: number
   player: Player
+  /** The wheel's value, submitted by this player's button. */
   value: number
-  onSelect: (value: number) => void
   entries: readonly number[]
   onSubmit: (value: number) => void
   onUndo: () => void
   revealed: boolean
 }
 
-const COLUMN = ['col-start-1', 'col-start-2']
+const COLUMN = ['col-start-1', 'col-start-3']
 /** How a locked part of the tracker shows once the game has ended. */
 const LOCKED = 'opacity-20 grayscale'
 
 function PlayerColumn({
   column,
   player,
-  values,
   value,
-  onSelect,
   entries,
   onSubmit,
   onUndo,
@@ -131,9 +142,12 @@ function PlayerColumn({
 
   return (
     <>
-      <div className={`${COLUMN[column]} row-start-1 flex min-h-0 min-w-0 flex-col justify-center gap-2 short:gap-1 tiny:gap-0`}>
-        {/* Name, label and value share one baseline; the row stays centred over the wheel and button. */}
-        <div className="flex min-h-8 flex-wrap content-center items-baseline justify-center gap-x-2 short:min-h-5 tiny:min-h-4">
+      {/* As tall as the wheel, in thirds: the button sits level with the wheel's picked value, the name above it. */}
+      <div
+        className={`${COLUMN[column]} row-start-1 grid h-[calc(var(--wheel-row)*3)] min-w-0 grid-rows-[1fr_auto_1fr] justify-items-center self-center`}
+      >
+        {/* Name, label and value share one baseline; the row stays centred over the button. */}
+        <div className="flex flex-wrap content-end items-baseline justify-center gap-x-2 self-end pb-1.5 short:pb-1 tiny:pb-0.5">
           <span className={`font-condensed text-xs font-semibold uppercase tracking-[0.08em] ${tone.text}`}>
             {player.label}
           </span>
@@ -153,49 +167,38 @@ function PlayerColumn({
             <span className="font-mono text-xs text-ink-muted">{rolls(count)}</span>
           )}
         </div>
-        <div className="flex items-center justify-center gap-1.5 min-[360px]:gap-3">
-          <WheelPicker
-            values={values}
-            value={value}
-            onChange={onSelect}
-            label={text.wheel(player.label)}
-            tone={player.id}
-            format={formatValue}
-            disabled={revealed}
-          />
-          <button
-            type="button"
-            aria-label={cooling ? text.undo(player.label) : text.submit(player.label)}
-            data-cooling={cooling}
-            onClick={cooling ? undo : submit}
-            disabled={revealed}
-            className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
-              cooling ? tone.soft : `${tone.fill} ${revealed ? LOCKED : ''}`
-            }`}
-          >
-            {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
-            {cooling && added !== null && (
-              <span className="font-stencil text-xl leading-none font-extrabold tabular-nums">{formatValue(added)}</span>
-            )}
-            {cooling && (
-              <span
-                aria-hidden="true"
-                style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
-                className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
-              />
-            )}
-          </button>
-          <span role="status" className="sr-only">
-            {notice}
-          </span>
-        </div>
+        <button
+          type="button"
+          aria-label={cooling ? text.undo(player.label) : text.submit(player.label)}
+          data-cooling={cooling}
+          onClick={cooling ? undo : submit}
+          disabled={revealed}
+          className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
+            cooling ? tone.soft : `${tone.fill} ${revealed ? LOCKED : ''}`
+          }`}
+        >
+          {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
+          {cooling && added !== null && (
+            <span className="font-stencil text-xl leading-none font-extrabold tabular-nums">{formatValue(added)}</span>
+          )}
+          {cooling && (
+            <span
+              aria-hidden="true"
+              style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
+              className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
+            />
+          )}
+        </button>
+        <span role="status" className="sr-only">
+          {notice}
+        </span>
       </div>
       {/* Once the game has ended the log is history: greyed out like the locked controls. */}
       <div
         className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center justify-center whitespace-nowrap text-ink-muted transition-opacity ${revealed ? LOCKED : ''}`}
       >
         {count === 0 && <span className="font-mono text-xs opacity-70">{copy.noRolls}</span>}
-        {/* Centred under the wheel and button. Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
+        {/* Centred under the button. Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
         <ol
           aria-label={text.log(player.label)}
           className="flex min-w-0 max-w-full justify-end gap-0.5 overflow-hidden font-mono text-xs leading-5"

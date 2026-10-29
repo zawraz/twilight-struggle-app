@@ -4,11 +4,19 @@ interface SectionProps {
   title: string
   children: ReactNode
   className?: string
-  /** Extra classes for the two-column body grid. */
+  /** The body grid's columns: two, one per player, unless given. */
+  columnsClassName?: string
+  /** Extra classes for the body grid. */
   bodyClassName?: string
 }
 
-export function Section({ title, children, className = '', bodyClassName = '' }: SectionProps) {
+export function Section({
+  title,
+  children,
+  className = '',
+  columnsClassName = 'grid-cols-2',
+  bodyClassName = '',
+}: SectionProps) {
   const headingId = useId()
   return (
     <section
@@ -18,7 +26,7 @@ export function Section({ title, children, className = '', bodyClassName = '' }:
       <h2 id={headingId} className="text-center font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
         {title}
       </h2>
-      <div className={`grid min-h-0 flex-1 grid-cols-2 gap-3 ${bodyClassName}`}>{children}</div>
+      <div className={`grid min-h-0 flex-1 ${columnsClassName} gap-3 ${bodyClassName}`}>{children}</div>
     </section>
   )
 }
