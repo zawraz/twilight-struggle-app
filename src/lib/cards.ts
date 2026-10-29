@@ -25,7 +25,6 @@ export interface Card {
 
 export const PHASES: readonly Phase[] = ['early', 'mid', 'late']
 export const CARD_SIDES: readonly CardSide[] = ['ussr', 'us', 'neutral']
-export const CARD_VALUES = [0, 1, 2, 3, 4] as const
 
 /** The turn each phase's cards join the draw deck. */
 export const PHASE_START: Record<Phase, number> = { early: 1, mid: 4, late: 8 }

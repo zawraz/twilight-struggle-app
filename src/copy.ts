@@ -75,7 +75,7 @@ export const copy = {
     sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', value: 'PO', order: 'Układ', screen: 'Ekran', swipe: 'Gest' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     handFirst: 'Na ręce na górę',

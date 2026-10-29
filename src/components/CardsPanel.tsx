@@ -30,7 +30,7 @@ import {
   type CardsState,
   type CardState,
 } from '../lib/cardGame'
-import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
+import { CARD_SIDES, PHASES, phaseStarted, type CardSide, type Phase } from '../lib/cards'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
@@ -101,10 +101,9 @@ interface Filters {
   player: CardSide[]
   phase: Phase[]
   state: CardState[]
-  value: number[]
 }
 
-const NO_FILTERS: Filters = { player: [], phase: [], state: [], value: [] }
+const NO_FILTERS: Filters = { player: [], phase: [], state: [] }
 
 interface CardsPanelProps {
   cards: CardsState
@@ -154,7 +153,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const startedPhases = PHASES.filter((phase) => phaseStarted(phase, cards.turn))
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
-  const activeFilters = filters.player.length + phaseFilter.length + filters.state.length + filters.value.length
+  const activeFilters = filters.player.length + phaseFilter.length + filters.state.length
   // A picker lists every card it can pick on one screen, wherever they lie.
   const split = multiScreen && pending === null
   // Swiping between the screens takes the swipe from the cards.
@@ -170,7 +169,6 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       matches(phaseFilter, card.phase) &&
       // Shuttle Diplomacy in play is still to be played on, so Dostępne keeps it.
       matches(filters.state, filterState(cardState(cards, card.id))) &&
-      matches(filters.value, card.value) &&
       (!split || pileOf(cardState(cards, card.id)) === pile),
   )
   // Stable sort: a card in play pinned on top whatever the order chips say, then cards in hand,
@@ -478,18 +476,6 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                       role="img"
                     />
                   )}
-                </Chip>
-              ))}
-            </ChipGroup>
-            <ChipGroup label={copy.cards.filterGroups.value}>
-              {CARD_VALUES.map((value) => (
-                <Chip
-                  key={value}
-                  pressed={filters.value.includes(value)}
-                  onClick={() => toggle('value', value)}
-                  label={copy.cards.ops(value)}
-                >
-                  {value === 0 ? copy.cards.scoring : value}
                 </Chip>
               ))}
             </ChipGroup>

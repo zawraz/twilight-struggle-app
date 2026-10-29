@@ -376,19 +376,16 @@ describe('Karty: filters and order', () => {
     expect(rows().filter((li) => li.dataset.divider === 'played')).toHaveLength(1)
   })
 
-  it('combines groups: USA + 4 shows only US 4-ops cards', async () => {
-    const user = await setup()
+  it('combines groups: USA + Odrzucone shows only discarded US cards', async () => {
+    const user = await setup(at({ states: { [idOf('NATO')]: 'discarded', [idOf('Blokada')]: 'discarded' } }))
     await openFilters(user)
-    await user.click(within(screen.getByRole('group', { name: 'Strona' })).getByRole('button', { name: 'USA' }))
-    await user.click(screen.getByRole('button', { name: copy.cards.ops(4) }))
-    expect(rows().map((li) => li.textContent)).toEqual([
-      expect.stringContaining('NATO'),
-      expect.stringContaining('Plan Marshalla'),
-      expect.stringContaining('Traktat o bezpieczeństwie USA i Japonii'),
-    ])
-    // Within a group: either value.
-    await user.click(screen.getByRole('button', { name: copy.cards.ops(1) }))
-    expect(rows()).toHaveLength(6)
+    const side = within(screen.getByRole('group', { name: copy.cards.filterGroups.player }))
+    await user.click(side.getByRole('button', { name: 'USA' }))
+    await user.click(screen.getByRole('button', { name: copy.cards.states.discarded }))
+    expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('NATO')])
+    // Within a group: either side.
+    await user.click(side.getByRole('button', { name: 'ZSRR' }))
+    expect(rows()).toHaveLength(2)
 
     await user.click(screen.getByRole('button', { name: copy.cards.clearFilters }))
     expect(rows()).toHaveLength(39)
