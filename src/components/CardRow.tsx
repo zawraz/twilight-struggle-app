@@ -38,7 +38,7 @@ const DIVIDER: Record<RowDivider, string> = {
   played: 'border-b-2 border-danger/60',
 }
 
-const DIM: Record<CardState, string> = { available: '', in_play: '', discarded: 'opacity-55', removed: 'opacity-25' }
+const DIM: Record<CardState, string> = { available: '', in_play: '', discarded: 'opacity-55', removed: 'opacity-40' }
 
 interface Gesture {
   pointerId: number
