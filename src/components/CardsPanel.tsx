@@ -1,7 +1,7 @@
 import {
   ArrowDownWideNarrow,
-  ArrowUpNarrowWide,
   ChevronRight,
+  Hand,
   Layers,
   PanelBottom,
   Pin,
@@ -130,7 +130,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [filtersShown, setFiltersShown] = useState(false)
   const [playedLast, setPlayedLast] = useState(true)
-  const [handFirst, setHandFirst] = useState(true)
+  const [handView, setHandView] = useState(false)
   const [multiScreen, setMultiScreen] = useState(false)
   const [pile, setPile] = useState<Pile>('available')
   const [swipeScreens, setSwipeScreens] = useState(false)
@@ -154,16 +154,19 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length
-  // A picker lists every card it can pick on one screen, wherever they lie.
-  const split = multiScreen && pending === null
+  const hand = inPlay.filter((card) => isInHand(cards, card.id))
+  // Once the last card leaves the hand there is nothing left to show: back to the whole list.
+  const showHand = handView && hand.length > 0 && pending === null
+  // A picker lists every card it can pick on one screen, wherever they lie; so does the hand.
+  const split = multiScreen && pending === null && !showHand
   // Swiping between the screens takes the swipe from the cards.
   const screenSwipe = split && swipeScreens
   // Two screens already keep the played cards apart, so their own screen reads as with Zagrane on.
   const sinkPlayed = playedLast || multiScreen
 
   const matches = <T,>(selected: readonly T[], value: T) => selected.length === 0 || selected.includes(value)
-  // A picker needs every card it can pick, whatever the filters say.
-  const visible = pending !== null ? inPlay.filter((card) => pickable.includes(card.id)) : inPlay.filter(
+  // A picker needs every card it can pick, whatever the filters say; the hand shows all of itself.
+  const visible = pending !== null ? inPlay.filter((card) => pickable.includes(card.id)) : showHand ? hand : inPlay.filter(
     (card) =>
       matches(filters.player, card.player) &&
       matches(phaseFilter, card.phase) &&
@@ -171,28 +174,25 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       matches(filters.state, filterState(cardState(cards, card.id))) &&
       (!split || pileOf(cardState(cards, card.id)) === pile),
   )
-  // Stable sort: a card in play pinned on top whatever the order chips say, then cards in hand,
-  // then the rest available, then played ones, each in checklist order.
+  // Stable sort: a card in play pinned on top whatever Zagrane says, then the rest available,
+  // then played ones, each in checklist order.
   const rank = (id: number) =>
-    cardState(cards, id) === 'in_play'
-      ? -1
-      : (sinkPlayed ? PLAYED_RANK[cardState(cards, id)] * 2 : 0) + (handFirst && !isInHand(cards, id) ? 1 : 0)
+    cardState(cards, id) === 'in_play' ? -1 : sinkPlayed ? PLAYED_RANK[cardState(cards, id)] : 0
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
-  // The list falls into the blocks the order puts together: the card in play, the hand, the rest,
-  // and the played cards. A thicker line closes each block and, in the hand and the rest, each ops value;
-  // a green one closes the hand, a red one where the played cards begin. With the order chips off their cards join the rest.
+  // The list falls into the blocks the order puts together: the card in play, the rest, and the played cards.
+  // A thicker line closes each block and, in the rest, each ops value; a red one where the played cards begin.
+  // With Zagrane off the played cards join the rest.
   const block = (id: number) => {
     const state = cardState(cards, id)
     if (state === 'in_play') return 'in_play'
     if (sinkPlayed && state !== 'available') return 'played'
-    if (handFirst && isInHand(cards, id)) return 'hand'
     return 'rest'
   }
   const divider = (i: number): RowDivider | undefined => {
     const [card, next] = [shown[i], shown[i + 1]]
     if (next === undefined) return undefined
     const [here, below] = [block(card.id), block(next.id)]
-    if (here !== below) return below === 'played' ? 'played' : here === 'hand' ? 'hand' : 'value'
+    if (here !== below) return below === 'played' ? 'played' : 'value'
     return here !== 'played' && next.value !== card.value ? 'value' : undefined
   }
 
@@ -343,13 +343,29 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
       }`}
     >
       <section aria-label={copy.cards.turn} className="flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-2">
-        {/* Mirrored around the counts: the filters and the deck on the left, the turn and its button on the right.
+        {/* Mirrored around the counts: the hand, the filters and the deck on the left, the turn and its button on the right.
             The outer columns share the space left over equally, so the counts sit dead centre,
             and each number is centred between its button and the counts.
             The deck and turn numbers carry their labels on top, to keep the row narrow; the labels hang
             above the numbers so the numbers, not number and label together, centre on the row. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          {/* The space between the buttons is the hand button's own, so the deck starts right at the filters. */}
           <div className="flex items-center">
+            <button
+              type="button"
+              aria-label={copy.cards.showHand}
+              aria-pressed={showHand}
+              onClick={() => {
+                setOpenId(null)
+                setHandView(!showHand)
+              }}
+              disabled={hand.length === 0 || pending !== null}
+              className={`mr-1.5 grid size-9 shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${
+                showHand ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
+              }`}
+            >
+              <Hand className="size-4" aria-hidden="true" />
+            </button>
             <button
               type="button"
               aria-label={copy.cards.filters}
@@ -507,10 +523,6 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                   {copy.cards.playedLastShort}
                 </Chip>
               )}
-              <Chip pressed={handFirst} onClick={() => setHandFirst((s) => !s)} label={copy.cards.handFirst}>
-                <ArrowUpNarrowWide className="size-4" aria-hidden="true" />
-                {copy.cards.handFirstShort}
-              </Chip>
               {activeFilters > 0 && (
                 <button
                   type="button"

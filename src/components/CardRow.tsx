@@ -30,11 +30,10 @@ interface CardRowProps {
   swipe?: boolean
 }
 
-export type RowDivider = 'value' | 'hand' | 'played'
+export type RowDivider = 'value' | 'played'
 
 const DIVIDER: Record<RowDivider, string> = {
   value: 'border-b-2 border-line-strong/60',
-  hand: 'border-b-2 border-go/60',
   played: 'border-b-2 border-danger/60',
 }
 

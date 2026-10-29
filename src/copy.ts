@@ -75,13 +75,12 @@ export const copy = {
     sides: { ussr: 'ZSRR', us: 'USA', neutral: 'N' },
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
+    showHand: 'Pokaż karty na ręce',
     filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
-    handFirst: 'Na ręce na górę',
-    /** The order chips' visible labels: their arrows say which way. */
+    /** The order chip's visible label: its arrow says which way. */
     playedLastShort: 'Zagrane',
-    handFirstShort: 'Na ręce',
     singleScreen: 'Jeden ekran',
     multiScreen: 'Dwa ekrany',
     /** The screen chips' visible labels: their icons show the footer or its absence. */

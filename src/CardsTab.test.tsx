@@ -190,18 +190,16 @@ describe('Karty: changing a card', () => {
 
   it('puts Shuttle Diplomacy in play with a right swipe, pinned above every other card', async () => {
     const name = 'Dyplomacja Wahadłowa'
-    const user = await setup(at({ turn: 4, inHand: [idOf('Nasser'), idOf('Fidel')] }))
-    expect(rows()[0]).toHaveTextContent('Nasser')
+    const user = await setup(at({ turn: 4 }))
     await discard(user, 'Blokada')
     expect(counts(copy.cards.states.discarded)).not.toHaveAccessibleName(/w grze/)
     swipe(name, SWIPE_COMMIT_PX + 10)
     expect(stateOf(name)).toBe('in_play')
     expect(counts(copy.cards.states.discarded)).toHaveAccessibleName(/w grze: Dyplomacja Wahadłowa$/)
     expect(rows()[0]).toHaveTextContent(name)
-    // Still on top with the order chips off.
+    // Still on top with Zagrane off.
     await openFilters(user)
     await user.click(screen.getByRole('button', { name: copy.cards.playedLast }))
-    await user.click(screen.getByRole('button', { name: copy.cards.handFirst }))
     expect(rows()[0]).toHaveTextContent(name)
     // In play, a right swipe does nothing; a left one discards it.
     swipe(name, SWIPE_COMMIT_PX + 10)
@@ -320,8 +318,8 @@ describe('Karty: filters and order', () => {
     expect(played.map((li) => li.dataset.divider)).toEqual([undefined, undefined])
   })
 
-  describe('with the order chips', () => {
-    // A hand of three values and three played cards, each played one on a value's edge.
+  describe('with the order chip', () => {
+    // A hand of three values, which takes its places like any card, and three played cards, each on a value's edge.
     const game = () =>
       at({
         inHand: [idOf('Nasser'), idOf('Fidel'), idOf('Zakaz prób jądrowych')],
@@ -334,11 +332,11 @@ describe('Karty: filters and order', () => {
       for (const name of names) await user.click(screen.getByRole('button', { name }))
     }
 
-    it('both on: a line per value in the hand, a green one closing it, a line per value, then the red one', async () => {
+    it('on: a line per value, then the red one', async () => {
       await setup(game())
-      // Hand 0–2 (1, 2 and 4 ops), scoring 3–4, 1 ops 5–10, 2 ops 11–20, 3 ops 21–31, 4 ops 32–35, played 36–38.
-      expect(dividers()).toEqual(['0:value', '1:value', '2:hand', '4:value', '10:value', '20:value', '31:value', '35:played'])
-      expect(names(2, 36)).toEqual([expect.stringContaining('Zakaz prób jądrowych'), expect.stringContaining('Kulminacja napięć w Azji')])
+      // Scoring 0–1, 1 ops 2–8, 2 ops 9–19, 3 ops 20–30, 4 ops 31–35, played 36–38.
+      expect(dividers()).toEqual(['1:value', '8:value', '19:value', '30:value', '35:played'])
+      expect(names(36)).toEqual([expect.stringContaining('Kulminacja napięć w Azji')])
     })
 
     it('Zagrane off: no red lines, and a played card on a value’s edge still closes it', async () => {
@@ -351,16 +349,9 @@ describe('Karty: filters and order', () => {
       expect(rows()[edge]).not.toHaveAttribute('data-divider')
     })
 
-    it('Na ręce off: the hand cards take their places, with no line of their own', async () => {
+    it('off: one line per value through the whole checklist', async () => {
       const user = await setup(game())
-      await toggleOrder(user, copy.cards.handFirst)
-      // Scoring 0–1, 1 ops 2–8, 2 ops 9–19, 3 ops 20–30, 4 ops 31–35, played 36–38.
-      expect(dividers()).toEqual(['1:value', '8:value', '19:value', '30:value', '35:played'])
-    })
-
-    it('both off: one line per value through the whole checklist', async () => {
-      const user = await setup(game())
-      await toggleOrder(user, copy.cards.playedLast, copy.cards.handFirst)
+      await toggleOrder(user, copy.cards.playedLast)
       const values = rows().map((li) => CARDS.find((c) => li.textContent!.includes(c.name))!.value)
       const edges = values.flatMap((v, i) => (i < values.length - 1 && values[i + 1] !== v ? [`${i}:value`] : []))
       expect(dividers()).toEqual(edges)
@@ -391,16 +382,31 @@ describe('Karty: filters and order', () => {
     expect(rows()).toHaveLength(39)
   })
 
-  it('puts cards in hand on top until turned off', async () => {
-    const last = 'Zakaz prób jądrowych'
-    const user = await setup(at({ inHand: [idOf(last)] }))
+  it('can’t show the hand while no card is in it', async () => {
+    await setup()
+    expect(screen.getByRole('button', { name: copy.cards.showHand })).toBeDisabled()
+  })
+
+  it('shows only the cards in hand until pressed again, back to the whole list once the hand is empty', async () => {
+    const user = await setup(at({ inHand: [idOf('Nasser'), idOf('Fidel')] }))
+    const showHand = screen.getByRole('button', { name: copy.cards.showHand })
+    // Filters that would hide the hand don't.
     await openFilters(user)
-    const handFirst = screen.getByRole('button', { name: copy.cards.handFirst })
-    expect(handFirst).toHaveAttribute('aria-pressed', 'true')
-    expect(rows()[0]).toHaveTextContent(last)
-    await user.click(handFirst)
-    expect(rows()[0]).toHaveTextContent('Kulminacja napięć na Bliskim Wschodzie')
-    expect(rows()[38]).toHaveTextContent(last)
+    await user.click(within(screen.getByRole('group', { name: copy.cards.filterGroups.player })).getByRole('button', { name: 'USA' }))
+    await user.click(showHand)
+    expect(showHand).toHaveAttribute('aria-pressed', 'true')
+    expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Nasser'), expect.stringContaining('Fidel')])
+    await user.click(showHand)
+    expect(showHand).toHaveAttribute('aria-pressed', 'false')
+    expect(rows().length).toBeGreaterThan(2)
+
+    await user.click(showHand)
+    await discard(user, 'Nasser')
+    expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Fidel')])
+    await discard(user, 'Fidel')
+    expect(showHand).toBeDisabled()
+    expect(showHand).toHaveAttribute('aria-pressed', 'false')
+    expect(rows().length).toBeGreaterThan(2)
   })
 
   describe('on two screens', () => {
@@ -495,7 +501,6 @@ describe('Karty: filters and order', () => {
       const user = await setup()
       await twoScreens(user)
       expect(screen.queryByRole('button', { name: copy.cards.playedLast })).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: copy.cards.handFirst })).toBeInTheDocument()
     })
   })
 
