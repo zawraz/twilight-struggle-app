@@ -517,8 +517,9 @@ describe('header: End and New Game', () => {
     expect(within(header()).getByRole('button', { name: 'Nowa gra' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: copy.fourOps.add('ZSRR') })).toBeDisabled()
     expect(screen.getByRole('button', { name: copy.fourOps.remove('ZSRR') })).toBeDisabled()
-    expect(screen.getByRole('button', { name: copy.success.submit('USA') })).toBeDisabled()
-    expect(screen.getByRole('button', { name: copy.dice.submit('USA') })).toBeDisabled()
+    // The results stand where the confirm buttons were.
+    expect(screen.queryByRole('button', { name: copy.success.submit('USA') })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.dice.submit('USA') })).not.toBeInTheDocument()
     // The wheels lock too: greyed out, and a tap on another value does nothing.
     const wheel = screen.getByRole('listbox', { name: copy.dice.wheel })
     expect(wheel).toHaveAttribute('aria-disabled', 'true')

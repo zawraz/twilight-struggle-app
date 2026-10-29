@@ -147,49 +147,51 @@ function PlayerColumn({
       <div
         className={`${COLUMN[column]} row-start-1 grid h-[calc(var(--wheel-row)*3)] min-w-0 grid-rows-[1fr_auto_1fr] justify-items-center self-center`}
       >
-        {/* Name, label and value share one baseline; the row stays centred over the button. */}
-        <div className="flex flex-wrap content-end items-baseline justify-center gap-x-2 self-end pb-1.5 short:pb-1 tiny:pb-0.5">
+        {/* Centred over the button: the name, and under it the roll count; once the game has ended the result's label
+            takes the count's place. The second line keeps one height, so nothing moves on End. */}
+        <div className="flex flex-col items-center gap-1 self-end pb-1.5 short:pb-1 tiny:pb-0.5">
           <span className={`font-stencil text-base leading-none font-extrabold uppercase tracking-[0.04em] ${tone.text}`}>
             {player.label}
           </span>
           {revealed ? (
-            <span className="flex items-baseline gap-1.5">
-              <span className="font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink">
-                {text.result}
-              </span>
-              <output
-                aria-label={text.resultFor(player.label)}
-                className={`font-stencil text-3xl leading-none font-extrabold tabular-nums short:text-xl tiny:text-lg ${tone.text}`}
-              >
-                {summarize(entries)}
-              </output>
+            <span className="h-5 font-stencil text-sm leading-5 font-extrabold uppercase tracking-[0.04em] text-ink">
+              {text.result}
             </span>
           ) : (
-            <span className="font-mono text-xs text-ink-muted">{rolls(count)}</span>
+            <span className="h-5 font-mono text-xs leading-5 text-ink-muted">{rolls(count)}</span>
           )}
         </div>
-        <button
-          type="button"
-          aria-label={cooling ? text.undo(player.label) : text.submit(player.label)}
-          data-cooling={cooling}
-          onClick={cooling ? undo : submit}
-          disabled={revealed}
-          className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
-            cooling ? tone.soft : `${tone.fill} ${revealed ? LOCKED : ''}`
-          }`}
-        >
-          {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
-          {cooling && added !== null && (
-            <span className="font-stencil text-xl leading-none font-extrabold tabular-nums">{formatValue(added)}</span>
-          )}
-          {cooling && (
-            <span
-              aria-hidden="true"
-              style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
-              className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
-            />
-          )}
-        </button>
+        {/* Once the game has ended no more rolls are taken: the result stands in the button's place, as large. */}
+        {revealed ? (
+          <output
+            aria-label={text.resultFor(player.label)}
+            className={`flex h-(--wheel-item) items-center justify-center font-stencil text-[length:calc(var(--wheel-item)*0.8)] leading-none font-extrabold tabular-nums whitespace-nowrap ${tone.text}`}
+          >
+            {summarize(entries)}
+          </output>
+        ) : (
+          <button
+            type="button"
+            aria-label={cooling ? text.undo(player.label) : text.submit(player.label)}
+            data-cooling={cooling}
+            onClick={cooling ? undo : submit}
+            className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
+              cooling ? tone.soft : tone.fill
+            }`}
+          >
+            {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
+            {cooling && added !== null && (
+              <span className="font-stencil text-xl leading-none font-extrabold tabular-nums">{formatValue(added)}</span>
+            )}
+            {cooling && (
+              <span
+                aria-hidden="true"
+                style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
+                className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
+              />
+            )}
+          </button>
+        )}
         <span role="status" className="sr-only">
           {notice}
         </span>
