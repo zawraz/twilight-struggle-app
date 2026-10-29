@@ -83,7 +83,7 @@ const MID: Row[] = [
   [79, 'africa-scoring', 'Kulminacja napięć w Afryce', N, 0, false, false],
   [81, 'south-america-scoring', 'Kulminacja napięć w Ameryce Południowej', N, 0, false, false],
   [37, 'central-america-scoring', 'Kulminacja napięć w Ameryce Środkowej', N, 0, false, false],
-  [38, 'southeast-asia-scoring', 'Kulminacja napięć w Azji Południowo-Wschodniej', N, 0, true, false],
+  [38, 'southeast-asia-scoring', 'Kulminacja napięć w Azji Płd.-Wsch.', N, 0, true, false],
   [54, 'allende', 'Allende', R, 1, true, false],
   [70, 'oas-founded', 'Powołanie OPA', U, 1, true, false],
   [48, 'kitchen-debates', 'Rozmowy kuchenne', U, 1, true, false],
