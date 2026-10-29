@@ -402,7 +402,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
               aria-label={copy.cards.deckCount(cards.deck)}
               role="status"
             >
-              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
+              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-xs leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
                 {copy.cards.deck}
               </span>
               <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.deck}</span>
@@ -444,7 +444,7 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
           </div>
           <div className="flex items-center gap-3">
             <div className="relative flex-1" aria-label={copy.cards.turnOf(cards.turn)} role="status">
-              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
+              <span className="absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 font-stencil text-xs leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted">
                 {copy.cards.turn}
               </span>
               <span className="block min-w-[2ch] text-center font-stencil text-3xl leading-none font-extrabold tabular-nums">{cards.turn}</span>
