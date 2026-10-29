@@ -515,24 +515,22 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
                 </Chip>
               </ChipGroup>
             )}
-            <ChipGroup label={copy.cards.filterGroups.order}>
-              {/* Two screens put the played cards on their own already. */}
-              {!multiScreen && (
+            {/* Two screens put the played cards on their own already, leaving the order nothing to show. */}
+            {!multiScreen ? (
+              <ChipGroup label={copy.cards.filterGroups.order}>
                 <Chip pressed={playedLast} onClick={() => setPlayedLast((s) => !s)} label={copy.cards.playedLast}>
                   <ArrowDownWideNarrow className="size-4" aria-hidden="true" />
                   {copy.cards.playedLastShort}
                 </Chip>
-              )}
-              {activeFilters > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setFilters(NO_FILTERS)}
-                  className="ml-auto px-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted underline"
-                >
-                  {copy.cards.clearFilters}
-                </button>
-              )}
-            </ChipGroup>
+                {activeFilters > 0 && <ClearFilters onClick={() => setFilters(NO_FILTERS)} />}
+              </ChipGroup>
+            ) : (
+              activeFilters > 0 && (
+                <div className="flex">
+                  <ClearFilters onClick={() => setFilters(NO_FILTERS)} />
+                </div>
+              )
+            )}
           </div>
         )}
       </section>
@@ -598,6 +596,18 @@ function ChipGroup({ label, children }: { label: string; children: ReactNode }) 
       <span className="w-12 font-condensed text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{label}</span>
       {children}
     </div>
+  )
+}
+
+function ClearFilters({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="ml-auto px-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted underline"
+    >
+      {copy.cards.clearFilters}
+    </button>
   )
 }
 

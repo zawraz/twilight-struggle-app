@@ -497,10 +497,14 @@ describe('Karty: filters and order', () => {
       expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
     })
 
-    it('hides the Zagrane order chip, which has nothing left to do', async () => {
+    it('hides the order row, which has nothing left to do, but keeps a way to clear the filters', async () => {
       const user = await setup()
       await twoScreens(user)
-      expect(screen.queryByRole('button', { name: copy.cards.playedLast })).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: copy.cards.filterGroups.order })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: copy.cards.clearFilters })).not.toBeInTheDocument()
+      await user.click(within(screen.getByRole('group', { name: copy.cards.filterGroups.player })).getByRole('button', { name: 'USA' }))
+      await user.click(screen.getByRole('button', { name: copy.cards.clearFilters }))
+      expect(screen.getByRole('button', { name: 'USA' })).toHaveAttribute('aria-pressed', 'false')
     })
   })
 
