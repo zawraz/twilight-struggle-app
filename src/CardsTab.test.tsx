@@ -477,6 +477,23 @@ describe('Karty: filters and order', () => {
       expect(rowButton('Blokada')).toHaveAttribute('aria-expanded', 'false')
     })
 
+    it('the list follows the finger, giving only a little past the outer screens', async () => {
+      const user = await setup()
+      await twoScreens(user)
+      await user.click(screen.getByRole('button', { name: copy.cards.swipeScreens }))
+      const surface = rowButton('Blokada').parentElement!
+      fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 200, clientY: 10 })
+      fireEvent.pointerMove(surface, { pointerId: 1, clientX: 160, clientY: 10 })
+      expect(list().style.transform).toBe('translateX(-40px)')
+      // Nothing left of the first screen.
+      fireEvent.pointerMove(surface, { pointerId: 1, clientX: 240, clientY: 10 })
+      expect(list().style.transform).toBe('translateX(10px)')
+      // Let go short of a swipe: it eases back into place.
+      fireEvent.pointerUp(surface, { pointerId: 1, clientX: 240, clientY: 10 })
+      expect(list().style.transform).toBe('')
+      expect(pileTab('available')).toHaveAttribute('aria-selected', 'true')
+    })
+
     it('hides the Zagrane order chip, which has nothing left to do', async () => {
       const user = await setup()
       await twoScreens(user)

@@ -8,7 +8,7 @@ import { SIDE_NAME_TEXT, SIDE_TEXT } from './tone'
 /** How far a row must be dragged sideways to commit the swipe. */
 export const SWIPE_COMMIT_PX = 80
 /** Sideways movement that turns a press into a swipe (and vertical movement that cancels it). */
-const SLOP_PX = 8
+export const SLOP_PX = 8
 /** How long a press must be held to offer restoring a played card. */
 export const LONG_PRESS_MS = 500
 

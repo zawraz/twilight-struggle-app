@@ -34,7 +34,7 @@ import { CARD_SIDES, CARD_VALUES, PHASES, phaseStarted, type CardSide, type Phas
 import { PLAYERS, type PlayerId } from '../lib/players'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
-import { CardRow, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
+import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
 import { PlayerPicker } from './PlayerPicker'
 import { SUBMIT_COOLDOWN_MS, UndoIcon } from './RollTracker'
@@ -127,8 +127,12 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [multiScreen, setMultiScreen] = useState(false)
   const [pile, setPile] = useState<Pile>('available')
   const [swipeScreens, setSwipeScreens] = useState(false)
-  // Where a sideways swipe across the list began, to move between its two screens.
-  const listSwipe = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  // Where a sideways swipe across the list began, to move between its two screens;
+  // decided past the slop, as on a row: a swipe, or a scroll the browser owns.
+  const listSwipe = useRef<{ pointerId: number; x: number; y: number; mode: 'press' | 'swipe' } | null>(null)
+  // How far the list sits off its place: following a finger (held), or easing back to it.
+  const [slide, setSlide] = useState({ x: 0, held: false })
+  const listRef = useRef<HTMLUListElement>(null)
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
@@ -269,18 +273,51 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     notify(start ? { text, undo: () => dispatch({ type: 'restore', state: start }) } : { text })
   }
 
-  function showPile(id: Pile) {
+  /** Opens a screen, sliding it in from its tab's side: from `from` px off, the list's edge by default. */
+  function showPile(id: Pile, from?: number) {
     setOpenId(null)
+    if (id === pile) return
     setPile(id)
+    const width = listRef.current?.clientWidth ?? 0
+    // The played cards' tab is on the right, so they come in from the right.
+    setSlide({ x: from ?? (id === 'played' ? width : -width), held: true })
+    // Once that lands, ease into place.
+    requestAnimationFrame(() => requestAnimationFrame(() => setSlide({ x: 0, held: false })))
+  }
+
+  function startListSwipe(event: PointerEvent) {
+    if (event.button === 0) listSwipe.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: 'press' }
+  }
+
+  function moveListSwipe(event: PointerEvent) {
+    const g = listSwipe.current
+    if (!g || g.pointerId !== event.pointerId) return
+    const [dx, dy] = [event.clientX - g.x, event.clientY - g.y]
+    if (g.mode === 'press') {
+      if (Math.abs(dy) > SLOP_PX && Math.abs(dy) >= Math.abs(dx)) {
+        listSwipe.current = null
+        return
+      }
+      if (Math.abs(dx) <= SLOP_PX) return
+      g.mode = 'swipe'
+      ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
+    }
+    // Past the outer screens there is nothing to show: the list only gives a little.
+    const edge = dx > 0 ? pile === 'available' : pile === 'played'
+    setSlide({ x: edge ? dx / 4 : dx, held: true })
   }
 
   function endListSwipe(event: PointerEvent) {
-    const start = listSwipe.current
+    const g = listSwipe.current
     listSwipe.current = null
-    if (!start || start.pointerId !== event.pointerId) return
-    const [dx, dy] = [event.clientX - start.x, event.clientY - start.y]
-    // Left to the played cards on the right-hand tab, right back to the available ones.
-    if (Math.abs(dx) >= SWIPE_COMMIT_PX && Math.abs(dx) > Math.abs(dy)) showPile(dx < 0 ? 'played' : 'available')
+    if (!g || g.pointerId !== event.pointerId || g.mode !== 'swipe') return
+    const dx = event.type === 'pointercancel' ? 0 : event.clientX - g.x
+    const width = listRef.current?.clientWidth ?? 0
+    // Left to the played cards on the right-hand tab, right back to the available ones;
+    // the new screen comes in right behind the one leaving.
+    if (dx <= -SWIPE_COMMIT_PX && pile === 'available') showPile('played', width + dx)
+    else if (dx >= SWIPE_COMMIT_PX && pile === 'played') showPile('available', dx - width)
+    else setSlide({ x: 0, held: false })
   }
 
   const toggle = <K extends keyof Filters>(group: K, value: Filters[K][number]) =>
@@ -294,7 +331,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
 
   return (
     <div
-      className={`grid min-h-0 gap-2 ${
+      // Clipped at the sides, so a screen sliding in or out doesn't show past them.
+      className={`grid min-h-0 gap-2 overflow-x-clip ${
         pending !== null ? 'grid-rows-[auto_auto_1fr]' : split ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr]'
       }`}
     >
@@ -499,13 +537,16 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
         id={split ? `${PILE_ID}-panel-${pile}` : undefined}
         // The browser keeps the vertical scroll; a sideways swipe is left to move between the screens.
         {...(screenSwipe && {
-          onPointerDown: (event: PointerEvent) => {
-            if (event.button === 0) listSwipe.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-          },
+          onPointerDown: startListSwipe,
+          onPointerMove: moveListSwipe,
           onPointerUp: endListSwipe,
-          onPointerCancel: () => (listSwipe.current = null),
+          onPointerCancel: endListSwipe,
         })}
-        className={`min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised ${screenSwipe ? 'touch-pan-y' : ''}`}
+        ref={listRef}
+        style={slide.x !== 0 ? { transform: `translateX(${slide.x}px)` } : undefined}
+        className={`min-h-0 overflow-y-auto overscroll-contain rounded-card border border-line bg-surface-raised ${
+          screenSwipe ? 'touch-pan-y' : ''
+        } ${slide.held ? '' : 'transition-transform duration-200 ease-out motion-reduce:transition-none'}`}
       >
         {shown.map((card, i) => (
           <CardRow
