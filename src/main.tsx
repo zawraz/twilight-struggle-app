@@ -1,3 +1,4 @@
+import { ConvexProvider } from 'convex/react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource/big-shoulders-stencil-display/800'
@@ -8,6 +9,7 @@ import '@fontsource/ibm-plex-mono/400'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App'
+import { convex } from './lib/convex'
 
 // An installed PWA resumed from the background never re-navigates, so the browser
 // would not look for a new deploy on its own. Check on resume and once a day;
@@ -26,6 +28,12 @@ registerSW({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {convex ? (
+      <ConvexProvider client={convex}>
+        <App />
+      </ConvexProvider>
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 )

@@ -1,5 +1,7 @@
 [build]
-  command = "pnpm run build"
+  # Deploys the sync server's functions (convex/) first, then builds the app pointed at it.
+  # Needs CONVEX_DEPLOY_KEY (a production deploy key) in Netlify's environment variables.
+  command = "pnpm exec convex deploy --cmd 'pnpm run build'"
   publish = "dist"
 
 [build.environment]
