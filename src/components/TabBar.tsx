@@ -9,11 +9,17 @@ export interface Tab<Id extends string> {
   disabled?: boolean
 }
 
-/** Each size's height and border: a slim bar takes the thinnest border to leave its icons the room. */
+/** Each size's height, width and border: a slim bar takes the thinnest border to leave its icons the room. */
 const SIZE = {
-  slim: { height: 'h-6', border: 'border-y first:border-l last:border-r' },
-  regular: { height: 'h-10', border: 'border-y-2 first:border-l-2 last:border-r-2' },
-  tall: { height: 'h-12.5', border: 'border-y-2 first:border-l-2 last:border-r-2' },
+  slim: { height: 'h-6', width: 'w-18', border: 'border-y first:border-l last:border-r' },
+  regular: { height: 'h-10', width: 'w-18', border: 'border-y-2 first:border-l-2 last:border-r-2' },
+  tall: { height: 'h-12.5', width: 'w-18', border: 'border-y-2 first:border-l-2 last:border-r-2' },
+  /** The header's views, tapped all game long: as tall as the header's other buttons. */
+  header: {
+    height: 'h-12 short-landscape:h-10',
+    width: 'w-14 min-[390px]:w-16 min-[480px]:w-20',
+    border: 'border-y-2 first:border-l-2 last:border-r-2',
+  },
 } as const
 
 interface TabBarProps<Id extends string> {
@@ -26,7 +32,7 @@ interface TabBarProps<Id extends string> {
   className?: string
   /** Stretches the tabs to share the bar's width. */
   stretch?: boolean
-  /** Tall for a bar at the foot of the screen, slim for one that only shows where the swipes have got to. */
+  /** Tall for a bar at the foot of the screen, slim for one that only shows where the swipes have got to, header for the header's. */
   size?: keyof typeof SIZE
 }
 
@@ -45,7 +51,7 @@ export function TabBar<Id extends string>({
   size = 'regular',
 }: TabBarProps<Id>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
-  const { height, border } = SIZE[size]
+  const { height, width, border } = SIZE[size]
 
   /** The nearest enabled tab `by` away from `index`, round the ends. */
   function step(index: number, by: 1 | -1) {
@@ -89,7 +95,7 @@ export function TabBar<Id extends string>({
             disabled={tab.disabled}
             onClick={() => onSelect(selected ? tabs[step(index, 1)].id : tab.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`flex ${height} items-center justify-center gap-1 ${border} ${stretch ? 'flex-1' : 'w-18'} transition-colors first:rounded-l-counter last:rounded-r-counter disabled:opacity-30 ${
+            className={`flex ${height} items-center justify-center gap-1 ${border} ${stretch ? 'flex-1' : width} transition-colors first:rounded-l-counter last:rounded-r-counter disabled:opacity-30 ${
               selected ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
             }`}
           >
