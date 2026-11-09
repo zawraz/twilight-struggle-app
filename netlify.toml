@@ -8,6 +8,18 @@
   # Vite 8 needs Node 20.19+ or 22.12+.
   NODE_VERSION = "22"
 
+# Previews and branch builds don't deploy anything to Convex (it refuses a production key outside
+# production): they use the development deployment, kept up to date by `npx convex dev`.
+[context.deploy-preview]
+  command = "pnpm run build"
+  [context.deploy-preview.environment]
+    VITE_CONVEX_URL = "https://scintillating-capybara-511.convex.cloud"
+
+[context.branch-deploy]
+  command = "pnpm run build"
+  [context.branch-deploy.environment]
+    VITE_CONVEX_URL = "https://scintillating-capybara-511.convex.cloud"
+
 [dev]
   command = "vite"
   port = 5173
