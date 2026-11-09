@@ -111,6 +111,10 @@ export const copy = {
     restore: (name: string) => `Przywróć: ${name}`,
     restoreLabel: 'Przywróć',
     changed: (name: string, state: string) => `${name}: ${state}`,
+    /** The header strip with the last card played, from either device in the room. */
+    lastAction: 'Ostatni ruch',
+    noLastAction: 'Brak',
+    undoLast: (what: string) => `Cofnij: ${what}`,
   },
 
   room: {
@@ -152,7 +156,7 @@ export const copy = {
   } satisfies TrackerCopy,
 
   dice: {
-    title: 'EV rzutów',
+    title: 'Zwykłe rzuty',
     wheel: 'Rzut kością',
     submit: (side) => `Potwierdź rzut kością: ${side}`,
     undo: (side) => `Cofnij rzut kością: ${side}`,

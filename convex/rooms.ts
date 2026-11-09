@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { isRoomState, normalizeRoomCode, roomReducer, type RoomAction, type RoomState } from '../src/lib/room'
+import { isRoomState, normalizeRoomCode, roomReducer, withMoves, type RoomAction, type RoomState } from '../src/lib/room'
 import { mutation, query, type QueryCtx } from './_generated/server'
 
 const findRoom = (ctx: QueryCtx, code: string) =>
@@ -19,18 +19,20 @@ export const get = query({
   args: { code: v.string() },
   handler: async (ctx, { code }): Promise<RoomState | null> => {
     const room = await findRoom(ctx, code)
-    return room && { game: room.game, cards: room.cards }
+    return room && { game: room.game, cards: room.cards, moves: room.moves ?? [] }
   },
 })
 
 /** Opens a room with this game unless it already exists; true when it was created. */
 export const ensure = mutation({
   args: { code: v.string(), state: v.any() },
-  handler: async (ctx, { code, state }) => {
+  handler: async (ctx, { code, state: sent }) => {
     checkCode(code)
+    // An app from before rooms kept their moves sends none.
+    const state = withMoves(sent)
     if (!isRoomState(state)) throw new Error('Invalid game state')
     if (await findRoom(ctx, code)) return false
-    await ctx.db.insert('rooms', { code, game: state.game, cards: state.cards })
+    await ctx.db.insert('rooms', { code, game: state.game, cards: state.cards, moves: state.moves })
     return true
   },
 })
@@ -43,11 +45,11 @@ export const dispatch = mutation({
     if (!room) throw new Error(`No room ${code}`)
     let next: RoomState
     try {
-      next = roomReducer({ game: room.game, cards: room.cards }, action as RoomAction)
+      next = roomReducer({ game: room.game, cards: room.cards, moves: room.moves ?? [] }, action as RoomAction)
     } catch {
       throw new Error('Invalid action')
     }
     if (!isRoomState(next)) throw new Error('Invalid action')
-    await ctx.db.patch(room._id, { game: next.game, cards: next.cards })
+    await ctx.db.patch(room._id, { game: next.game, cards: next.cards, moves: next.moves })
   },
 })

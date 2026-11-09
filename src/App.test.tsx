@@ -613,7 +613,7 @@ describe('header tabs', () => {
 describe('Polish interface', () => {
   it('shows every label in Polish', async () => {
     const { user } = setup()
-    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'EV rzutów']) {
+    for (const text of ['Karty 4 PO', 'Rzuty na sukces', 'Zwykłe rzuty']) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
     expect(screen.getByRole('button', { name: 'Zakończ grę' })).toBeInTheDocument()
@@ -682,6 +682,58 @@ describe('saved progress', () => {
     localStorage.setItem(STORAGE_KEY, '{not json')
     setup()
     expect(screen.getByRole('status', { name: copy.fourOps.count('ZSRR') })).toHaveTextContent('0')
+  })
+})
+
+describe('Last move', () => {
+  const lastMove = (text: string) => within(header()).getByRole('status', { name: text })
+  const undoLast = () => within(header()).getByRole('button', { name: /^Cofnij: / })
+  const submit = (player: string) => screen.getByRole('button', { name: copy.dice.submit(player) })
+  const diceLog = (player: string) => screen.getByRole('list', { name: copy.dice.log(player) })
+
+  it('shows a roll from either track and takes it back, with no time limit', async () => {
+    const { user } = setup()
+    await submitRoll(user, submit('USA'))
+    expect(lastMove(`${copy.dice.wheel}: USA 4`)).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(60_000))
+    await user.click(undoLast())
+    expect(within(diceLog('USA')).queryAllByRole('listitem')).toHaveLength(0)
+    expect(lastMove(copy.cards.noLastAction)).toBeInTheDocument()
+  })
+
+  it("is cleared when the roll's own undo button takes the roll back", async () => {
+    const { user } = setup()
+    await user.click(submit('ZSRR'))
+    await user.click(screen.getByRole('button', { name: copy.dice.undo('ZSRR') }))
+    expect(lastMove(copy.cards.noLastAction)).toBeInTheDocument()
+  })
+
+  it('shows a 4 Ops count moved by hand and takes it back', async () => {
+    const { user } = setup()
+    await addFourOps(user, 'ZSRR')
+    expect(lastMove(`${copy.fourOps.title}: ZSRR +1`)).toBeInTheDocument()
+    await user.click(undoLast())
+    expect(screen.getByRole('status', { name: copy.fourOps.count('ZSRR') })).toHaveTextContent('0')
+  })
+
+  it('takes back two moves in a row, then shows the third with its undo off', async () => {
+    const { user } = setup()
+    await addFourOps(user, 'USA')
+    await submitRoll(user, submit('ZSRR'))
+    await submitRoll(user, submit('USA'))
+    await user.click(undoLast())
+    expect(lastMove(`${copy.dice.wheel}: ZSRR 4`)).toBeInTheDocument()
+    await user.click(undoLast())
+    expect(lastMove(`${copy.fourOps.title}: USA +1`)).toBeInTheDocument()
+    expect(within(header()).queryByRole('button', { name: /^Cofnij: / })).not.toBeInTheDocument()
+    expect(screen.getByRole('status', { name: copy.fourOps.count('USA') })).toHaveTextContent('1')
+  })
+
+  it('cannot take a move back once the game has ended', async () => {
+    const { user } = setup()
+    await submitRoll(user, submit('USA'))
+    await endGame(user)
+    expect(within(header()).queryByRole('button', { name: /^Cofnij: / })).not.toBeInTheDocument()
   })
 })
 

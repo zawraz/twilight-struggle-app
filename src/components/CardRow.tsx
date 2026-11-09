@@ -215,9 +215,7 @@ export function CardRow({
             </span>
           ) : (
             <span className="grid size-4 shrink-0 place-items-center">
-              {state === 'in_play' && <Pin className="size-4 text-go" strokeWidth={2.5} aria-hidden="true" />}
-              {state === 'discarded' && <Play className="size-3.5 text-ink-muted" aria-hidden="true" />}
-              {state === 'removed' && <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />}
+              <CardStateIcon state={state} />
               {inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />}
             </span>
           )}
@@ -300,4 +298,12 @@ function ActionButton({
       {children}
     </button>
   )
+}
+
+/** How a row marks a card that isn't simply available: pinned in play, discarded or removed. */
+export function CardStateIcon({ state }: { state: CardState }) {
+  if (state === 'in_play') return <Pin className="size-4 text-go" strokeWidth={2.5} aria-hidden="true" />
+  if (state === 'discarded') return <Play className="size-3.5 text-ink-muted" aria-hidden="true" />
+  if (state === 'removed') return <X className="size-4 text-danger" strokeWidth={3} aria-hidden="true" />
+  return null
 }
