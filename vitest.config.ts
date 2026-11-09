@@ -7,5 +7,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Tests play the game on the device: no sync server, whatever .env.local points at.
+    env: { VITE_CONVEX_URL: '' },
   },
 })

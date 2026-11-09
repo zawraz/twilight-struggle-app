@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CardsPanel } from './components/CardsPanel'
 import { GameAction } from './components/GameAction'
 import { OpsCounter } from './components/OpsCounter'
+import { RoomButton } from './components/RoomButton'
 import { RollTracker } from './components/RollTracker'
 import { Section } from './components/Section'
 import { TabBar } from './components/TabBar'
@@ -10,8 +11,7 @@ import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
-import { useCards } from './lib/useCards'
-import { useGame } from './lib/useGame'
+import { useRoom } from './lib/useRoom'
 import { useToast } from './lib/useToast'
 
 // −5…+5 without 0, highest on top.
@@ -27,8 +27,8 @@ type TabId = (typeof TABS)[number]['id']
 const TAB_ID = 'view'
 
 export default function App() {
-  const [game, dispatch] = useGame()
-  const [cards, dispatchCards] = useCards()
+  // Shared with every device in the same room when the app has a sync server.
+  const { game, dispatch, cards, dispatchCards, sync } = useRoom()
   const [tab, setTab] = useState<TabId>('log')
   const [toast, showToast, dismissToast] = useToast()
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
@@ -60,7 +60,10 @@ export default function App() {
           <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
             {copy.appTitle}
           </h1>
-          <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} className="ml-auto" />
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {sync && <RoomButton sync={sync} notify={showToast} />}
+            <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} />
+          </div>
         </div>
         {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
         <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">

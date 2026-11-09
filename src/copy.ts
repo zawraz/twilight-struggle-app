@@ -113,6 +113,25 @@ export const copy = {
     changed: (name: string, state: string) => `${name}: ${state}`,
   },
 
+  room: {
+    /** The header button: opens the room panel. */
+    open: 'Wspólna gra',
+    title: 'Wspólna gra',
+    code: 'Kod pokoju',
+    hint: 'Na drugim urządzeniu otwórz link albo wpisz ten kod.',
+    share: 'Udostępnij link',
+    shareTitle: 'Twilight Struggle: wspólna gra',
+    copied: 'Skopiowano link do pokoju',
+    joinLabel: 'Dołącz do innego pokoju',
+    join: 'Dołącz',
+    joined: (code: string) => `Dołączono do pokoju ${code}`,
+    badCode: 'Kod ma 5 znaków',
+    connected: 'Połączono',
+    offline: 'Brak połączenia: zmiany zostaną wysłane po powrocie',
+    loading: 'Wczytywanie gry, zmiany na razie zablokowane',
+    close: 'Zamknij',
+  },
+
   fourOps: {
     title: 'Karty 4 PO',
     add: (side: string) => `Dodaj kartę 4 PO: ${side}`,
