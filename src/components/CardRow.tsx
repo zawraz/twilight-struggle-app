@@ -9,7 +9,7 @@ import { SIDE_NAME_TEXT, SIDE_TEXT } from './tone'
 export const SWIPE_COMMIT_PX = 80
 /** Sideways movement that turns a press into a swipe (and vertical movement that cancels it). */
 export const SLOP_PX = 8
-/** How long a press must be held to offer restoring a played card. */
+/** How long a press must be held to offer restoring a played card, or to mark an available one as held. */
 export const LONG_PRESS_MS = 500
 
 interface CardRowProps {
@@ -17,6 +17,10 @@ interface CardRowProps {
   state: CardState
   /** A reshuffle showed the card must be in one hand or the other. */
   inHand: boolean
+  /** This player marked the card as held: on this device only. */
+  mine?: boolean
+  /** A long press on an available card marks it as held, or unmarks it. */
+  onMark?: () => void
   /** The row's action buttons are showing. */
   open: boolean
   onToggle: () => void
@@ -51,13 +55,16 @@ interface Gesture {
 
 /**
  * One checklist line. Tap an available card for remove / discard buttons; swipe it left to discard
- * or right to remove; long-press a discarded or removed card to restore it. Shuttle Diplomacy swipes
+ * or right to remove; long-press it to mark it as held in this player's hand, and a discarded or
+ * removed card to restore it. Shuttle Diplomacy swipes
  * right into play instead, and left from there to the discard pile.
  */
 export function CardRow({
   card,
   state,
   inHand,
+  mine = false,
+  onMark,
   open,
   onToggle,
   onClose,
@@ -90,12 +97,13 @@ export function CardRow({
     if (event.button !== 0 || pick) return
     gesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: 'press' }
     swallowClick.current = false
-    if (!live) {
+    const held = !live ? onToggle : state === 'available' ? onMark : undefined
+    if (held) {
       longPress.current = window.setTimeout(() => {
         gesture.current = null
         swallowClick.current = true
         navigator.vibrate?.(10)
-        onToggle()
+        held()
       }, LONG_PRESS_MS)
     }
   }
@@ -216,7 +224,11 @@ export function CardRow({
           ) : (
             <span className="grid size-4 shrink-0 place-items-center">
               <CardStateIcon state={state} />
-              {inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />}
+              {mine ? (
+                <Hand className="size-4 text-gold-text" aria-label={copy.cards.myHand} role="img" />
+              ) : (
+                inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />
+              )}
             </span>
           )}
           <span className={`flex min-w-0 flex-1 items-center gap-1 ${faded}`}>

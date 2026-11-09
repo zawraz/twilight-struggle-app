@@ -52,6 +52,8 @@ export const copy = {
     deck: 'Talia',
     deckCount: (n: number) => `Talia: ${cards(n)}`,
     inHand: 'Na ręce',
+    /** A card this player marked as held, with a long press; seen on this device only. */
+    myHand: 'Na mojej ręce',
     pickTitle: {
       43: 'Negocjacje SALT: karta do ręki',
       77: '„Nie pytajcie…”: odrzucone karty',

@@ -8,6 +8,7 @@ import { copy } from './copy'
 import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
 import { CARDS } from './lib/cards'
 import { at, discarded } from './test/cardStates'
+import { MY_HAND_KEY } from './lib/useMyHand'
 import { TOAST_MS } from './lib/useToast'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -26,6 +27,7 @@ const early = cardsInPlay(1).map((c) => c.id)
 const nameOf = (id: number) => CARDS.find((c) => c.id === id)!.name
 const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
 const inHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.inHand })
+const myHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.myHand })
 
 /** Opens the Karty tab as it first shows, on a saved game when given one. */
 async function open(saved?: CardsState) {
@@ -605,6 +607,49 @@ describe('Karty: filters and order', () => {
     expect(rows()[38]).toHaveTextContent('Kulminacja napięć w Azji')
     await user.click(playedLast)
     expect(rows()[1]).toHaveTextContent('Kulminacja napięć w Azji')
+  })
+})
+
+describe('Karty: my hand', () => {
+  it('marks an available card as held with a long press, and unmarks it with another', async () => {
+    await setup()
+    longPress('Interwencja ONZ')
+    expect(myHandIcon('Interwencja ONZ')).toBeInTheDocument()
+    // No buttons open: the press only marks.
+    expect(screen.queryByRole('button', { name: copy.cards.discard('Interwencja ONZ') })).not.toBeInTheDocument()
+
+    longPress('Interwencja ONZ')
+    expect(myHandIcon('Interwencja ONZ')).not.toBeInTheDocument()
+  })
+
+  it('keeps the marks on this device, out of the shared game', async () => {
+    await setup()
+    longPress('Interwencja ONZ')
+    expect(JSON.parse(localStorage.getItem(MY_HAND_KEY)!)).toEqual([idOf('Interwencja ONZ')])
+    const shared = JSON.parse(localStorage.getItem(CARDS_STORAGE_KEY)!) as CardsState
+    expect(shared.inHand).toEqual([])
+  })
+
+  it('shows the marked cards on the hand screen', async () => {
+    const user = await setup()
+    longPress('Interwencja ONZ')
+    await user.click(screen.getByRole('button', { name: copy.cards.showHand }))
+    expect(rows()).toHaveLength(1)
+    expect(rows()[0]).toHaveTextContent('Interwencja ONZ')
+  })
+
+  it('drops a card from the hand once it is played, and the whole hand on a new game', async () => {
+    const user = await setup()
+    longPress('Interwencja ONZ')
+    longPress('Nasser')
+    await discard(user, 'Interwencja ONZ')
+    expect(myHandIcon('Interwencja ONZ')).not.toBeInTheDocument()
+    expect(myHandIcon('Nasser')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.newGame }))
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
   })
 })
 

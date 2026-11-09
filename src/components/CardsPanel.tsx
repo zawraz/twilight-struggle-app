@@ -34,6 +34,7 @@ import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
 import type { PlayerId } from '../lib/players'
 import type { RoomAction } from '../lib/room'
 import { useCooldown } from '../lib/useCooldown'
+import { useMyHand } from '../lib/useMyHand'
 import type { Toast } from '../lib/useToast'
 import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
@@ -150,6 +151,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
   const pending = cards.pending
+  const myHand = useMyHand(cards)
   const pickable = pickableIds(cards)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
@@ -158,7 +160,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length
-  const hand = inPlay.filter((card) => isInHand(cards, card.id))
+  // The hand: the cards a reshuffle showed are held, and the ones this player marked.
+  const hand = inPlay.filter((card) => isInHand(cards, card.id) || myHand.has(card.id))
   // Once the last card leaves the hand there is nothing left to show: back to the whole list.
   const showHand = handView && hand.length > 0 && pending === null
   // A picker lists every card it can pick on one screen, wherever they lie.
@@ -541,6 +544,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
             card={card}
             state={cardState(cards, card.id)}
             inHand={isInHand(cards, card.id)}
+            mine={myHand.has(card.id)}
+            onMark={() => myHand.toggle(card.id)}
             open={openId === card.id}
             onToggle={() => setOpenId((id) => (id === card.id ? null : card.id))}
             onClose={() => setOpenId(null)}

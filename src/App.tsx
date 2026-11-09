@@ -15,6 +15,7 @@ import { canUndo } from './lib/room'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
 import { useRoom } from './lib/useRoom'
 import { useToast } from './lib/useToast'
+import { useWakeLock } from './lib/useWakeLock'
 
 // −5…+5 without 0, highest on top.
 export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
@@ -33,6 +34,7 @@ export default function App() {
   const { game, dispatch, cards, dispatchCards, moves, act, sync } = useRoom()
   const [tab, setTab] = useState<TabId>('log')
   const [toast, showToast, dismissToast] = useToast()
+  useWakeLock()
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
   const panel = (id: TabId) => ({
     role: 'tabpanel',
