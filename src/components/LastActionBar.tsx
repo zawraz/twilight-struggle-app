@@ -112,7 +112,7 @@ interface LastActionBarProps {
 export function LastActionBar({ last, undoable, onUndo }: LastActionBarProps) {
   const view = last && shown(last)
   return (
-    <section aria-label={copy.cards.lastAction} className="flex h-8 min-w-0 items-center gap-2 px-1 short-landscape:h-7">
+    <section aria-label={copy.cards.lastAction} className="flex h-6 min-w-0 items-center gap-2 short-landscape:h-5">
       <h2 className="shrink-0 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text">
         {copy.cards.lastAction}:
       </h2>
@@ -141,9 +141,9 @@ export function LastActionBar({ last, undoable, onUndo }: LastActionBarProps) {
           type="button"
           onClick={onUndo}
           aria-label={copy.cards.undoLast(describeLast(last))}
-          className="flex h-6 shrink-0 items-center gap-1 rounded-counter border-2 border-gold px-1.5 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text"
+          className="flex h-5 shrink-0 items-center gap-1 rounded-counter border border-gold px-1.5 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text"
         >
-          <Undo2 className="size-3.5" aria-hidden="true" />
+          <Undo2 className="size-3" aria-hidden="true" />
           {copy.undo}
         </button>
       )}

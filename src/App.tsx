@@ -46,7 +46,7 @@ export default function App() {
       <header className="flex min-w-0 flex-col gap-1.5 short-landscape:gap-1">
         {/* The toast lies over the title row and the Iron Curtain, leaving the last action in view. */}
         <div className="relative flex flex-col gap-1.5 short-landscape:gap-1">
-          <div className="flex items-center gap-2 px-1 max-[390px]:gap-1.5">
+          <div className="flex items-center gap-2 max-[390px]:gap-1.5">
             <GameAction
               ended={game.ended}
               // Ending shows the results in the log; a new game starts at the deck.
@@ -61,13 +61,12 @@ export default function App() {
                 setTab('cards')
               }}
             />
-            <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base short-landscape:text-lg">
+            <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base short-landscape:text-lg">
               {copy.appTitle}
             </h1>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              {sync && <RoomButton sync={sync} notify={showToast} />}
-              <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" />
-            </div>
+            {sync && <RoomButton sync={sync} notify={showToast} />}
+            {/* The view tabs take the rest of the row: the most tapped buttons, made the widest. */}
+            <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" stretch className="min-w-24 flex-1" />
           </div>
           {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
           <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">

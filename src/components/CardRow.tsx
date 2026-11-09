@@ -209,7 +209,7 @@ export function CardRow({
         >
           {pick ? (
             <span
-              className={`grid size-4 shrink-0 place-items-center rounded-sm border-2 ${pick.checked ? 'border-gold bg-gold text-on-gold' : 'border-line-strong'}`}
+              className={`grid size-4 shrink-0 place-items-center rounded-counter border-2 ${pick.checked ? 'border-gold bg-gold text-on-gold' : 'border-line-strong'}`}
             >
               {pick.checked && <Check className="size-3" strokeWidth={3} aria-hidden="true" />}
             </span>
