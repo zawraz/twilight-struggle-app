@@ -651,6 +651,16 @@ describe('Karty: my hand', () => {
     await user.click(screen.getByRole('button', { name: copy.newGame }))
     expect(myHandIcon('Nasser')).not.toBeInTheDocument()
   })
+
+  it('clears the hand on a new game even when no card was played', async () => {
+    const user = await setup()
+    longPress('Nasser')
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.newGame }))
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(MY_HAND_KEY)!)).toEqual([])
+  })
 })
 
 describe('Karty: last action', () => {

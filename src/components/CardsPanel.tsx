@@ -34,7 +34,7 @@ import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
 import type { PlayerId } from '../lib/players'
 import type { RoomAction } from '../lib/room'
 import { useCooldown } from '../lib/useCooldown'
-import { useMyHand } from '../lib/useMyHand'
+import type { MyHand } from '../lib/useMyHand'
 import type { Toast } from '../lib/useToast'
 import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
@@ -115,6 +115,8 @@ interface CardsPanelProps {
   onToastStale: () => void
   /** Whether a 4 Ops card asks who played it, for the Dziennik's count; not once the game has ended. */
   countsFourOps: boolean
+  /** The cards this player marked as held, kept on this device. */
+  myHand: MyHand
 }
 
 interface Play {
@@ -124,7 +126,7 @@ interface Play {
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsFourOps }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsFourOps, myHand }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   // A 4 Ops card waiting to hear who played it.
   const [asking, setAsking] = useState<Play | null>(null)
@@ -151,7 +153,6 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
   const pending = cards.pending
-  const myHand = useMyHand(cards)
   const pickable = pickableIds(cards)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.

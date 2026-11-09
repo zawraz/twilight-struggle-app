@@ -13,6 +13,7 @@ import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { canUndo } from './lib/room'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
+import { useMyHand } from './lib/useMyHand'
 import { useRoom } from './lib/useRoom'
 import { useToast } from './lib/useToast'
 import { useWakeLock } from './lib/useWakeLock'
@@ -34,6 +35,8 @@ export default function App() {
   const { game, dispatch, cards, dispatchCards, moves, act, sync } = useRoom()
   const [tab, setTab] = useState<TabId>('log')
   const [toast, showToast, dismissToast] = useToast()
+  // Kept here, not in the Karty tab, so New Game can clear it.
+  const myHand = useMyHand(cards)
   useWakeLock()
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
   const panel = (id: TabId) => ({
@@ -59,6 +62,7 @@ export default function App() {
               onNewGame={() => {
                 dispatch({ type: 'newGame' })
                 dispatchCards({ type: 'newGame' })
+                myHand.clear()
                 dismissToast()
                 setTab('cards')
               }}
@@ -128,6 +132,7 @@ export default function App() {
             notify={showToast}
             onToastStale={dismissToast}
             countsFourOps={!game.ended}
+            myHand={myHand}
           />
         </div>
       </main>

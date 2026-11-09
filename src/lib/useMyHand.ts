@@ -33,11 +33,14 @@ export interface MyHand {
   has: (id: number) => boolean
   /** Marks an available card as held, or unmarks it. */
   toggle: (id: number) => void
+  /** Drops every mark: what New Game does on this device. */
+  clear: () => void
 }
 
 /**
  * This player's marked cards. A card leaves the hand once it is played, from either device,
- * and the whole hand goes when a new game starts.
+ * and the whole hand goes when a new game starts: pressed here, cleared outright; started on
+ * another device, seen as the deck going back to fresh.
  */
 export function useMyHand(cards: CardsState): MyHand {
   const [ids, setIds] = useState(loadMyHand)
@@ -61,5 +64,6 @@ export function useMyHand(cards: CardsState): MyHand {
       if (cardState(cards, id) !== 'available') return
       setIds((held) => (held.includes(id) ? held.filter((other) => other !== id) : [...held, id]))
     },
+    clear: () => setIds((held) => (held.length === 0 ? held : [])),
   }
 }
