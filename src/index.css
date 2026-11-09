@@ -185,3 +185,8 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Netlify's free plan injects a "Powered by Netlify" badge (an iframe it styles inline) over the app's bottom edge. */
+#nl-badge-frame {
+  display: none !important;
+}
