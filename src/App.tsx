@@ -44,10 +44,10 @@ export default function App() {
   })
 
   return (
-    <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
-      <header className="flex min-w-0 flex-col gap-1.5 short-landscape:gap-1">
+    <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))]">
+      <header className="flex min-w-0 flex-col gap-1.5">
         {/* The toast lies over the title row and the Iron Curtain, leaving the last action in view. */}
-        <div className="relative flex flex-col gap-1.5 short-landscape:gap-1">
+        <div className="relative flex flex-col gap-1.5">
           <div className="flex items-center gap-2 max-[390px]:gap-1.5">
             <GameAction
               ended={game.ended}
@@ -63,7 +63,7 @@ export default function App() {
                 setTab('cards')
               }}
             />
-            <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base short-landscape:text-lg">
+            <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base">
               {copy.appTitle}
             </h1>
             {sync && <RoomButton sync={sync} notify={showToast} />}
@@ -71,7 +71,7 @@ export default function App() {
             <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" stretch className="min-w-24 flex-1" />
           </div>
           {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
-          <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">
+          <div aria-hidden="true" className="flex h-1 gap-1">
             <span className="flex-1 rounded-counter bg-ussr" />
             <span className="flex-1 rounded-counter bg-us" />
           </div>
@@ -83,9 +83,9 @@ export default function App() {
       <main className="grid min-h-0">
         <div
           {...panel('log')}
-          className="grid min-h-0 grid-rows-3 gap-2 short-landscape:grid-cols-2 short-landscape:grid-rows-[auto_1fr] short-landscape:gap-1"
+          className="grid min-h-0 grid-rows-3 gap-2"
         >
-          <Section title={copy.fourOps.title} className="short-landscape:col-span-2" balanced>
+          <Section title={copy.fourOps.title} balanced>
             {PLAYERS.map((player) => (
               <OpsCounter
                 key={player.id}

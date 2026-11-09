@@ -16,7 +16,7 @@ const SIZE = {
   tall: { height: 'h-12.5', width: 'w-18', border: 'border-y-2 first:border-l-2 last:border-r-2' },
   /** The header's views, tapped all game long: as tall as the header's other buttons. */
   header: {
-    height: 'h-12 short-landscape:h-10',
+    height: 'h-12',
     width: 'w-18',
     border: 'border-y-2 first:border-l-2 last:border-r-2',
   },

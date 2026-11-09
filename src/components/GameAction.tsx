@@ -9,7 +9,7 @@ interface GameActionProps {
   onNewGame: () => void
 }
 
-const BUTTON = 'grid h-12 w-13 shrink-0 max-[390px]:w-11 short-landscape:size-10 place-items-center rounded-counter border-2 transition-colors'
+const BUTTON = 'grid h-12 w-13 shrink-0 max-[390px]:w-11 place-items-center rounded-counter border-2 transition-colors'
 
 /**
  * The header's one action. While the game runs it is a quiet stop to end it, turning red only

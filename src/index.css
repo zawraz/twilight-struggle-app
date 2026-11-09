@@ -1,10 +1,8 @@
 @import 'tailwindcss';
 
-/* Phones held sideways: too short to stack three sections, so the two roll sections sit side by side. */
-@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
-/* Short phones (and all landscape phones): the roll trackers tighten their spacing. */
+/* Short phones: the roll trackers tighten their spacing. */
 @custom-variant short (@media (max-height: 700px));
-/* Tiny screens (old small phones, any phone in landscape): sections tighten their padding. */
+/* Tiny screens (old small phones): sections tighten their padding. */
 @custom-variant tiny (@media (max-height: 600px));
 
 /* Twilight Struggle App design system tokens.

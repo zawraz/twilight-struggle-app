@@ -57,7 +57,7 @@ export function RoomButton({ sync, notify }: RoomButtonProps) {
         title={copy.room.open}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className={`relative grid h-12 w-13 shrink-0 place-items-center max-[390px]:w-11 rounded-counter border-2 transition-colors short-landscape:size-10 ${
+        className={`relative grid h-12 w-13 shrink-0 place-items-center max-[390px]:w-11 rounded-counter border-2 transition-colors ${
           open ? 'border-gold bg-gold text-on-gold' : 'border-line bg-surface-sunken text-ink-muted'
         }`}
       >

@@ -19,6 +19,8 @@ export default defineConfig({
         theme_color: '#0f151c',
         background_color: '#0f151c',
         display: 'standalone',
+        // One layout, held upright: an installed app doesn't turn with the phone.
+        orientation: 'portrait',
         start_url: '/',
         icons: [
           { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },

@@ -32,7 +32,7 @@ export function Section({
         {title}
       </h2>
       <div className={`grid min-h-0 flex-1 ${columnsClassName} gap-3 ${bodyClassName}`}>{children}</div>
-      {balanced && <div aria-hidden="true" className={`h-[1lh] shrink-0 short-landscape:hidden ${TITLE}`} />}
+      {balanced && <div aria-hidden="true" className={`h-[1lh] shrink-0 ${TITLE}`} />}
     </section>
   )
 }

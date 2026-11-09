@@ -31,14 +31,14 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
   const tone = TONE[player.id]
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1 short-landscape:flex-row short-landscape:gap-3">
+    <div className="flex flex-col items-center justify-center gap-1">
       <span className={`font-stencil text-base leading-none font-extrabold uppercase tracking-[0.04em] ${tone.text}`}>
         {player.label}
       </span>
       {/* As wide as a roll section's wheel and button (gap included), so the buttons line up with theirs.
           Once the game has ended the count is final: the buttons go, and it stands alone in the middle. */}
       <div
-        className={`flex h-(--wheel-item) w-[calc(var(--wheel-width)*2_+_var(--spacing)*1.5)] items-center gap-2 min-[360px]:w-[calc(var(--wheel-width)*2_+_var(--spacing)*3)] short-landscape:h-10 short-landscape:w-auto short-landscape:flex-1 ${
+        className={`flex h-(--wheel-item) w-[calc(var(--wheel-width)*2_+_var(--spacing)*1.5)] items-center gap-2 min-[360px]:w-[calc(var(--wheel-width)*2_+_var(--spacing)*3)] ${
           locked ? 'justify-center' : 'justify-between'
         }`}
       >
@@ -51,7 +51,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
               data-armed={minus.armed}
               disabled={count === 0}
               onClick={handleMinus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${tone.border} ${
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${
                 minus.armed ? tone.soft : tone.fill
               }`}
             >
@@ -75,7 +75,7 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
               aria-label={copy.fourOps.add(player.label)}
               data-armed={plus.armed}
               onClick={handlePlus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter short-landscape:size-10 border-2 transition-colors disabled:opacity-40 ${tone.border} ${
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${
                 plus.armed ? tone.soft : tone.fill
               }`}
             >
