@@ -1,12 +1,19 @@
 import { useConvexConnectionState, useMutation, useQuery } from 'convex/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { api } from '../../convex/_generated/api'
 import { loadCards, saveCards, type CardsAction, type CardsState } from './cardGame'
 import { convex } from './convex'
 import { loadGame, saveGame, type GameAction, type GameState } from './game'
-import { makeRoomCode, normalizeRoomCode, roomReducer, type RoomAction, type RoomState } from './room'
-import { useCards } from './useCards'
-import { useGame } from './useGame'
+import {
+  loadMoves,
+  makeRoomCode,
+  normalizeRoomCode,
+  roomReducer,
+  saveMoves,
+  type Move,
+  type RoomAction,
+  type RoomState,
+} from './room'
 
 export interface RoomSync {
   /** The room this device plays in; another device joins it with this code or its link. */
@@ -24,6 +31,10 @@ export interface Room {
   dispatch: (action: GameAction) => void
   cards: CardsState
   dispatchCards: (action: CardsAction) => void
+  /** The last moves, oldest first, with what taking them back needs. */
+  moves: Move[]
+  /** Plays a card, closes an event's picker or takes the last move back. */
+  act: (action: RoomAction) => void
   /** Null when the app runs without a sync server: the game stays on this device. */
   sync: RoomSync | null
 }
@@ -71,10 +82,19 @@ function startingCode(): string {
   return code
 }
 
+/** The game kept on this device: the whole game without a sync server, the last one seen with one. */
+const loadRoom = (): RoomState => ({ game: loadGame(), cards: loadCards(), moves: loadMoves() })
+
+function saveRoom(state: RoomState): void {
+  saveGame(state.game)
+  saveCards(state.cards)
+  saveMoves(state.moves)
+}
+
 function useSyncedRoom(): Room {
   const [code, setCode] = useState(startingCode)
   // The last game seen, kept on the device: shown at once on start and while a room loads.
-  const [stored] = useState<RoomState>(() => ({ game: loadGame(), cards: loadCards() }))
+  const [stored] = useState<RoomState>(loadRoom)
   const lastSeen = useRef(stored)
   const remote = useQuery(api.rooms.get, { code })
   const { isWebSocketConnected } = useConvexConnectionState()
@@ -88,8 +108,7 @@ function useSyncedRoom(): Room {
   if (remote) lastSeen.current = remote
   useEffect(() => {
     if (!remote) return
-    saveGame(remote.game)
-    saveCards(remote.cards)
+    saveRoom(remote)
   }, [remote])
 
   // A room nobody has opened yet (a new code, or a code typed in) starts from the game on screen.
@@ -115,6 +134,8 @@ function useSyncedRoom(): Room {
     dispatch: (action) => dispatchRoom({ target: 'game', action }),
     cards: state.cards,
     dispatchCards: (action) => dispatchRoom({ target: 'cards', action }),
+    moves: state.moves,
+    act: dispatchRoom,
     sync: {
       code,
       live,
@@ -132,9 +153,17 @@ function useSyncedRoom(): Room {
 
 /** Without a sync server: the game lives in this device's storage, as before rooms. */
 function useLocalRoom(): Room {
-  const [game, dispatch] = useGame()
-  const [cards, dispatchCards] = useCards()
-  return { game, dispatch, cards, dispatchCards, sync: null }
+  const [state, act] = useReducer(roomReducer, undefined, loadRoom)
+  useEffect(() => saveRoom(state), [state])
+  return {
+    game: state.game,
+    dispatch: (action) => act({ target: 'game', action }),
+    cards: state.cards,
+    dispatchCards: (action) => act({ target: 'cards', action }),
+    moves: state.moves,
+    act,
+    sync: null,
+  }
 }
 
 /** The game on screen and how to change it: shared through a room when the app has a sync server. */

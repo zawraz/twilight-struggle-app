@@ -9,7 +9,7 @@ interface GameActionProps {
   onNewGame: () => void
 }
 
-const BUTTON = 'grid size-10 shrink-0 place-items-center rounded-counter border-2 transition-colors'
+const BUTTON = 'grid h-12 w-13 shrink-0 max-[390px]:w-11 short-landscape:size-10 place-items-center rounded-counter border-2 transition-colors'
 
 /**
  * The header's one action. While the game runs it is a quiet stop to end it, turning red only
@@ -19,7 +19,7 @@ const BUTTON = 'grid size-10 shrink-0 place-items-center rounded-counter border-
 export function GameAction({ ended, onEnd, onNewGame }: GameActionProps) {
   return ended ? (
     <button type="button" aria-label={copy.newGame} onClick={onNewGame} className={`${BUTTON} border-go bg-go text-surface`}>
-      <Play className="size-5 fill-current" aria-hidden="true" />
+      <Play className="size-6 fill-current" aria-hidden="true" />
     </button>
   ) : (
     <EndButton onEnd={onEnd} />
@@ -38,7 +38,7 @@ function EndButton({ onEnd }: { onEnd: () => void }) {
         onClick={tap}
         className={`${BUTTON} ${armed ? 'border-danger bg-danger text-surface' : 'border-line-strong text-ink-muted'}`}
       >
-        <Square className="size-4 fill-current" aria-hidden="true" />
+        <Square className="size-5 fill-current" aria-hidden="true" />
       </button>
     </div>
   )

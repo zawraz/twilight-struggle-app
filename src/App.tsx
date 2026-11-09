@@ -2,6 +2,7 @@ import { NotebookText, PlayingCardsFan } from 'lucide-react'
 import { useState } from 'react'
 import { CardsPanel } from './components/CardsPanel'
 import { GameAction } from './components/GameAction'
+import { LastActionBar } from './components/LastActionBar'
 import { OpsCounter } from './components/OpsCounter'
 import { RoomButton } from './components/RoomButton'
 import { RollTracker } from './components/RollTracker'
@@ -10,6 +11,7 @@ import { TabBar } from './components/TabBar'
 import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
+import { canUndo } from './lib/room'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
 import { useRoom } from './lib/useRoom'
 import { useToast } from './lib/useToast'
@@ -20,15 +22,15 @@ export const SUCCESS_VALUES = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5] as const
 export const DIE_VALUES = [6, 5, 4, 3, 2, 1] as const
 
 const TABS = [
-  { id: 'cards', label: copy.tabs.cards, icon: <PlayingCardsFan className="size-5" aria-hidden="true" /> },
-  { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-5" aria-hidden="true" /> },
+  { id: 'cards', label: copy.tabs.cards, icon: <PlayingCardsFan className="size-6" aria-hidden="true" /> },
+  { id: 'log', label: copy.tabs.log, icon: <NotebookText className="size-6" aria-hidden="true" /> },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 const TAB_ID = 'view'
 
 export default function App() {
   // Shared with every device in the same room when the app has a sync server.
-  const { game, dispatch, cards, dispatchCards, sync } = useRoom()
+  const { game, dispatch, cards, dispatchCards, moves, act, sync } = useRoom()
   const [tab, setTab] = useState<TabId>('log')
   const [toast, showToast, dismissToast] = useToast()
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
@@ -40,37 +42,41 @@ export default function App() {
   })
 
   return (
-    <div className="mx-auto grid h-full max-w-3xl grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
-      <header className="relative flex flex-col gap-1.5 short-landscape:gap-1">
-        <div className="flex items-center gap-2 px-1">
-          <GameAction
-            ended={game.ended}
-            // Ending shows the results in the log; a new game starts at the deck.
-            onEnd={() => {
-              dispatch({ type: 'end' })
-              setTab('log')
-            }}
-            onNewGame={() => {
-              dispatch({ type: 'newGame' })
-              dispatchCards({ type: 'newGame' })
-              dismissToast()
-              setTab('cards')
-            }}
-          />
-          <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[380px]:text-xl short-landscape:text-lg">
-            {copy.appTitle}
-          </h1>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {sync && <RoomButton sync={sync} notify={showToast} />}
-            <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} />
+    <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))] short-landscape:max-w-none short-landscape:gap-1">
+      <header className="flex min-w-0 flex-col gap-1.5 short-landscape:gap-1">
+        {/* The toast lies over the title row and the Iron Curtain, leaving the last action in view. */}
+        <div className="relative flex flex-col gap-1.5 short-landscape:gap-1">
+          <div className="flex items-center gap-2 px-1 max-[390px]:gap-1.5">
+            <GameAction
+              ended={game.ended}
+              // Ending shows the results in the log; a new game starts at the deck.
+              onEnd={() => {
+                dispatch({ type: 'end' })
+                setTab('log')
+              }}
+              onNewGame={() => {
+                dispatch({ type: 'newGame' })
+                dispatchCards({ type: 'newGame' })
+                dismissToast()
+                setTab('cards')
+              }}
+            />
+            <h1 className="min-w-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base short-landscape:text-lg">
+              {copy.appTitle}
+            </h1>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {sync && <RoomButton sync={sync} notify={showToast} />}
+              <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" />
+            </div>
           </div>
+          {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
+          <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">
+            <span className="flex-1 rounded-counter bg-ussr" />
+            <span className="flex-1 rounded-counter bg-us" />
+          </div>
+          <ToastBar toast={toast} onDismiss={dismissToast} />
         </div>
-        {/* The Iron Curtain: USSR and US halves with a gap of ground between them. */}
-        <div aria-hidden="true" className="flex h-1 gap-1 short-landscape:hidden">
-          <span className="flex-1 rounded-counter bg-ussr" />
-          <span className="flex-1 rounded-counter bg-us" />
-        </div>
-        <ToastBar toast={toast} onDismiss={dismissToast} />
+        <LastActionBar last={moves.at(-1) ?? null} undoable={canUndo({ game, moves })} onUndo={() => act({ target: 'undoLast' })} />
       </header>
 
       <main className="grid min-h-0">
@@ -117,13 +123,10 @@ export default function App() {
           <CardsPanel
             cards={cards}
             dispatch={dispatchCards}
+            act={act}
             notify={showToast}
             onToastStale={dismissToast}
-            onFourOps={
-              game.ended
-                ? null
-                : (player, by) => dispatch({ type: by > 0 ? 'incrementFourOps' : 'decrementFourOps', player })
-            }
+            countsFourOps={!game.ended}
           />
         </div>
       </main>

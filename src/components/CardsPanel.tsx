@@ -14,7 +14,6 @@ import {
 import { useEffect, useRef, useState, type Dispatch, type PointerEvent, type ReactNode } from 'react'
 import { copy } from '../copy'
 import {
-  ASK_NOT,
   CARD_STATES,
   cardsReducer,
   cardsInPlay,
@@ -26,14 +25,14 @@ import {
   LAST_TURN,
   pickableIds,
   SHUTTLE_DIPLOMACY,
-  TEHRAN,
   type CardsAction,
   type CardsState,
   type CardState,
 } from '../lib/cardGame'
 import { CARD_SIDES, PHASES, phaseStarted, type CardSide } from '../lib/cards'
 import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
-import { PLAYERS, type PlayerId } from '../lib/players'
+import type { PlayerId } from '../lib/players'
+import type { RoomAction } from '../lib/room'
 import { useCooldown } from '../lib/useCooldown'
 import type { Toast } from '../lib/useToast'
 import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
@@ -107,12 +106,14 @@ const HAND_TAB = { id: 'hand', label: copy.cards.handScreen, icon: <Hand classNa
 interface CardsPanelProps {
   cards: CardsState
   dispatch: Dispatch<CardsAction>
-  /** Shows what just happened over the header, with a way to take it back. */
+  /** Plays a card or closes an event's picker; the room remembers it as the last action. */
+  act: (action: RoomAction) => void
+  /** Shows a turn's reshuffle over the header, with a way to take it back. */
   notify: (toast: Toast) => void
   /** A turn change or a played event makes the last toast's undo stale. */
   onToastStale: () => void
-  /** Moves a side's Dziennik count of 4 Ops cards; null once the game has ended and the count is final. */
-  onFourOps: ((player: PlayerId, by: 1 | -1) => void) | null
+  /** Whether a 4 Ops card asks who played it, for the Dziennik's count; not once the game has ended. */
+  countsFourOps: boolean
 }
 
 interface Play {
@@ -122,7 +123,7 @@ interface Play {
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsFourOps }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   // A 4 Ops card waiting to hear who played it.
   const [asking, setAsking] = useState<Play | null>(null)
@@ -148,8 +149,6 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
-  // The game from just before the event card was played: what its toast's undo puts back.
-  const eventStart = useRef<CardsState | null>(null)
   const pending = cards.pending
   const pickable = pickableIds(cards)
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
@@ -230,39 +229,26 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
     // Once a card is played on the new turn, the turn is under way.
     cancelTurnCooldown()
     const card = inPlay.find((c) => c.id === id)
-    if (state !== 'available' && card?.value === 4 && onFourOps) {
+    if (state !== 'available' && card?.value === 4 && countsFourOps) {
       setAsking({ id, name, state })
       return
     }
-    play(id, name, state)
+    play(id, state)
   }
 
   function playedBy(player: PlayerId) {
-    const { id, name, state } = asking!
+    const { id, state } = asking!
     setAsking(null)
-    onFourOps!(player, 1)
-    play(id, name, state, player)
+    play(id, state, player)
   }
 
-  function play(id: number, name: string, state: CardState, by?: PlayerId) {
+  function play(id: number, state: CardState, by: PlayerId | null = null) {
     if (cardsReducer(cards, { type: 'setCardState', id, state }).pending !== null) {
-      // An event card: its toast comes once its picker is done.
-      eventStart.current = cards
+      // An event card: its picker opens.
       setPicks([])
       onToastStale()
-      dispatch({ type: 'setCardState', id, state })
-      return
     }
-    const text = copy.cards.changed(name, copy.cards.state[state])
-    notify({
-      text: by ? copy.fourOps.playedBy(text, PLAYERS.find((p) => p.id === by)!.label) : text,
-      // The whole game back, so a card in hand gets its mark back too; a 4 Ops card takes its count with it.
-      undo: () => {
-        dispatch({ type: 'restore', state: cards })
-        if (by) onFourOps?.(by, -1)
-      },
-    })
-    dispatch({ type: 'setCardState', id, state })
+    act({ target: 'play', id, state, by })
   }
 
   function togglePick(id: number) {
@@ -272,39 +258,8 @@ export function CardsPanel({ cards, dispatch, notify, onToastStale, onFourOps }:
   }
 
   function confirmPicks() {
-    const start = eventStart.current
-    const n = picks.length
-    let text: string
-    if (pending === TEHRAN) {
-      text = copy.cards.tehran(n, cards.eventReturned.length)
-    } else if (pending === ASK_NOT) {
-      text = cards.deck < n ? copy.cards.drewReshuffled(n, discardedIds(cards).length + n) : copy.cards.drewWithout(n)
-    } else {
-      const taken = inPlay.find((card) => card.id === picks[0])
-      text = taken ? copy.cards.toHand(taken.name) : copy.cards.nothingTaken
-    }
-    // Ask Not's discards come from the US hand: each 4 Ops card among them counts as one the US played.
-    const usFourOps =
-      pending === ASK_NOT && onFourOps ? picks.filter((id) => inPlay.find((card) => card.id === id)?.value === 4).length : 0
-    const moveUsFourOps = (by: 1 | -1) => {
-      for (let i = 0; i < usFourOps; i++) onFourOps?.('us', by)
-    }
-    dispatch({ type: 'resolveEvent', picked: picks })
-    moveUsFourOps(1)
+    act({ target: 'resolve', picked: picks })
     setPicks([])
-    eventStart.current = null
-    // After a reload there is no snapshot to go back to.
-    notify(
-      start
-        ? {
-            text,
-            undo: () => {
-              dispatch({ type: 'restore', state: start })
-              moveUsFourOps(-1)
-            },
-          }
-        : { text },
-    )
   }
 
   /** Opens a screen, sliding it in from its tab's side: from `from` px off, the list's edge by default. */
