@@ -18,13 +18,27 @@ export const SALT = 43
 export const ASK_NOT = 77
 export const TEHRAN = 108
 export const SHUTTLE_DIPLOMACY = 73
+export const CIA_CREATED = 26
+export const LONE_GUNMAN = 62
+export const ALDRICH_AMES = 98
 /** Played as an event, the card stays in play rather than going to the discard pile. */
 export const staysInPlay = (id: number): boolean => id === SHUTTLE_DIPLOMACY
+/** Events that show one player the other's hand: its picker marks the cards seen there as in hand. */
+export type RevealCard = typeof CIA_CREATED | typeof LONE_GUNMAN | typeof ALDRICH_AMES
+const REVEAL_CARDS: readonly number[] = [CIA_CREATED, LONE_GUNMAN, ALDRICH_AMES]
+export const isReveal = (id: number | null): id is RevealCard => id !== null && REVEAL_CARDS.includes(id)
 /** Cards whose event the app follows up with a picker. */
-export type EventCard = typeof SALT | typeof ASK_NOT | typeof TEHRAN
-const EVENT_CARDS: readonly number[] = [SALT, ASK_NOT, TEHRAN]
-/** How many cards each event's picker takes at most. */
-export const EVENT_PICKS: Record<EventCard, number> = { [SALT]: 1, [ASK_NOT]: 8, [TEHRAN]: 5 }
+export type EventCard = typeof SALT | typeof ASK_NOT | typeof TEHRAN | RevealCard
+export const EVENT_CARDS: readonly number[] = [SALT, ASK_NOT, TEHRAN, ...REVEAL_CARDS]
+/** How many cards each event's picker takes at most; a revealed hand holds 9 at most. */
+export const EVENT_PICKS: Record<EventCard, number> = {
+  [SALT]: 1,
+  [ASK_NOT]: 8,
+  [TEHRAN]: 5,
+  [CIA_CREATED]: 9,
+  [LONE_GUNMAN]: 9,
+  [ALDRICH_AMES]: 9,
+}
 /** Tehran draws 5: a deck this small is reshuffled first. */
 const TEHRAN_DRAW = 5
 
@@ -127,9 +141,11 @@ const valueOf = (id: number) => CARDS.find((card) => card.id === id)?.value ?? 0
 
 /**
  * What the waiting event's picker may tick: Tehran's discards come from the deck, so not cards
- * known to be in hand; Ask Not discards from the US hand; SALT takes a non-scoring discard.
+ * known to be in hand; Ask Not discards from the US hand; SALT takes a non-scoring discard; a
+ * revealed hand shows available cards, less those already known to be in hand.
  */
 export function pickableIds(state: CardsState): number[] {
+  if (isReveal(state.pending)) return availableIds(state).filter((id) => !isInHand(state, id))
   switch (state.pending) {
     case TEHRAN:
       return availableIds(state).filter((id) => !isInHand(state, id))
@@ -177,7 +193,8 @@ function resolveEvent(state: CardsState, picked: readonly number[]): CardsState 
       return { ...after, inHand: [...after.inHand, ...picks] }
     }
   }
-  return done
+  // A revealed hand: what was seen there is in hand.
+  return { ...done, inHand: [...done.inHand, ...picks] }
 }
 
 export function cardsReducer(state: CardsState, action: CardsAction): CardsState {

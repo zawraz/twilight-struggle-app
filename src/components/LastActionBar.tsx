@@ -1,7 +1,7 @@
 import { ChevronRight, Crosshair, Dices, Layers, RotateCcw, Undo2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { copy } from '../copy'
-import { ASK_NOT, TEHRAN } from '../lib/cardGame'
+import { ASK_NOT, isReveal, TEHRAN } from '../lib/cardGame'
 import { CARDS } from '../lib/cards'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import type { Move } from '../lib/room'
@@ -19,6 +19,7 @@ function eventDetail(last: Extract<Move, { type: 'event' }>): string {
   const n = last.picked.length
   if (last.id === TEHRAN) return copy.cards.tehran(n, last.back)
   if (last.id === ASK_NOT) return last.back > 0 ? copy.cards.drewReshuffled(n, last.back) : copy.cards.drewWithout(n)
+  if (isReveal(last.id)) return copy.cards.seenInHand(n)
   return n > 0 ? copy.cards.toHand(nameOf(last.picked[0])) : copy.cards.nothingTaken
 }
 

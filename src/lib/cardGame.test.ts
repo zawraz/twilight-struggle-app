@@ -7,8 +7,11 @@ import {
   loadCards,
   newCards,
   saveCards,
+  ALDRICH_AMES,
   ASK_NOT,
   availableIds,
+  CIA_CREATED,
+  LONE_GUNMAN,
   isInHand,
   pickableIds,
   SALT,
@@ -261,6 +264,21 @@ describe('card events', () => {
     expect(cardState(s, BLOCKADE)).toBe('available')
     expect(isInHand(s, BLOCKADE)).toBe(true)
     expect(cardState(s, NASSER)).toBe('discarded')
+    expect(s.deck).toBe(20)
+  })
+
+  it.each([CIA_CREATED, LONE_GUNMAN, ALDRICH_AMES])('card %i shows the other hand: the picks go in hand, the deck stays', (event) => {
+    const before = run([remove(event)], at({ turn: 8, deck: 20, inHand: [BLOCKADE], states: discarded([NASSER]) }))
+    expect(before.pending).toBe(event)
+    const pickable = pickableIds(before)
+    expect(pickable).toContain(ARMS_RACE)
+    expect(pickable).not.toContain(BLOCKADE)
+    expect(pickable).not.toContain(NASSER)
+    expect(pickable).not.toContain(event)
+    const s = cardsReducer(before, resolve(ARMS_RACE, UN_INTERVENTION, NASSER))
+    expect(s.pending).toBeNull()
+    expect(s.inHand).toEqual([BLOCKADE, ARMS_RACE, UN_INTERVENTION])
+    expect(cardState(s, ARMS_RACE)).toBe('available')
     expect(s.deck).toBe(20)
   })
 

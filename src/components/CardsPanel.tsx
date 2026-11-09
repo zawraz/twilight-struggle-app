@@ -21,6 +21,7 @@ import {
   discardedIds,
   entersWithReshuffle,
   EVENT_PICKS,
+  isReveal,
   isInHand,
   LAST_TURN,
   pickableIds,
@@ -153,7 +154,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   // Right after a new turn its button takes the turn back for a while.
   const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
   const pending = cards.pending
-  const pickable = pickableIds(cards)
+  // A revealed hand is the other player's: the cards this player holds can't be in it.
+  const pickable = pickableIds(cards).filter((id) => !(isReveal(pending) && myHand.has(id)))
   // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
   // Each checklist section is already by value, so a single phase reads exactly as on paper.
   const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)

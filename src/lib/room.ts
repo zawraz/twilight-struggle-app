@@ -2,13 +2,13 @@ import {
   ASK_NOT,
   cardsReducer,
   discardedIds,
+  EVENT_CARDS,
   EVENT_PICKS,
   FIRST_TURN,
   isCardsState,
   LAST_TURN,
   newCards,
   pickableIds,
-  SALT,
   TEHRAN,
   type CardsAction,
   type CardsState,
@@ -245,7 +245,6 @@ export function roomReducer(state: RoomState, action: RoomAction): RoomState {
 
 const KNOWN_IDS = new Set(CARDS.map((card) => card.id))
 const STATES: readonly unknown[] = ['available', 'in_play', 'discarded', 'removed'] satisfies CardState[]
-const EVENTS: readonly unknown[] = [SALT, ASK_NOT, TEHRAN]
 const isPlayerOrNull = (v: unknown) => v === null || v === 'ussr' || v === 'us'
 const isCount = (v: unknown) => Number.isInteger(v) && (v as number) >= 0
 
@@ -266,7 +265,7 @@ export function isMove(value: unknown): value is Move {
   if (a.type === 'card') return KNOWN_IDS.has(a.id as number) && STATES.includes(a.state)
   if (a.type === 'event') {
     return (
-      EVENTS.includes(a.id) &&
+      EVENT_CARDS.includes(a.id as number) &&
       Array.isArray(a.picked) &&
       a.picked.every((id) => KNOWN_IDS.has(id)) &&
       isCount(a.back) &&

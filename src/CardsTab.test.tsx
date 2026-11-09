@@ -877,6 +877,27 @@ describe('Karty: event picker', () => {
     expect(deck(20)).toBeInTheDocument()
   })
 
+  it('CIA marks the cards seen in the other hand, leaving out this player’s own', async () => {
+    const CIA = 'Utworzenie CIA'
+    const user = await setup()
+    longPress('Nasser')
+    await play(user, CIA)
+    expect(screen.getByText(copy.cards.pickTitle[26])).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: copy.cards.pick('Nasser') })).not.toBeInTheDocument()
+    await user.click(pick('Blokada'))
+    await user.click(pick('Fidel'))
+    await user.click(screen.getByRole('button', { name: copy.cards.ok }))
+    expect(eventLast(CIA, copy.cards.seenInHand(2))).toBeInTheDocument()
+    expect(inHandIcon('Blokada')).not.toBeNull()
+    expect(inHandIcon('Fidel')).not.toBeNull()
+    expect(myHandIcon('Blokada')).not.toBeInTheDocument()
+    expect(stateOf('Blokada')).toBe('available')
+
+    await user.click(undoLast())
+    expect(inHandIcon('Blokada')).toBeNull()
+    expect(stateOf(CIA)).toBe('available')
+  })
+
   it('the picker survives a reload and ignores filters', async () => {
     const user = await setup(at({ turn: 5, deck: 20 }))
     await user.click(screen.getByRole('button', { name: copy.cards.filters }))
