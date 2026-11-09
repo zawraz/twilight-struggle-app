@@ -120,7 +120,8 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --radius-counter: 3px;
-  --radius-card: 8px;
+  /* Containers take the buttons' corners, so every edge on screen turns alike. */
+  --radius-card: 3px;
 
   /* A log entry just added: lights up in its side's color, then fades back. */
   --animate-log-flash: log-flash 1.4s ease-out;
