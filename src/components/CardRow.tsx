@@ -225,9 +225,9 @@ export function CardRow({
             <span className="grid size-4 shrink-0 place-items-center">
               <CardStateIcon state={state} />
               {mine ? (
-                <Hand className="size-4 text-gold-text" aria-label={copy.cards.myHand} role="img" />
+                <Hand className="size-4 text-ink-muted" aria-label={copy.cards.myHand} role="img" />
               ) : (
-                inHand && <Hand className="size-4 text-ink-muted" aria-label={copy.cards.inHand} role="img" />
+                inHand && <Hand className="size-4 text-gold-text" aria-label={copy.cards.inHand} role="img" />
               )}
             </span>
           )}
@@ -243,14 +243,17 @@ export function CardRow({
               <TriangleAlert className="ml-auto size-4 shrink-0 text-gold-text" aria-label={copy.cards.important} role="img" />
             )}
           </span>
-          <span className={`flex shrink-0 items-baseline gap-2 ${faded}`}>
-            <span className={`w-9 text-right font-condensed text-[13px] font-semibold uppercase tracking-[0.06em] ${SIDE_TEXT[card.player]}`}>
-              {copy.cards.sides[card.player]}
+          {/* While the row is open, its action buttons take the side and ops' place. */}
+          {!open && (
+            <span className={`flex shrink-0 items-baseline gap-2 ${faded}`}>
+              <span className={`w-9 text-right font-condensed text-[13px] font-semibold uppercase tracking-[0.06em] ${SIDE_TEXT[card.player]}`}>
+                {copy.cards.sides[card.player]}
+              </span>
+              <span className="w-3 text-right font-mono text-[15px] tabular-nums" aria-label={copy.cards.ops(card.value)}>
+                {card.value === 0 ? copy.cards.scoring : card.value}
+              </span>
             </span>
-            <span className="w-3 text-right font-mono text-[15px] tabular-nums" aria-label={copy.cards.ops(card.value)}>
-              {card.value === 0 ? copy.cards.scoring : card.value}
-            </span>
-          </span>
+          )}
           <span className="sr-only">, {copy.cards.state[state]}</span>
         </button>
         {open && (
@@ -305,7 +308,7 @@ function ActionButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`grid h-9 w-12 place-items-center rounded-counter border-2 ${className}`}
+      className={`grid h-9 w-[68px] place-items-center rounded-counter border-2 ${className}`}
     >
       {children}
     </button>
