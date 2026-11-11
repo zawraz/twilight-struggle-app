@@ -17,7 +17,7 @@ Two phones can share one game through a [Convex](https://convex.dev) server, whi
 - **New Game → Offline** starts a game on this phone alone. An offline phone never contacts the server.
 - **The people icon** in the header: on an offline phone it looks for the online game and offers to **join** it (two taps; this phone's game is replaced for good). On a synced phone it shows the connection and turns sync off, keeping the game on screen; the online game stays for the other phone, and either can rejoin later.
 
-Without `VITE_CONVEX_URL` (tests, local dev) there is no sync: New Game is one tap and the people icon is hidden.
+Without `VITE_CONVEX_URL` (tests, or a checkout with no `.env.local`) there is no sync: New Game is one tap and the people icon is hidden.
 
 React + TypeScript + Tailwind CSS v4, built with Vite and `vite-plugin-pwa` (offline, installable). Styling follows the Twilight Struggle App design system.
 
@@ -25,7 +25,8 @@ React + TypeScript + Tailwind CSS v4, built with Vite and `vite-plugin-pwa` (off
 
 ```sh
 pnpm install
-pnpm dev         # dev server
+pnpm dev         # dev server + `convex dev` (syncs convex/ to the dev deployment)
+pnpm dev:app     # dev server only
 pnpm test        # Vitest + Testing Library
 pnpm build       # type-check, build, generate the service worker
 pnpm preview     # serve the production build
