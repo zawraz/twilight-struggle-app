@@ -14,15 +14,25 @@ export interface FakeServer extends SyncServer {
   release: () => void
 }
 
-/** An in-memory sync server: changes apply at once, as Convex's optimistic updates show them. */
+/**
+ * An in-memory sync server that behaves as the Convex client does: changes show at once; while
+ * disconnected they wait, reach the game on reconnect, and are dropped once the last watcher stops.
+ */
 export function fakeServer(initial: OnlineGame | null = null, options: { held?: boolean } = {}): FakeServer {
   const listeners = new Set<SyncListener>()
   let held = options.held ?? false
   let connected = true
+  let waiting: RoomAction[] = []
+
+  /** The game as this phone sees it: the server's, with the changes still waiting on top. */
+  const shown = (): OnlineGame | null =>
+    fake.game && waiting.length > 0
+      ? { state: waiting.reduce(roomReducer, fake.game.state), updatedAt: fake.game.updatedAt }
+      : fake.game
 
   const tell = () => {
     if (held) return
-    for (const l of listeners) l.onGame(fake.game)
+    for (const l of listeners) l.onGame(shown())
   }
 
   const fake: FakeServer = {
@@ -36,10 +46,12 @@ export function fakeServer(initial: OnlineGame | null = null, options: { held?: 
       }
       listeners.add(listener)
       listener.onConnected(connected)
-      if (!held) listener.onGame(fake.game)
+      if (!held) listener.onGame(shown())
       return () => {
         listeners.delete(listener)
-        if (listeners.size === 0) fake.open = false
+        if (listeners.size > 0) return
+        fake.open = false
+        waiting = []
       }
     },
     async start() {
@@ -48,11 +60,17 @@ export function fakeServer(initial: OnlineGame | null = null, options: { held?: 
     },
     async dispatch(action: RoomAction) {
       if (!fake.game) throw new Error('No online game')
-      fake.game = { state: roomReducer(fake.game.state, action), updatedAt: Date.now() }
+      if (connected) fake.game = { state: roomReducer(fake.game.state, action), updatedAt: Date.now() }
+      else waiting.push(action)
       tell()
     },
     setConnected(up) {
       connected = up
+      if (up && fake.game && waiting.length > 0) {
+        fake.game = { state: waiting.reduce(roomReducer, fake.game.state), updatedAt: Date.now() }
+        waiting = []
+        tell()
+      }
       for (const l of listeners) l.onConnected(up)
     },
     replace(game) {

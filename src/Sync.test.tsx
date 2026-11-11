@@ -214,7 +214,8 @@ describe('The people panel', () => {
     expect(turn()).toHaveAccessibleName('Tura 4 z 10')
     await nextTurn(user)
     expect(turn()).toHaveAccessibleName('Tura 5 z 10')
-    expect(fake.game?.state.cards.turn).toBe(4)
+    // What waited for the connection never left this phone: Convex drops it when the client closes.
+    expect(fake.game?.state.cards.turn).toBe(3)
   })
 
   it('lets a phone that turned sync off join again', async () => {

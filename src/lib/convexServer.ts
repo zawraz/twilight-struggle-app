@@ -17,7 +17,9 @@ export function convexServer(url: string): SyncServer {
       clearTimeout(closing)
       closing = null
     }
-    client ??= new ConvexReactClient(url)
+    // No "Leave site?" prompt: a closed client keeps its unload listener, and would ask for ever
+    // about a change it can no longer send.
+    client ??= new ConvexReactClient(url, { unsavedChangesWarning: false })
     return client
   }
 
