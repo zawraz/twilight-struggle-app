@@ -79,11 +79,10 @@ const isArmed = (move: Move): boolean => (move.type === 'card' || move.type === 
 const disarm = (move: Move): Move =>
   move.type === 'card' || move.type === 'event' ? { ...move, before: null } : { ...move, armed: false }
 
-/** Whether the last move can be taken back now: a roll or a count not once the game has ended. */
+/** Whether the last move can be taken back now: nothing once the game has ended. */
 export function canUndo({ game, moves }: Pick<RoomState, 'game' | 'moves'>): boolean {
   const last = moves.at(-1)
-  if (!last || !isArmed(last)) return false
-  return !(game.ended && (last.type === 'roll' || last.type === 'fourOps'))
+  return !!last && isArmed(last) && !game.ended
 }
 
 /** A new last move: the oldest kept drops out of reach of undo, and the one before it out of the list. */
@@ -226,7 +225,15 @@ function undoLast(state: RoomState): RoomState {
   }
 }
 
+/** What still goes once the game has ended: only starting the next one. */
+const startsNewGame = (action: RoomAction) =>
+  (action.target === 'game' && action.action.type === 'newGame') ||
+  (action.target === 'cards' && (action.action.type === 'newGame' || action.action.type === 'restore'))
+
 export function roomReducer(state: RoomState, action: RoomAction): RoomState {
+  // Once the game has ended nothing moves until a new game starts: no rolls or counts, no cards or
+  // turns, and no taking a move back. The server runs this too, so no phone gets round it.
+  if (state.game.ended && !startsNewGame(action)) return state
   switch (action.target) {
     case 'game':
       return gameMove(state, action.action)

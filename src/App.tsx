@@ -150,6 +150,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             notify={showToast}
             onToastStale={dismissToast}
             countsFourOps={!game.ended}
+            locked={game.ended}
             myHand={myHand}
           />
         </div>

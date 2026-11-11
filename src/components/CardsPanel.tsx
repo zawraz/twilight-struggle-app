@@ -117,6 +117,8 @@ interface CardsPanelProps {
   countsFourOps: boolean
   /** The cards this player marked as held, kept on this device. */
   myHand: MyHand
+  /** The game has ended: until a new one starts no card moves and the turn stays, though the list can still be browsed. */
+  locked?: boolean
 }
 
 interface Play {
@@ -126,7 +128,7 @@ interface Play {
 }
 
 /** The Karty tab: the turn, card counts, filters and the checklist itself. */
-export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsFourOps, myHand }: CardsPanelProps) {
+export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsFourOps, myHand, locked = false }: CardsPanelProps) {
   const [openId, setOpenId] = useState<number | null>(null)
   // A 4 Ops card waiting to hear who played it.
   const [asking, setAsking] = useState<Play | null>(null)
@@ -153,7 +155,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button rests for a moment, so a double tap doesn't skip a turn.
   const [turnLocked, lockTurn] = useCooldown(TAP_LOCK_MS)
-  const turnBlocked = cards.turn >= LAST_TURN || cards.pending !== null
+  const turnBlocked = locked || cards.turn >= LAST_TURN || cards.pending !== null
   const pending = cards.pending
   // A revealed hand is the other player's: the cards this player holds can't be in it.
   const pickable = pickableIds(cards).filter((id) => !(isReveal(pending) && myHand.has(id)))
@@ -525,7 +527,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
         )}
       </section>
 
-      {pending !== null && <EventPicker event={pending} count={picks.length} onConfirm={confirmPicks} />}
+      {pending !== null && <EventPicker event={pending} count={picks.length} onConfirm={confirmPicks} disabled={locked} />}
 
       <ul
         aria-label={copy.cards.list}
@@ -558,6 +560,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
             onClose={() => setOpenId(null)}
             onChange={(state) => change(card.id, card.name, state)}
             pick={pending !== null ? { checked: picks.includes(card.id), onToggle: () => togglePick(card.id) } : undefined}
+            locked={locked}
             divider={divider(i)}
             swipe={!screenSwipe}
             dim={!multiScreen || dimPlayed}

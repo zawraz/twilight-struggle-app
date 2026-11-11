@@ -41,6 +41,8 @@ interface CardRowProps {
   onChange: (state: CardState) => void
   /** An event's picker is open: the row is a checkbox, and nothing else moves it. */
   pick?: { checked: boolean; onToggle: () => void }
+  /** The game has ended: no tap, swipe or hold does anything to the card. */
+  locked?: boolean
   /** A thicker line under the row: the next card down has another ops value, is out of the hand, or is already played. */
   divider?: RowDivider
   /** Off, a sideways swipe leaves the row alone and goes to the list around it. */
@@ -86,6 +88,7 @@ export function CardRow({
   onClose,
   onChange,
   pick,
+  locked = false,
   divider,
   swipe = true,
   dim = true,
@@ -116,7 +119,7 @@ export function CardRow({
   }
 
   function onPointerDown(event: PointerEvent) {
-    if (event.button !== 0 || pick) return
+    if (event.button !== 0 || pick || locked) return
     gesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: 'press' }
     swallowClick.current = false
     if (!live) {
@@ -190,6 +193,7 @@ export function CardRow({
   }
 
   function onClick(event: MouseEvent) {
+    if (locked) return
     if (pick) {
       pick.onToggle()
       return

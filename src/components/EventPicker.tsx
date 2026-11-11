@@ -2,7 +2,18 @@ import { copy } from '../copy'
 import { EVENT_PICKS, type EventCard } from '../lib/cardGame'
 
 /** Over the list while an event's picker is open. No Cancel: the event has been played. */
-export function EventPicker({ event, count, onConfirm }: { event: EventCard; count: number; onConfirm: () => void }) {
+export function EventPicker({
+  event,
+  count,
+  onConfirm,
+  disabled = false,
+}: {
+  event: EventCard
+  count: number
+  onConfirm: () => void
+  /** The game has ended: the picks can't be confirmed. */
+  disabled?: boolean
+}) {
   return (
     <div
       role="group"
@@ -14,7 +25,8 @@ export function EventPicker({ event, count, onConfirm }: { event: EventCard; cou
       <button
         type="button"
         onClick={onConfirm}
-        className="h-9 shrink-0 rounded-counter border-2 border-gold bg-gold px-3 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-on-gold"
+        disabled={disabled}
+        className="h-9 shrink-0 rounded-counter disabled:opacity-30 border-2 border-gold bg-gold px-3 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-on-gold"
       >
         {copy.cards.ok}
       </button>

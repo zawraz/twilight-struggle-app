@@ -43,11 +43,27 @@ describe('roomReducer: card moves', () => {
     expect(undone.moves).toEqual([])
   })
 
-  it('counts only 4 Ops cards, and nothing once the game has ended', () => {
+  it('counts only 4 Ops cards', () => {
     expect(run(newRoom(), { target: 'play', id: BLOCKADE, state: 'discarded', by: 'us' }).game.fourOps.us).toBe(0)
-    const ended = run(newRoom(), { target: 'game', action: { type: 'end' } }, { target: 'play', id: NATO, state: 'removed', by: 'us' })
-    expect(ended.game.fourOps.us).toBe(0)
-    expect(last(ended)).toMatchObject({ by: null })
+  })
+
+  it('moves nothing once the game has ended, until a new game starts', () => {
+    const played = run(newRoom(), { target: 'play', id: BLOCKADE, state: 'discarded', by: null })
+    const ended = run(played, { target: 'game', action: { type: 'end' } })
+    const blocked: RoomAction[] = [
+      { target: 'play', id: NATO, state: 'removed', by: 'us' },
+      { target: 'cards', action: { type: 'setCardState', id: NATO, state: 'discarded' } },
+      { target: 'cards', action: { type: 'nextTurn' } },
+      { target: 'game', action: { type: 'addRoll', track: 'dice', player: 'us', value: 4 } },
+      { target: 'game', action: { type: 'incrementFourOps', player: 'ussr' } },
+      undo,
+    ]
+    for (const action of blocked) expect(roomReducer(ended, action)).toBe(ended)
+    expect(canUndo(ended)).toBe(false)
+
+    const fresh = run(ended, { target: 'game', action: { type: 'newGame' } }, { target: 'cards', action: { type: 'newGame' } })
+    expect(fresh.game.ended).toBe(false)
+    expect(fresh.cards).toEqual(newRoom().cards)
   })
 
   it('ignores a play that changes nothing', () => {

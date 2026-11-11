@@ -101,6 +101,32 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('Karty: once the game has ended', () => {
+  it('moves no card and no turn, and offers no undo, until a new game', async () => {
+    const user = await setup()
+    await discard(user, 'Blokada')
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('tab', { name: copy.tabs.cards }))
+
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /^Cofnij: / })).not.toBeInTheDocument()
+    await user.click(rowButton('NATO'))
+    expect(screen.queryByRole('button', { name: copy.cards.discard('NATO') })).not.toBeInTheDocument()
+    swipe('Nasser', -SWIPE_COMMIT_PX - 10)
+    expect(stateOf('Nasser')).toBe('available')
+    longPress('Blokada')
+    expect(screen.queryByRole('button', { name: copy.cards.restore('Blokada') })).not.toBeInTheDocument()
+    expect(stateOf('Blokada')).toBe('discarded')
+    markTheirs('Nasser')
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.newGame }))
+    await user.click(screen.getByRole('button', { name: copy.cards.nextTurn }))
+    expect(turn()).toHaveTextContent('2')
+  })
+})
+
 describe('Karty: turns', () => {
   it('starts on turn 1 with the 39 Early War cards in checklist order', async () => {
     await setup()
@@ -869,18 +895,10 @@ describe('Karty: 4 Ops cards', () => {
     expect(opsCount('ZSRR')).toHaveTextContent('0')
   })
 
-  it('does not ask for other cards, nor once the game has ended', async () => {
+  it('does not ask for other cards', async () => {
     const user = await setup()
     await discard(user, 'Blokada')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: copy.end }))
-    await user.click(screen.getByRole('button', { name: copy.end }))
-    // Ending moves to the log; come back to keep playing cards.
-    await user.click(screen.getByRole('tab', { name: 'Karty' }))
-    await discard(user, BAN)
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(stateOf(BAN)).toBe('discarded')
     expect(opsCount('USA')).toHaveTextContent('0')
   })
 })
