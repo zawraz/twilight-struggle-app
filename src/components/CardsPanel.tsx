@@ -628,7 +628,7 @@ function HandButton({
       onClick={onClick}
       disabled={disabled}
       className={`grid shrink-0 place-items-center rounded-counter border-2 transition-colors disabled:opacity-30 ${className} ${
-        shown ? 'border-gold bg-gold text-on-gold' : 'border-line-strong text-ink'
+        shown ? 'border-gold text-gold-text' : 'border-line-strong text-ink'
       }`}
     >
       <Hand className="size-4" aria-hidden="true" />

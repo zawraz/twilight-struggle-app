@@ -11,17 +11,18 @@ export interface Tab<Id extends string> {
 
 /**
  * Each size's height, width and border, and the outline that rings the selected tab as thick as the
- * border: a slim bar takes the thinnest border to leave its icons the room.
+ * border: a slim bar takes the thinnest border to leave its icons the room. Every tab draws its left
+ * border, so the tabs stay divided even while none of them is selected.
  */
 const SIZE = {
-  slim: { height: 'h-6', width: 'w-18', border: 'border-y first:border-l last:border-r', ring: 'outline -outline-offset-1' },
-  regular: { height: 'h-10', width: 'w-18', border: 'border-y-2 first:border-l-2 last:border-r-2', ring: 'outline-2 -outline-offset-2' },
-  tall: { height: 'h-12.5', width: 'w-18', border: 'border-y-2 first:border-l-2 last:border-r-2', ring: 'outline-2 -outline-offset-2' },
+  slim: { height: 'h-6', width: 'w-18', border: 'border-y border-l last:border-r', ring: 'outline -outline-offset-1' },
+  regular: { height: 'h-10', width: 'w-18', border: 'border-y-2 border-l-2 last:border-r-2', ring: 'outline-2 -outline-offset-2' },
+  tall: { height: 'h-12.5', width: 'w-18', border: 'border-y-2 border-l-2 last:border-r-2', ring: 'outline-2 -outline-offset-2' },
   /** The header's views, tapped all game long: as tall as the header's other buttons. */
   header: {
     height: 'h-12',
     width: 'w-18',
-    border: 'border-y-2 first:border-l-2 last:border-r-2',
+    border: 'border-y-2 border-l-2 last:border-r-2',
     ring: 'outline-2 -outline-offset-2',
   },
 } as const
@@ -82,8 +83,10 @@ export function TabBar<Id extends string>({
     <div role="tablist" className={`flex ${className}`}>
       {tabs.map((tab, index) => {
         const selected = tab.id === active
-        // Outlined, not filled: the pill's inner tabs have no side borders of their own, so the
-        // selected one is ringed by an outline drawn over its edge, all the way round.
+        // Beside the selected tab its outline is the edge: the divider there would show beside it.
+        const afterSelected = index > 0 && tabs[index - 1].id === active
+        // Outlined, not filled: a tab has no right border of its own (the next tab's left one divides
+        // them), so the selected one is ringed by an outline drawn over its edge, all the way round.
         return (
           <button
             key={tab.id}
@@ -103,7 +106,7 @@ export function TabBar<Id extends string>({
             onKeyDown={(event) => onKeyDown(event, index)}
             className={`flex ${height} items-center justify-center gap-1 ${border} ${stretch ? 'flex-1' : width} transition-colors first:rounded-l-counter last:rounded-r-counter disabled:opacity-30 ${
               selected ? `border-gold bg-surface-sunken text-gold-text ${ring} outline-gold` : 'border-line bg-surface-sunken text-ink-muted'
-            }`}
+            } ${afterSelected ? 'border-l-transparent' : ''}`}
           >
             {tab.icon}
           </button>
