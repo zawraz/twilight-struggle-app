@@ -11,4 +11,6 @@ export default defineSchema({
     moves: v.optional(v.any()),
     last: v.optional(v.any()),
   }).index('by_code', ['code']),
+  // The one shared game. At most one document; `game`, `cards` and `moves` are checked with the app's own validators.
+  games: defineTable({ game: v.any(), cards: v.any(), moves: v.any(), updatedAt: v.number() }),
 })
