@@ -129,6 +129,17 @@ describe('A synced phone', () => {
     expect(JSON.parse(localStorage.getItem(THEIR_HAND_KEY)!)).toEqual([])
   })
 
+  it('goes to the log when the other phone ends the game', async () => {
+    stored('online', atTurn(3))
+    const fake = fakeServer(online(3))
+    const user = setup(fake)
+    await cardsTab(user)
+    const ended = roomReducer(atTurn(3), { target: 'game', action: { type: 'end' } })
+    act(() => fake.replace({ state: ended, updatedAt: Date.now() }))
+    expect(within(header()).getByRole('button', { name: copy.newGame })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: copy.tabs.log })).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('after a reload shows the last game at once, read-only until the server answers', async () => {
     stored('online', atTurn(4))
     const fake = fakeServer(online(6), { held: true })

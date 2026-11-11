@@ -43,6 +43,13 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
   const myHand = useMyHand(cards)
   useWakeLock()
 
+  // Ending shows the results in the log, on this phone and on one synced to it alike.
+  const [wasEnded, setWasEnded] = useState(game.ended)
+  if (game.ended !== wasEnded) {
+    setWasEnded(game.ended)
+    if (game.ended) setTab('log')
+  }
+
   /** What every new game does on this phone, whichever way it started. */
   function startedNewGame() {
     myHand.clear()
@@ -71,11 +78,8 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
           <div className="flex items-center gap-2 max-[390px]:gap-1.5">
             <GameAction
               ended={game.ended}
-              // Ending shows the results in the log; a new game starts at the deck.
-              onEnd={() => {
-                dispatch({ type: 'end' })
-                setTab('log')
-              }}
+              // A new game starts at the deck.
+              onEnd={() => dispatch({ type: 'end' })}
               onNewGame={() => {
                 if (sync) return setAskingMode(true)
                 dispatch({ type: 'newGame' })
