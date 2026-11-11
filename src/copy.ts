@@ -123,6 +123,16 @@ export const copy = {
     undoLast: (what: string) => `Cofnij: ${what}`,
   },
 
+  /** New Game's question: a game on this phone alone, or the one both phones share. */
+  newGameDialog: {
+    title: 'Nowa gra',
+    offline: 'Offline',
+    offlineHint: 'Gra tylko na tym telefonie',
+    online: 'Online',
+    onlineHint: 'Wspólna gra na obu telefonach. Zastępuje obecną grę online.',
+    cancel: 'Anuluj',
+  },
+
   room: {
     /** The header button: opens the room panel. */
     open: 'Wspólna gra',

@@ -4,17 +4,19 @@ import { CardsPanel } from './components/CardsPanel'
 import { GameAction } from './components/GameAction'
 import { LastActionBar } from './components/LastActionBar'
 import { OpsCounter } from './components/OpsCounter'
-import { RoomButton } from './components/RoomButton'
+import { NewGameDialog } from './components/NewGameDialog'
 import { RollTracker } from './components/RollTracker'
 import { Section } from './components/Section'
 import { TabBar } from './components/TabBar'
 import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
+import { defaultServer } from './lib/convexServer'
 import { canUndo } from './lib/room'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
 import { useMyHand } from './lib/useMyHand'
-import { useRoom } from './lib/useRoom'
+import { useRoom, type SyncMode } from './lib/useRoom'
+import type { SyncServer } from './lib/syncServer'
 import { useToast } from './lib/useToast'
 import { useWakeLock } from './lib/useWakeLock'
 
@@ -30,14 +32,28 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id']
 const TAB_ID = 'view'
 
-export default function App() {
-  // Shared with every device in the same room when the app has a sync server.
-  const { game, dispatch, cards, dispatchCards, moves, act, sync } = useRoom()
+export default function App({ server = defaultServer }: { server?: SyncServer | null }) {
+  // Shared with the other phone while this one is online.
+  const { game, dispatch, cards, dispatchCards, moves, act, sync } = useRoom(server)
+  const [askingMode, setAskingMode] = useState(false)
   const [tab, setTab] = useState<TabId>('log')
   const [toast, showToast, dismissToast] = useToast()
   // Kept here, not in the Karty tab, so New Game can clear it.
   const myHand = useMyHand(cards)
   useWakeLock()
+
+  /** What every new game does on this phone, whichever way it started. */
+  function startedNewGame() {
+    myHand.clear()
+    dismissToast()
+    setTab('cards')
+  }
+
+  function chooseMode(mode: SyncMode) {
+    setAskingMode(false)
+    sync?.newGame(mode)
+    startedNewGame()
+  }
   // Both panels stay mounted, so a wheel's pick and a pending undo survive a tab switch.
   const panel = (id: TabId) => ({
     role: 'tabpanel',
@@ -60,17 +76,15 @@ export default function App() {
                 setTab('log')
               }}
               onNewGame={() => {
+                if (sync) return setAskingMode(true)
                 dispatch({ type: 'newGame' })
                 dispatchCards({ type: 'newGame' })
-                myHand.clear()
-                dismissToast()
-                setTab('cards')
+                startedNewGame()
               }}
             />
             <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base">
               {copy.appTitle}
             </h1>
-            {sync && <RoomButton sync={sync} notify={showToast} />}
             {/* The view tabs take the rest of the row: the most tapped buttons, made the widest. */}
             <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" stretch className="min-w-24 flex-1" />
           </div>
@@ -136,6 +150,7 @@ export default function App() {
           />
         </div>
       </main>
+      {askingMode && <NewGameDialog onChoose={chooseMode} onCancel={() => setAskingMode(false)} />}
     </div>
   )
 }
