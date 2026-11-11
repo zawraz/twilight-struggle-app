@@ -22,6 +22,7 @@ describe('cards view persistence', () => {
       multiScreen: false,
       swipeScreens: true,
       dimPlayed: false,
+      shortHold: 'mine',
     }
     saveView(view, store)
     expect(loadView(store)).toEqual(view)
@@ -31,7 +32,12 @@ describe('cards view persistence', () => {
     const store = storage()
     store.setItem(
       VIEW_STORAGE_KEY,
-      JSON.stringify({ filters: { player: ['us', 'mars'], phase: ['late'] }, multiScreen: 'yes', dimPlayed: false }),
+      JSON.stringify({
+        filters: { player: ['us', 'mars'], phase: ['late'] },
+        multiScreen: 'yes',
+        dimPlayed: false,
+        shortHold: 'nobody',
+      }),
     )
     expect(loadView(store)).toEqual({
       ...DEFAULT_VIEW,

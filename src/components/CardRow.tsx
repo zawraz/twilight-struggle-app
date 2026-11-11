@@ -32,6 +32,8 @@ interface CardRowProps {
    * long for mine. Marked: short moves it to the other hand, long takes it off.
    */
   onMark?: (whose: Whose | null) => void
+  /** The hand a short hold marks an unmarked card as in; held on past the second buzz, the other one. */
+  shortHold?: Whose
   /** The row's action buttons are showing. */
   open: boolean
   onToggle: () => void
@@ -78,6 +80,7 @@ export function CardRow({
   mine = false,
   theirs = false,
   onMark,
+  shortHold = 'theirs',
   open,
   onToggle,
   onClose,
@@ -126,11 +129,11 @@ export function CardRow({
         }, LONG_PRESS_MS),
       ]
     } else if (state === 'available' && onMark) {
-      // Two buzzes on the way; letting go picks the last one reached. Unmarked: the other hand, then
-      // this player's. Marked: the hand it isn't in, then no mark at all.
+      // Two buzzes on the way; letting go picks the last one reached. Unmarked: the short-hold hand
+      // (the other player's by default), then the other. Marked: the hand it isn't in, then no mark at all.
       const current: Whose | null = mine ? 'mine' : theirs ? 'theirs' : null
       const [first, second]: [Whose, Whose | 'clear'] =
-        current === null ? ['theirs', 'mine'] : [current === 'mine' ? 'theirs' : 'mine', 'clear']
+        current === null ? [shortHold, shortHold === 'mine' ? 'theirs' : 'mine'] : [current === 'mine' ? 'theirs' : 'mine', 'clear']
       const reach = (target: Whose | 'clear') => () => {
         swallowClick.current = true
         navigator.vibrate?.(10)

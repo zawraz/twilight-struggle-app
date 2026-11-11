@@ -1,5 +1,6 @@
 import { CARD_STATES, type CardState } from './cardGame'
 import { CARD_SIDES, PHASES, type CardSide, type Phase } from './cards'
+import type { Whose } from './useMyHand'
 
 export const VIEW_STORAGE_KEY = 'ts-companion:cards-view:v1'
 
@@ -22,6 +23,8 @@ export interface CardsView {
   swipeScreens: boolean
   /** On two screens, the played cards are dimmed. */
   dimPlayed: boolean
+  /** The hand a short hold marks an unmarked card as in; a long hold marks it as in the other one. */
+  shortHold: Whose
 }
 
 export const DEFAULT_VIEW: CardsView = {
@@ -30,6 +33,7 @@ export const DEFAULT_VIEW: CardsView = {
   multiScreen: true,
   swipeScreens: false,
   dimPlayed: true,
+  shortHold: 'theirs',
 }
 
 const pickList = <T>(value: unknown, allowed: readonly T[]): T[] | null =>
@@ -56,6 +60,7 @@ export function loadView(storage: Storage | undefined = globalThis.localStorage)
           multiScreen: pickBoolean(s.multiScreen, DEFAULT_VIEW.multiScreen),
           swipeScreens: pickBoolean(s.swipeScreens, DEFAULT_VIEW.swipeScreens),
           dimPlayed: pickBoolean(s.dimPlayed, DEFAULT_VIEW.dimPlayed),
+          shortHold: s.shortHold === 'mine' || s.shortHold === 'theirs' ? s.shortHold : DEFAULT_VIEW.shortHold,
         }
       }
     }

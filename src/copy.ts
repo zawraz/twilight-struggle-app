@@ -85,7 +85,7 @@ export const copy = {
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
     showHand: 'Pokaż karty na ręce',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest', look: 'Karty' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest', look: 'Karty', hold: 'Ręka' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     /** The order chip's visible label: its arrow says which way. */
@@ -100,6 +100,11 @@ export const copy = {
     /** The swipe chips' visible labels: what a sideways swipe moves. */
     swipeCardsShort: 'Karty',
     swipeScreensShort: 'Ekrany',
+    shortHoldTheirs: 'Krótkie przytrzymanie: na ręce przeciwnika',
+    shortHoldMine: 'Krótkie przytrzymanie: na mojej ręce',
+    /** The hold chips' visible labels: whose hand a short hold marks a card as in. */
+    shortHoldTheirsShort: 'Przeciwnik',
+    shortHoldMineShort: 'Moja',
     dimPlayed: 'Przyciemnij zagrane',
     /** The dimming chip's visible label. */
     dimPlayedShort: 'Przyciemnij',

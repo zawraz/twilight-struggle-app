@@ -692,6 +692,19 @@ describe('Karty: my hand', () => {
     expect(myHandIcon('Nasser')).not.toBeInTheDocument()
   })
 
+  it('a setting makes the short hold mark a card as in this player’s hand instead', async () => {
+    const user = await setup()
+    await openFilters(user)
+    await user.click(screen.getByRole('button', { name: copy.cards.shortHoldMine }))
+    expect(screen.getByRole('button', { name: copy.cards.shortHoldTheirs })).toHaveAttribute('aria-pressed', 'false')
+    hold('Nasser', LONG_PRESS_MS)
+    expect(myHandIcon('Nasser')).toBeInTheDocument()
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+    hold('Fidel', MINE_PRESS_MS)
+    expect(theirHandIcon('Fidel')).toBeInTheDocument()
+    expect(myHandIcon('Fidel')).not.toBeInTheDocument()
+  })
+
   it('shows which mark a hold will set before letting go', async () => {
     await setup()
     const surface = rowButton('Nasser').parentElement!

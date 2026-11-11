@@ -141,9 +141,10 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const [pile, setPile] = useState<Pile>('available')
   const [swipeScreens, setSwipeScreens] = useState(savedView.swipeScreens)
   const [dimPlayed, setDimPlayed] = useState(savedView.dimPlayed)
+  const [shortHold, setShortHold] = useState(savedView.shortHold)
   useEffect(() => {
-    saveView({ filters, playedLast, multiScreen, swipeScreens, dimPlayed })
-  }, [filters, playedLast, multiScreen, swipeScreens, dimPlayed])
+    saveView({ filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold })
+  }, [filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold])
   // Where a sideways swipe across the list began, to move between its two screens;
   // decided past the slop, as on a row: a swipe, or a scroll the browser owns.
   const listSwipe = useRef<{ pointerId: number; x: number; y: number; mode: 'press' | 'swipe' } | null>(null)
@@ -502,6 +503,16 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
                 </Chip>
               </ChipGroup>
             )}
+            <ChipGroup label={copy.cards.filterGroups.hold}>
+              <Chip pressed={shortHold === 'theirs'} onClick={() => setShortHold('theirs')} label={copy.cards.shortHoldTheirs}>
+                <Hand className={`size-4 ${shortHold === 'theirs' ? '' : 'text-gold-text'}`} aria-hidden="true" />
+                {copy.cards.shortHoldTheirsShort}
+              </Chip>
+              <Chip pressed={shortHold === 'mine'} onClick={() => setShortHold('mine')} label={copy.cards.shortHoldMine}>
+                <Hand className="size-4" aria-hidden="true" />
+                {copy.cards.shortHoldMineShort}
+              </Chip>
+            </ChipGroup>
             {/* Two screens put the played cards on their own already, leaving the order nothing to show. */}
             {!multiScreen ? (
               <ChipGroup label={copy.cards.filterGroups.order}>
@@ -552,6 +563,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
             mine={myHand.has(card.id)}
             theirs={myHand.theirs(card.id)}
             onMark={(whose) => myHand.mark(card.id, whose)}
+            shortHold={shortHold}
             open={openId === card.id}
             onToggle={() => setOpenId((id) => (id === card.id ? null : card.id))}
             onClose={() => setOpenId(null)}
