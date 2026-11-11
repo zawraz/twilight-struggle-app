@@ -2,7 +2,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { SUBMIT_COOLDOWN_MS } from './components/RollTracker'
+import { TAP_LOCK_MS } from './lib/useCooldown'
 import { copy } from './copy'
 import { CARDS_STORAGE_KEY } from './lib/cardGame'
 import { newRoom, roomReducer, type RoomState } from './lib/room'
@@ -41,8 +41,8 @@ function setup(fake: FakeServer) {
 const cardsTab = (user: User) => user.click(screen.getByRole('tab', { name: 'Karty' }))
 
 async function nextTurn(user: User) {
-  if (screen.queryByRole('button', { name: copy.cards.undoTurn })) act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
   await user.click(screen.getByRole('button', { name: copy.cards.nextTurn }))
+  act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
 }
 
 async function endGame(user: User) {

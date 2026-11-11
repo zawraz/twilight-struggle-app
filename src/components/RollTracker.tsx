@@ -1,15 +1,15 @@
 import { useState, type CSSProperties } from 'react'
 import { copy, rolls, type TrackerCopy } from '../copy'
 import { PLAYERS, type PerPlayer, type Player, type PlayerId } from '../lib/players'
-import { useCooldown } from '../lib/useCooldown'
+import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import { Section } from './Section'
 import { WheelPicker } from './WheelPicker'
 import { TONE } from './tone'
 
 /** How many of the newest entries the log shows. */
 export const LOG_VISIBLE = 3
-/** After a submit the button shows what was added for this long; a tap meanwhile takes it back. */
-export const SUBMIT_COOLDOWN_MS = 5000
+/** How long a new log entry stays lit: the length of its flash (--animate-log-flash). */
+export const LOG_FLASH_MS = 1400
 
 interface RollTrackerProps {
   /** The section's title and every label it shows or announces. */
@@ -22,8 +22,6 @@ interface RollTrackerProps {
   /** Every submitted entry per player, oldest first. */
   entries: PerPlayer<readonly number[]>
   onSubmit: (player: PlayerId, value: number) => void
-  /** Takes back the player's newest entry. */
-  onUndo: (player: PlayerId) => void
   /** The game has ended: summaries are shown and no more entries are taken. */
   revealed: boolean
 }
@@ -40,7 +38,6 @@ export function RollTracker({
   summarize,
   entries,
   onSubmit,
-  onUndo,
   revealed,
 }: RollTrackerProps) {
   const [selected, setSelected] = useState(initialValue)
@@ -72,7 +69,6 @@ export function RollTracker({
           value={selected}
           entries={entries[player.id]}
           onSubmit={(v) => onSubmit(player.id, v)}
-          onUndo={() => onUndo(player.id)}
           revealed={revealed}
           text={text}
           formatValue={formatValue}
@@ -97,7 +93,6 @@ interface PlayerColumnProps
   value: number
   entries: readonly number[]
   onSubmit: (value: number) => void
-  onUndo: () => void
   revealed: boolean
 }
 
@@ -111,14 +106,15 @@ function PlayerColumn({
   value,
   entries,
   onSubmit,
-  onUndo,
   revealed,
   text,
   formatValue,
   summarize,
 }: PlayerColumnProps) {
-  const [cooling, startCooldown, cancelCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
-  const [added, setAdded] = useState<number | null>(null)
+  // Just submitted: the button rests for a moment, so a double tap doesn't log the roll twice.
+  const [locked, lock] = useCooldown(TAP_LOCK_MS)
+  // The entry just added stays lit until its flash ends.
+  const [flashing, startFlash] = useCooldown(LOG_FLASH_MS)
   // What the last tap did, for screen readers.
   const [notice, setNotice] = useState('')
 
@@ -129,16 +125,9 @@ function PlayerColumn({
 
   const submit = () => {
     onSubmit(value)
-    setAdded(value)
+    startFlash()
     setNotice(copy.added(formatValue(value)))
-    startCooldown()
-  }
-
-  // A second tap before the cooldown runs out takes the roll back.
-  const undo = () => {
-    onUndo()
-    if (added !== null) setNotice(copy.undone(formatValue(added)))
-    cancelCooldown()
+    lock()
   }
 
   return (
@@ -172,24 +161,12 @@ function PlayerColumn({
         ) : (
           <button
             type="button"
-            aria-label={cooling ? text.undo(player.label) : text.submit(player.label)}
-            data-cooling={cooling}
-            onClick={cooling ? undo : submit}
-            className={`relative flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center gap-1 overflow-hidden rounded-counter border-2 px-1 transition-colors ${tone.border} ${
-              cooling ? tone.soft : tone.fill
-            }`}
+            aria-label={text.submit(player.label)}
+            onClick={submit}
+            disabled={locked}
+            className={`flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center rounded-counter border-2 px-1 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
           >
-            {cooling ? <UndoIcon className="size-4" /> : <CheckIcon className="size-6" />}
-            {cooling && added !== null && (
-              <span className="font-stencil text-xl leading-none font-extrabold tabular-nums">{formatValue(added)}</span>
-            )}
-            {cooling && (
-              <span
-                aria-hidden="true"
-                style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
-                className={`absolute inset-x-0 bottom-0 h-1 origin-left animate-drain motion-reduce:hidden ${tone.bar}`}
-              />
-            )}
+            <CheckIcon className="size-6" />
           </button>
         )}
         <span role="status" className="sr-only">
@@ -207,7 +184,7 @@ function PlayerColumn({
           className="flex min-w-0 max-w-full justify-end gap-0.5 overflow-hidden font-mono text-xs leading-5"
         >
           {latest.map(({ v, i }) => {
-            const isNew = cooling && i === count - 1
+            const isNew = flashing && i === count - 1
             return (
               // Keyed by position in the whole log, so each new entry mounts afresh and flashes,
               // even when it repeats the previous value.
@@ -224,20 +201,6 @@ function PlayerColumn({
         </ol>
       </div>
     </>
-  )
-}
-
-export function UndoIcon({ className }: { className: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="square"
-      />
-    </svg>
   )
 }
 

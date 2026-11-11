@@ -101,7 +101,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
           </div>
           <ToastBar toast={toast} onDismiss={dismissToast} />
         </div>
-        <LastActionBar last={moves.at(-1) ?? null} undoable={canUndo({ game, moves })} onUndo={() => act({ target: 'undoLast' })} />
+        <LastActionBar moves={moves} game={game} undoable={canUndo({ game, moves })} onUndo={() => act({ target: 'undoLast' })} />
       </header>
 
       <main className="grid min-h-0">
@@ -129,7 +129,6 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             summarize={(values) => formatSigned(sum(values))}
             entries={game.rolls.success}
             onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'success', player, value })}
-            onUndo={(player) => dispatch({ type: 'undoRoll', track: 'success', player })}
             revealed={game.ended}
           />
           <RollTracker
@@ -140,7 +139,6 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             summarize={(values) => formatAverage(average(values))}
             entries={game.rolls.dice}
             onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'dice', player, value })}
-            onUndo={(player) => dispatch({ type: 'undoRoll', track: 'dice', player })}
             revealed={game.ended}
           />
         </div>

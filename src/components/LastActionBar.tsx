@@ -1,8 +1,9 @@
 import { ChevronRight, Crosshair, Dices, Layers, RotateCcw, Undo2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { copy } from '../copy'
 import { ASK_NOT, isReveal, TEHRAN } from '../lib/cardGame'
 import { CARDS } from '../lib/cards'
+import type { GameState } from '../lib/game'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import type { Move } from '../lib/room'
 import { formatSigned } from '../lib/stats'
@@ -103,15 +104,31 @@ function shown(last: Move): { icon: ReactNode; text: ReactNode } {
 }
 
 interface LastActionBarProps {
-  last: Move | null
+  /** The room's last moves, oldest first. */
+  moves: readonly Move[]
+  /** The counts the Dziennik's moves change: a repeat of the same move still changes them. */
+  game: Pick<GameState, 'fourOps' | 'rolls'>
   /** Whether the last move can still be taken back; the third one back is only shown. */
   undoable: boolean
   onUndo: () => void
 }
 
-/** The last move in the room, from either device, for as long as it stays the last one. */
-export function LastActionBar({ last, undoable, onUndo }: LastActionBarProps) {
+/**
+ * The last move in the room, from either device, for as long as it stays the last one. A new move
+ * flashes in; one taken back (or a turn gone back) only shows the move before it.
+ */
+export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarProps) {
+  const last = moves.at(-1) ?? null
   const view = last && shown(last)
+  // Only three moves are kept, so a repeat of the same move can leave them looking alike: the
+  // counts it changes tell it apart. Taking a move back shortens the list; a new one never does.
+  const signature = JSON.stringify([moves, game.fourOps, game.rolls])
+  const [seen, setSeen] = useState({ signature, length: moves.length })
+  const [flashes, setFlashes] = useState(0)
+  if (seen.signature !== signature) {
+    if (last && moves.length >= seen.length) setFlashes((n) => n + 1)
+    setSeen({ signature, length: moves.length })
+  }
   return (
     <section aria-label={copy.cards.lastAction} className="flex h-6 min-w-0 items-center gap-2">
       <h2 className="shrink-0 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text">
@@ -123,14 +140,19 @@ export function LastActionBar({ last, undoable, onUndo }: LastActionBarProps) {
         className="flex min-w-0 flex-1 items-center gap-1.5"
       >
         {view ? (
-          <>
+          // Keyed by the flash count, so each new move mounts afresh and its flash runs again.
+          <span
+            key={flashes}
+            data-flash={flashes > 0}
+            className={`-mx-1 flex min-w-0 items-center gap-1.5 rounded-counter px-1 ${flashes > 0 ? 'animate-move-flash' : ''}`}
+          >
             <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center">
               {view.icon}
             </span>
             <span aria-hidden="true" className="min-w-0 truncate text-sm text-ink">
               {view.text}
             </span>
-          </>
+          </span>
         ) : (
           <span aria-hidden="true" className="text-sm text-ink-muted">
             {copy.cards.noLastAction}

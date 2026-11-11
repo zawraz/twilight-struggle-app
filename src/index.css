@@ -123,7 +123,9 @@
 
   /* A log entry just added: lights up in its side's color, then fades back. */
   --animate-log-flash: log-flash 1.4s ease-out;
-  /* An undo window (submit cooldown, toast), as a bar that drains away; each sets its own duration. */
+  /* The last move just made: washed in gold, its words keeping their colours, then fades back. */
+  --animate-move-flash: move-flash 1.4s ease-out;
+  /* An undo window (a toast), as a bar that drains away; each sets its own duration. */
   --animate-drain: drain 5s linear forwards;
 
   @keyframes log-flash {
@@ -131,6 +133,16 @@
     35% {
       background-color: var(--flash);
       color: var(--on-flash);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes move-flash {
+    0%,
+    35% {
+      background-color: color-mix(in oklab, var(--gold) 35%, transparent);
     }
     100% {
       background-color: transparent;

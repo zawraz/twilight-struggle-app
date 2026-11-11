@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { LONG_PRESS_MS, MINE_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
-import { SUBMIT_COOLDOWN_MS } from './components/RollTracker'
+import { TAP_LOCK_MS } from './lib/useCooldown'
 import { copy } from './copy'
 import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
 import { CARDS } from './lib/cards'
@@ -56,9 +56,9 @@ async function setup(saved?: CardsState) {
 
 async function nextTurns(user: User, times: number) {
   for (let i = 0; i < times; i++) {
-    // Right after a new turn the button takes it back; wait that out first.
-    if (screen.queryByRole('button', { name: copy.cards.undoTurn })) act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
     await user.click(screen.getByRole('button', { name: copy.cards.nextTurn }))
+    // Right after a new turn the button rests for a moment; wait that out.
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
   }
 }
 
@@ -110,25 +110,17 @@ describe('Karty: turns', () => {
     expect(rows()[38]).toHaveTextContent('Zakaz prób jądrowych')
   })
 
-  it('the next-turn button takes the turn back for a while', async () => {
+  it('the next-turn button rests for a moment after a new turn, so a double tap skips nothing', async () => {
     const user = await setup()
-    await nextTurns(user, 1)
+    const next = () => screen.getByRole('button', { name: copy.cards.nextTurn })
+    await user.click(next())
     expect(turn()).toHaveTextContent('2')
-    await user.click(screen.getByRole('button', { name: copy.cards.undoTurn }))
-    expect(turn()).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeEnabled()
-
-    await nextTurns(user, 1)
-    act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
-    expect(screen.queryByRole('button', { name: copy.cards.undoTurn })).not.toBeInTheDocument()
+    expect(next()).toBeDisabled()
+    await user.click(next())
     expect(turn()).toHaveTextContent('2')
-  })
 
-  it('playing a card ends the window to take the turn back', async () => {
-    const user = await setup()
-    await nextTurns(user, 1)
-    await discard(user, 'Blokada')
-    expect(screen.queryByRole('button', { name: copy.cards.undoTurn })).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
+    expect(next()).toBeEnabled()
   })
 
   it('brings in Mid War on turn 4 and Late War on turn 8', async () => {

@@ -3,10 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import indexHtml from '../index.html?raw'
 import App from './App'
-import { SUBMIT_COOLDOWN_MS } from './components/RollTracker'
+import { LOG_FLASH_MS } from './components/RollTracker'
 import { ITEM_HEIGHT, SETTLE_MS } from './components/WheelPicker'
 import { copy } from './copy'
 import { STORAGE_KEY } from './lib/game'
+import { TAP_LOCK_MS } from './lib/useCooldown'
 import { CONFIRM_TIMEOUT_MS } from './lib/useConfirmTap'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -23,10 +24,10 @@ function setup() {
   return { user, ...view }
 }
 
-/** Tap a checkmark button, then wait out its cooldown so it can be tapped again. */
+/** Tap a checkmark button, then wait out its rest so it can be tapped again. */
 async function submitRoll(user: User, button: HTMLElement) {
   await user.click(button)
-  act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
+  act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
 }
 
 /** End takes two taps: one to arm, one to confirm. */
@@ -35,10 +36,10 @@ async function endGame(user: User) {
   await user.click(within(header()).getByRole('button', { name: 'Zakończ grę' }))
 }
 
-/** + takes two taps too: one to arm, one to confirm. */
+/** + acts at once, then rests a moment: waited out so it can be tapped again. */
 async function addFourOps(user: User, player: string) {
   await user.click(screen.getByRole('button', { name: copy.fourOps.add(player) }))
-  await user.click(screen.getByRole('button', { name: copy.fourOps.add(player) }))
+  act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
 }
 
 async function startNewGame(user: User) {
@@ -74,70 +75,35 @@ describe('4 Ops Cards', () => {
     expect(minus('ZSRR')).toBeDisabled()
   })
 
-  it('asks for confirmation on the first − tap and decrements on the second', async () => {
+  it('− takes one off at once, then rests for a moment', async () => {
     const { user } = setup()
     await addFourOps(user, 'USA')
     await addFourOps(user, 'USA')
-
-    await user.click(minus('USA'))
-    expect(count('USA')).toHaveTextContent('2')
-    expect(minus('USA')).toHaveAttribute('data-armed', 'true')
-    expect(minus('USA')).toHaveClass('bg-us-soft')
-    expect(within(section(copy.fourOps.title)).getByText('Potwierdź?')).toBeVisible()
 
     await user.click(minus('USA'))
     expect(count('USA')).toHaveTextContent('1')
-    expect(minus('USA')).toHaveAttribute('data-armed', 'false')
+    expect(minus('USA')).toBeDisabled()
+    expect(plus('USA')).toBeEnabled()
+    expect(minus('ZSRR')).toBeDisabled() // at zero, as before
     expect(screen.queryByText('Potwierdź?')).not.toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
+    expect(minus('USA')).toBeEnabled()
   })
 
-  it('only arms the − of the player who tapped it', async () => {
-    const { user } = setup()
-    await addFourOps(user, 'ZSRR')
-    await addFourOps(user, 'USA')
-    await user.click(minus('ZSRR'))
-    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
-    expect(minus('USA')).toHaveAttribute('data-armed', 'false')
-  })
-
-  it('asks for confirmation on the first + tap and increments on the second', async () => {
+  it('+ adds one at once, then rests for a moment', async () => {
     const { user } = setup()
     await user.click(plus('ZSRR'))
-    expect(count('ZSRR')).toHaveTextContent('0')
-    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'true')
-    expect(within(section(copy.fourOps.title)).getByText('Potwierdź?')).toBeVisible()
+    expect(count('ZSRR')).toHaveTextContent('1')
+    expect(plus('ZSRR')).toBeDisabled()
+    expect(plus('USA')).toBeEnabled()
 
+    await user.click(plus('ZSRR')) // a double tap: the second lands on the resting button
+    expect(count('ZSRR')).toHaveTextContent('1')
+
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
     await user.click(plus('ZSRR'))
-    expect(count('ZSRR')).toHaveTextContent('1')
-    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'false')
-  })
-
-  it('swaps a pending − for a pending + and back', async () => {
-    const { user } = setup()
-    await addFourOps(user, 'ZSRR')
-    await user.click(minus('ZSRR'))
-    await user.click(plus('ZSRR'))
-    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'false')
-    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'true')
-    expect(count('ZSRR')).toHaveTextContent('1')
-
-    await user.click(minus('ZSRR'))
-    expect(plus('ZSRR')).toHaveAttribute('data-armed', 'false')
-    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
-    expect(count('ZSRR')).toHaveTextContent('1')
-  })
-
-  it('cancels a pending − after a timeout', () => {
-    vi.useFakeTimers()
-    render(<App />)
-    fireEvent.click(plus('ZSRR'))
-    fireEvent.click(plus('ZSRR'))
-    fireEvent.click(minus('ZSRR'))
-    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'true')
-
-    act(() => vi.advanceTimersByTime(CONFIRM_TIMEOUT_MS))
-    expect(minus('ZSRR')).toHaveAttribute('data-armed', 'false')
-    expect(count('ZSRR')).toHaveTextContent('1')
+    expect(count('ZSRR')).toHaveTextContent('2')
   })
 })
 
@@ -257,7 +223,6 @@ describe('Success Rolls', () => {
       within(screen.getByRole('listbox', { name: copy.success.wheel })).getByRole('option', { name: label }),
     )
   const confirm = (player: string) => screen.getByRole('button', { name: copy.success.submit(player) })
-  const undo = (player: string) => screen.getByRole('button', { name: copy.success.undo(player) })
   const log = (player: string) => screen.getByRole('list', { name: copy.success.log(player) })
   const logged = (player: string) => within(log(player)).queryAllByRole('listitem').map((li) => li.textContent)
 
@@ -269,53 +234,24 @@ describe('Success Rolls', () => {
     expect(options).toEqual(['+5', '+4', '+3', '+2', '+1', ...[1, 2, 3, 4, 5].map((n) => `${MINUS}${n}`)])
   })
 
-  it('turns the checkmark into an undo button for 5 seconds, showing the value just added', async () => {
+  it('adds the roll at once, then rests the checkmark for a moment', async () => {
     const { user } = setup()
     await pick(user, '+3')
     await user.click(confirm('ZSRR'))
 
-    expect(undo('ZSRR')).toBeEnabled()
-    expect(undo('ZSRR')).toHaveAttribute('data-cooling', 'true')
-    expect(undo('ZSRR')).toHaveTextContent('+3')
+    expect(logged('ZSRR')).toEqual(['+3'])
     expect(screen.getByText('Dodano +3')).toBeInTheDocument()
+    expect(confirm('ZSRR')).toBeDisabled()
+    expect(confirm('ZSRR')).toHaveTextContent('')
     expect(confirm('USA')).toBeEnabled() // the other side is unaffected
 
-    act(() => vi.advanceTimersByTime(1500))
-    expect(undo('ZSRR')).toBeInTheDocument()
-    act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS - 1500))
-    expect(screen.queryByRole('button', { name: copy.success.undo('ZSRR') })).not.toBeInTheDocument()
-    expect(confirm('ZSRR')).toHaveAttribute('data-cooling', 'false')
-    expect(confirm('ZSRR')).toHaveTextContent('')
+    await user.click(confirm('ZSRR')) // a double tap: the second lands on the resting button
     expect(logged('ZSRR')).toEqual(['+3'])
-  })
 
-  it('takes the roll back when tapped again within 5 seconds', async () => {
-    const { user } = setup()
-    await pick(user, '+3')
-    await submitRoll(user, confirm('ZSRR'))
-    await pick(user, `${MINUS}2`)
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
     await user.click(confirm('ZSRR'))
-    expect(logged('ZSRR')).toEqual(['+3', `${MINUS}2`])
-
-    act(() => vi.advanceTimersByTime(1500))
-    await user.click(undo('ZSRR'))
-
-    expect(logged('ZSRR')).toEqual(['+3']) // only the newest roll is taken back
-    expect(within(section(copy.success.title)).getByText('1 rzut')).toBeInTheDocument()
-    expect(screen.getByText(`Cofnięto ${MINUS}2`)).toBeInTheDocument()
-    expect(confirm('ZSRR')).toHaveAttribute('data-cooling', 'false') // ready for the next roll at once
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).rolls.success.ussr).toEqual([3])
-
-    await submitRoll(user, confirm('ZSRR'))
-    await endGame(user)
-    expect(screen.getByRole('status', { name: copy.success.resultFor('ZSRR') })).toHaveTextContent('+1')
-  })
-
-  it('cannot undo once the 5 seconds are over: the tap adds a new roll', async () => {
-    const { user } = setup()
-    await submitRoll(user, confirm('ZSRR'))
-    await user.click(confirm('ZSRR'))
-    expect(logged('ZSRR')).toEqual(['+1', '+1'])
+    expect(logged('ZSRR')).toEqual(['+3', '+3'])
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).rolls.success.ussr).toEqual([3, 3])
   })
 
   it('flashes each new log entry, even when the value repeats', async () => {
@@ -324,7 +260,7 @@ describe('Success Rolls', () => {
     const first = within(log('ZSRR')).getByRole('listitem')
     expect(first).toHaveAttribute('data-new', 'true')
 
-    act(() => vi.advanceTimersByTime(SUBMIT_COOLDOWN_MS))
+    act(() => vi.advanceTimersByTime(LOG_FLASH_MS))
     expect(first).toHaveAttribute('data-new', 'false')
 
     await user.click(confirm('ZSRR')) // +1 again
@@ -425,19 +361,6 @@ describe('Dice EV', () => {
     expect(add('ZSRR').className.replaceAll('ussr', 'X')).toBe(
       screen.getByRole('button', { name: copy.success.submit('ZSRR') }).className.replaceAll('ussr', 'X'),
     )
-  })
-
-  it('offers to undo for 5 seconds after adding', async () => {
-    const { user } = setup()
-    await pick(user, '5')
-    await user.click(add('USA'))
-    const undo = screen.getByRole('button', { name: copy.dice.undo('USA') })
-    expect(undo).toHaveTextContent('5')
-
-    await user.click(undo)
-    expect(within(screen.getByRole('list', { name: copy.dice.log('USA') })).queryAllByRole('listitem')).toHaveLength(0)
-    expect(within(section(copy.dice.title)).getAllByText('Brak rzutów')).toHaveLength(2)
-    expect(add('USA')).toBeEnabled()
   })
 
   it('stores added rolls and reveals the average on End', async () => {
@@ -701,11 +624,24 @@ describe('Last move', () => {
     expect(lastMove(copy.cards.noLastAction)).toBeInTheDocument()
   })
 
-  it("is cleared when the roll's own undo button takes the roll back", async () => {
+  it('flashes a new move in, even a repeat of the last one, but not one taken back', async () => {
     const { user } = setup()
-    await user.click(submit('ZSRR'))
-    await user.click(screen.getByRole('button', { name: copy.dice.undo('ZSRR') }))
-    expect(lastMove(copy.cards.noLastAction)).toBeInTheDocument()
+    const flash = () => within(header()).getByRole('status', { name: /./ }).firstElementChild!
+    await submitRoll(user, submit('USA'))
+    const first = flash()
+    expect(first).toHaveAttribute('data-flash', 'true')
+    expect(first).toHaveClass('animate-move-flash')
+
+    for (let i = 0; i < 3; i++) await submitRoll(user, submit('USA')) // the same roll: still a new move each time
+    expect(flash()).not.toBe(first)
+    const repeated = flash()
+    await submitRoll(user, submit('USA'))
+    expect(flash()).not.toBe(repeated)
+
+    const beforeUndo = flash()
+    await user.click(undoLast())
+    expect(lastMove(`${copy.dice.wheel}: USA 4`)).toBeInTheDocument()
+    expect(flash()).toBe(beforeUndo) // the move before it shows without a flash
   })
 
   it('shows a 4 Ops count moved by hand and takes it back', async () => {

@@ -1,7 +1,6 @@
 import { copy } from '../copy'
 import type { Player } from '../lib/players'
-import { useConfirmTap } from '../lib/useConfirmTap'
-import { ConfirmCaption } from './ConfirmCaption'
+import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import { TONE } from './tone'
 
 interface OpsCounterProps {
@@ -14,18 +13,18 @@ interface OpsCounterProps {
 }
 
 export function OpsCounter({ player, count, onIncrement, onDecrement, locked = false }: OpsCounterProps) {
-  // Playing a card on the Karty tab keeps the count, so a tap here is a correction: both take a confirming second tap.
-  const minus = useConfirmTap(onDecrement)
-  const plus = useConfirmTap(onIncrement)
+  // A tap acts at once (the undo bar takes it back), then the button rests for a moment against a double tap.
+  const [minusLocked, lockMinus] = useCooldown(TAP_LOCK_MS)
+  const [plusLocked, lockPlus] = useCooldown(TAP_LOCK_MS)
 
   const handleMinus = () => {
-    plus.disarm()
-    minus.tap()
+    onDecrement()
+    lockMinus()
   }
 
   const handlePlus = () => {
-    minus.disarm()
-    plus.tap()
+    onIncrement()
+    lockPlus()
   }
 
   const tone = TONE[player.id]
@@ -44,16 +43,12 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
       >
         {!locked && (
           <div className="relative">
-            {minus.armed && <ConfirmCaption />}
             <button
               type="button"
               aria-label={copy.fourOps.remove(player.label)}
-              data-armed={minus.armed}
-              disabled={count === 0}
+              disabled={count === 0 || minusLocked}
               onClick={handleMinus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${
-                minus.armed ? tone.soft : tone.fill
-              }`}
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
             >
               <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
                 <path d="M5 12h14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />
@@ -69,15 +64,12 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
         </output>
         {!locked && (
           <div className="relative">
-            {plus.armed && <ConfirmCaption />}
             <button
               type="button"
               aria-label={copy.fourOps.add(player.label)}
-              data-armed={plus.armed}
+              disabled={plusLocked}
               onClick={handlePlus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${
-                plus.armed ? tone.soft : tone.fill
-              }`}
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
             >
               <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
                 <path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />

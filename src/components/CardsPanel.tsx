@@ -34,13 +34,12 @@ import { CARD_SIDES, PHASES, phaseStarted, type CardSide } from '../lib/cards'
 import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
 import type { PlayerId } from '../lib/players'
 import type { RoomAction } from '../lib/room'
-import { useCooldown } from '../lib/useCooldown'
+import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import type { MyHand } from '../lib/useMyHand'
 import type { Toast } from '../lib/useToast'
 import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
 import { EventPicker } from './EventPicker'
 import { PlayerPicker } from './PlayerPicker'
-import { SUBMIT_COOLDOWN_MS, UndoIcon } from './RollTracker'
 import { TabBar } from './TabBar'
 import { SIDE_TEXT } from './tone'
 
@@ -152,8 +151,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const [slide, setSlide] = useState({ x: 0, held: false })
   const listRef = useRef<HTMLUListElement>(null)
   const [picks, setPicks] = useState<number[]>([])
-  // Right after a new turn its button takes the turn back for a while.
-  const [turnCooling, startTurnCooldown, cancelTurnCooldown] = useCooldown(SUBMIT_COOLDOWN_MS)
+  // Right after a new turn its button rests for a moment, so a double tap doesn't skip a turn.
+  const [turnLocked, lockTurn] = useCooldown(TAP_LOCK_MS)
   const pending = cards.pending
   // A revealed hand is the other player's: the cards this player holds can't be in it.
   const pickable = pickableIds(cards).filter((id) => !(isReveal(pending) && myHand.has(id)))
@@ -222,21 +221,18 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
       notify({ text: back > 0 ? copy.cards.reshuffled(back) : copy.cards.deckRanOut, undo: previousTurn })
     } else onToastStale()
     setOpenId(null)
-    startTurnCooldown()
+    lockTurn()
     dispatch({ type: 'nextTurn' })
   }
 
   function previousTurn() {
     setOpenId(null)
-    cancelTurnCooldown()
     onToastStale()
     dispatch({ type: 'previousTurn' })
   }
 
   function change(id: number, name: string, state: CardState) {
     setOpenId(null)
-    // Once a card is played on the new turn, the turn is under way.
-    cancelTurnCooldown()
     const card = inPlay.find((c) => c.id === id)
     if (state !== 'available' && card?.value === 4 && countsFourOps) {
       setAsking({ id, name, state })
@@ -430,22 +426,12 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
             </div>
             <button
               type="button"
-              aria-label={turnCooling ? copy.cards.undoTurn : copy.cards.nextTurn}
-              data-cooling={turnCooling}
-              onClick={turnCooling ? previousTurn : nextTurn}
-              disabled={!turnCooling && (cards.turn >= LAST_TURN || pending !== null)}
-              className={`relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-counter border-2 transition-colors disabled:opacity-30 ${
-                turnCooling ? 'border-gold text-gold-text' : 'border-line-strong text-ink'
-              }`}
+              aria-label={copy.cards.nextTurn}
+              onClick={nextTurn}
+              disabled={turnLocked || cards.turn >= LAST_TURN || pending !== null}
+              className="grid size-9 shrink-0 place-items-center rounded-counter border-2 border-line-strong text-ink transition-colors disabled:opacity-30"
             >
-              {turnCooling ? <UndoIcon className="size-4" /> : <ChevronRight className="size-5" aria-hidden="true" />}
-              {turnCooling && (
-                <span
-                  aria-hidden="true"
-                  style={{ animationDuration: `${SUBMIT_COOLDOWN_MS}ms` }}
-                  className="absolute inset-x-0 bottom-0 h-1 origin-left animate-drain bg-gold motion-reduce:hidden"
-                />
-              )}
+              <ChevronRight className="size-5" aria-hidden="true" />
             </button>
           </div>
         </div>

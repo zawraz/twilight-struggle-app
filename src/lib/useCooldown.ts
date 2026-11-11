@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
 
+/**
+ * How long a button that just acted stays disabled, so a double tap doesn't act twice. The act
+ * itself is taken back with the undo bar.
+ */
+export const TAP_LOCK_MS = 1000
+
 /** A flag that turns itself off `ms` after `start()`, or at once on `cancel()`. */
 export function useCooldown(ms: number) {
   const [active, setActive] = useState(false)

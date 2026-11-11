@@ -24,8 +24,6 @@ export interface TrackerCopy {
   /** The one wheel both players submit from. */
   wheel: string
   submit: (side: string) => string
-  /** The same button while its cooldown runs: a tap takes the roll back. */
-  undo: (side: string) => string
   log: (side: string) => string
   result: string
   resultFor: (side: string) => string
@@ -46,7 +44,6 @@ export const copy = {
     turnOf: (n: number) => `Tura ${n} z 10`,
     nextTurn: 'Następna tura',
     /** The next-turn button for a while after a new turn: a tap takes it back. */
-    undoTurn: 'Cofnij turę',
     reshuffled: (n: number) => `Przetasowano: wraca ${cards(n)}`,
     deckRanOut: 'Talia wyczerpana, nie ma czego przetasować',
     deck: 'Talia',
@@ -179,7 +176,6 @@ export const copy = {
     title: 'Rzuty na sukces',
     wheel: 'Rzut na sukces',
     submit: (side) => `Potwierdź rzut na sukces: ${side}`,
-    undo: (side) => `Cofnij rzut na sukces: ${side}`,
     log: (side) => `Ostatnie rzuty na sukces: ${side}`,
     result: 'Suma',
     resultFor: (side) => `Suma: ${side}`,
@@ -189,7 +185,6 @@ export const copy = {
     title: 'Zwykłe rzuty',
     wheel: 'Rzut kością',
     submit: (side) => `Potwierdź rzut kością: ${side}`,
-    undo: (side) => `Cofnij rzut kością: ${side}`,
     log: (side) => `Ostatnie rzuty kością: ${side}`,
     result: 'Średnia',
     resultFor: (side) => `Średnia: ${side}`,
@@ -198,5 +193,4 @@ export const copy = {
   lastRolls: 'Ostatnie 3 rzuty:',
   noRolls: 'Brak rzutów',
   added: (value: string) => `Dodano ${value}`,
-  undone: (value: string) => `Cofnięto ${value}`,
 }
