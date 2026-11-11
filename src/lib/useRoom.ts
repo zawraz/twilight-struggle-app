@@ -2,7 +2,7 @@ import { useConvexConnectionState, useMutation, useQuery } from 'convex/react'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { api } from '../../convex/_generated/api'
 import { loadCards, saveCards, type CardsAction, type CardsState } from './cardGame'
-import { convex } from './convex'
+import { defaultServer as convex } from './convexServer'
 import { loadGame, saveGame, type GameAction, type GameState } from './game'
 import {
   loadMoves,
