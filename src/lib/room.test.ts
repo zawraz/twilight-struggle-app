@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ASK_NOT, cardsReducer, TEHRAN } from './cardGame'
 import { CARDS } from './cards'
-import { canUndo, CODE_LENGTH, isRoomState, makeRoomCode, newRoom, normalizeRoomCode, roomReducer, withMoves, type RoomAction, type RoomState } from './room'
+import { canUndo, isRoomState, newRoom, roomReducer, type RoomAction, type RoomState } from './room'
 
 const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
 const NATO = idOf('NATO')
@@ -150,12 +150,6 @@ describe('roomReducer: the last three moves', () => {
 })
 
 describe('isRoomState', () => {
-  it('takes a room stored before the moves were kept, once given an empty list', () => {
-    const { game, cards } = newRoom()
-    expect(isRoomState({ game, cards })).toBe(false)
-    expect(isRoomState(withMoves({ game, cards }))).toBe(true)
-  })
-
   it('accepts a new room and a game that went through JSON, as the server stores it', () => {
     const played = roomReducer(newRoom(), { target: 'cards', action: { type: 'setCardState', id: 43, state: 'discarded' } })
     expect(isRoomState(newRoom())).toBe(true)
@@ -165,26 +159,5 @@ describe('isRoomState', () => {
   it('rejects anything else', () => {
     expect(isRoomState(null)).toBe(false)
     expect(isRoomState({ game: newRoom().game })).toBe(false)
-  })
-})
-
-describe('room codes', () => {
-  it('makes codes that read back as themselves', () => {
-    for (let i = 0; i < 50; i++) {
-      const code = makeRoomCode()
-      expect(code).toHaveLength(CODE_LENGTH)
-      expect(normalizeRoomCode(code)).toBe(code)
-    }
-  })
-
-  it('takes a typed code in any case, with stray spaces', () => {
-    expect(normalizeRoomCode(' xk4pa ')).toBe('XK4PA')
-  })
-
-  it('refuses codes of the wrong length or with look-alike characters', () => {
-    expect(normalizeRoomCode('XK4P')).toBeNull()
-    expect(normalizeRoomCode('XK4PAB')).toBeNull()
-    expect(normalizeRoomCode('XK0PA')).toBeNull()
-    expect(normalizeRoomCode('')).toBeNull()
   })
 })

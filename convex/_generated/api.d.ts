@@ -8,7 +8,8 @@
  * @module
  */
 
-import type * as rooms from "../rooms.js";
+import type * as game from "../game.js";
+import type * as validators from "../validators.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +18,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  rooms: typeof rooms;
+  game: typeof game;
+  validators: typeof validators;
 }>;
 
 /**

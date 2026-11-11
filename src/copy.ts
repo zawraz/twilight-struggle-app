@@ -117,29 +117,46 @@ export const copy = {
     restore: (name: string) => `Przywróć: ${name}`,
     restoreLabel: 'Przywróć',
     changed: (name: string, state: string) => `${name}: ${state}`,
-    /** The header strip with the last card played, from either device in the room. */
+    /** The header strip with the last card played, from either phone. */
     lastAction: 'Ostatni ruch',
     noLastAction: 'Brak',
     undoLast: (what: string) => `Cofnij: ${what}`,
   },
 
-  room: {
-    /** The header button: opens the room panel. */
+  /** New Game's question: a game on this phone alone, or the one both phones share. */
+  newGameDialog: {
+    title: 'Nowa gra',
+    offline: 'Offline',
+    offlineHint: 'Gra tylko na tym telefonie',
+    online: 'Online',
+    onlineHint: 'Wspólna gra na obu telefonach. Zastępuje obecną grę online.',
+    cancel: 'Anuluj',
+  },
+
+  /** The people icon: this phone's sync, and the way into the online game. */
+  sync: {
     open: 'Wspólna gra',
     title: 'Wspólna gra',
-    code: 'Kod pokoju',
-    hint: 'Na drugim urządzeniu otwórz link albo wpisz ten kod.',
-    share: 'Udostępnij link',
-    shareTitle: 'Twilight Struggle: wspólna gra',
-    copied: 'Skopiowano link do pokoju',
-    joinLabel: 'Dołącz do innego pokoju',
-    join: 'Dołącz',
-    joined: (code: string) => `Dołączono do pokoju ${code}`,
-    badCode: 'Kod ma 5 znaków',
-    connected: 'Połączono',
-    offline: 'Brak połączenia: zmiany zostaną wysłane po powrocie',
-    loading: 'Wczytywanie gry, zmiany na razie zablokowane',
     close: 'Zamknij',
+    online: 'Ten telefon: online',
+    offline: 'Ten telefon: offline',
+    connected: 'Połączono',
+    disconnected: 'Brak połączenia: zmiany zostaną wysłane po powrocie',
+    loading: 'Wczytywanie gry, zmiany na razie zablokowane',
+    missing: 'Na serwerze nie ma gry online',
+    leave: 'Wyłącz synchronizację',
+    left: 'Synchronizacja wyłączona: grasz offline',
+    checking: 'Sprawdzanie gry online…',
+    none: 'Nie ma gry online. Zacznij ją przez Nowa gra → Online.',
+    /** An ended online game can't be joined: there is nothing left to play. */
+    ended: (turn: number) => `Gra online zakończona (tura ${turn}). Nową zaczniesz przez Nowa gra → Online.`,
+    unreachable: 'Brak połączenia z serwerem',
+    found: (turn: number, ago: string) => `Gra online: tura ${turn}, ostatnia zmiana ${ago}`,
+    ago: (minutes: number) =>
+      minutes < 1 ? 'przed chwilą' : minutes < 60 ? `${minutes} min temu` : `${Math.floor(minutes / 60)} godz. temu`,
+    join: 'Dołącz',
+    joinWarning: 'Gra na tym telefonie zostanie zastąpiona i nie da się jej odzyskać.',
+    joined: 'Dołączono do gry online',
   },
 
   fourOps: {

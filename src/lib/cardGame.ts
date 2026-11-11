@@ -73,7 +73,7 @@ export type CardsAction =
   | { type: 'nextTurn' }
   | { type: 'previousTurn' }
   /** Closes the waiting event's picker with what it picked. */
-  | { type: 'resolveEvent'; picked: readonly number[] }
+  | { type: 'resolveEvent'; picked: number[] }
   /** Puts a whole earlier state back: how an event is taken back. */
   | { type: 'restore'; state: CardsState }
   | { type: 'newGame' }
