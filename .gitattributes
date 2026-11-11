@@ -1,0 +1,2 @@
+# Convex writes its generated files with LF; keep them LF so `convex dev` does not leave them showing as modified.
+convex/_generated/** text eol=lf
