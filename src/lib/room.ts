@@ -67,7 +67,7 @@ export type RoomAction =
   /** A card changes state; a 4 Ops card names the side that played it, counted in the log. */
   | { target: 'play'; id: number; state: CardState; by: PlayerId | null }
   /** Closes the waiting event's picker with what it picked. */
-  | { target: 'resolve'; picked: readonly number[] }
+  | { target: 'resolve'; picked: number[] }
   /** Takes the last move back. */
   | { target: 'undoLast' }
 

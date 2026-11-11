@@ -1,7 +1,8 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { cardsState, gameState, moves } from './validators'
 
 export default defineSchema({
-  // The one shared game. At most one document; `game`, `cards` and `moves` are checked with the app's own validators.
-  games: defineTable({ game: v.any(), cards: v.any(), moves: v.any(), updatedAt: v.number() }),
+  // The one shared game: at most one document.
+  games: defineTable({ game: gameState, cards: cardsState, moves, updatedAt: v.number() }),
 })
