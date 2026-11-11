@@ -7,7 +7,7 @@ import { copy } from './copy'
 import { CARDS_STORAGE_KEY } from './lib/cardGame'
 import { newRoom, roomReducer, type RoomState } from './lib/room'
 import type { OnlineGame } from './lib/syncServer'
-import { MY_HAND_KEY } from './lib/useMyHand'
+import { MY_HAND_KEY, THEIR_HAND_KEY } from './lib/useMyHand'
 import { CHECK_TIMEOUT_MS } from './lib/useOnlineGame'
 import { SYNC_MODE_KEY } from './lib/useRoom'
 import { fakeServer, type FakeServer } from './test/fakeServer'
@@ -118,6 +118,7 @@ describe('A synced phone', () => {
   it('resets when the other phone starts a new online game, and drops its hand', async () => {
     stored('online', atTurn(3))
     localStorage.setItem(MY_HAND_KEY, JSON.stringify([5]))
+    localStorage.setItem(THEIR_HAND_KEY, JSON.stringify([6]))
     const fake = fakeServer(online(3))
     const user = setup(fake)
     await cardsTab(user)
@@ -125,6 +126,7 @@ describe('A synced phone', () => {
     act(() => fake.replace({ state: newRoom(), updatedAt: Date.now() }))
     expect(turn()).toHaveAccessibleName('Tura 1 z 10')
     expect(JSON.parse(localStorage.getItem(MY_HAND_KEY)!)).toEqual([])
+    expect(JSON.parse(localStorage.getItem(THEIR_HAND_KEY)!)).toEqual([])
   })
 
   it('after a reload shows the last game at once, read-only until the server answers', async () => {

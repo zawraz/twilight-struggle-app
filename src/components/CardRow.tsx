@@ -3,14 +3,20 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type R
 import { copy } from '../copy'
 import { staysInPlay, type CardState } from '../lib/cardGame'
 import type { Card } from '../lib/cards'
+import type { Whose } from '../lib/useMyHand'
 import { SIDE_NAME_TEXT, SIDE_TEXT } from './tone'
 
 /** How far a row must be dragged sideways to commit the swipe. */
 export const SWIPE_COMMIT_PX = 80
 /** Sideways movement that turns a press into a swipe (and vertical movement that cancels it). */
 export const SLOP_PX = 8
-/** How long a press must be held to offer restoring a played card, or to mark an available one as held. */
+/**
+ * How long a press must be held to offer restoring a played card, or to mark an available one as in
+ * the other hand; on a marked card, to move its mark to the other hand.
+ */
 export const LONG_PRESS_MS = 500
+/** Held on this long, an unmarked card is marked as in this player's hand instead; a marked one loses its mark. */
+export const MINE_PRESS_MS = 1500
 
 interface CardRowProps {
   card: Card
@@ -19,8 +25,13 @@ interface CardRowProps {
   inHand: boolean
   /** This player marked the card as held: on this device only. */
   mine?: boolean
-  /** A long press on an available card marks it as held, or unmarks it. */
-  onMark?: () => void
+  /** This player marked the card as held by the other player: on this device only. */
+  theirs?: boolean
+  /**
+   * A hold on an available card sets its mark, or takes it off (null). Unmarked: short for theirs,
+   * long for mine. Marked: short moves it to the other hand, long takes it off.
+   */
+  onMark?: (whose: Whose | null) => void
   /** The row's action buttons are showing. */
   open: boolean
   onToggle: () => void
@@ -55,8 +66,9 @@ interface Gesture {
 
 /**
  * One checklist line. Tap an available card for remove / discard buttons; swipe it left to discard
- * or right to remove; long-press it to mark it as held in this player's hand, and a discarded or
- * removed card to restore it. Shuttle Diplomacy swipes
+ * or right to remove; hold it to mark it as held in the other player's hand, or on past a second
+ * buzz in this player's own. Once marked, a hold moves the mark to the other hand, or on past the
+ * second buzz takes it off. Long-press a discarded or removed card to restore it. Shuttle Diplomacy swipes
  * right into play instead, and left from there to the discard pile.
  */
 export function CardRow({
@@ -64,6 +76,7 @@ export function CardRow({
   state,
   inHand,
   mine = false,
+  theirs = false,
   onMark,
   open,
   onToggle,
@@ -76,7 +89,9 @@ export function CardRow({
 }: CardRowProps) {
   const [dx, setDx] = useState(0)
   const gesture = useRef<Gesture | null>(null)
-  const longPress = useRef<number | undefined>(undefined)
+  const longPress = useRef<number[]>([])
+  // The mark a hold sets once let go ('clear' takes it off), shown on the row while it is held.
+  const [marking, setMarking] = useState<Whose | 'clear' | null>(null)
   // The click that ends a long press or a swipe isn't a tap.
   const swallowClick = useRef(false)
 
@@ -89,22 +104,42 @@ export function CardRow({
   const canSwipeRight = canPutInPlay || canRemove
   const faded = dim ? DIM[state] : ''
 
-  useEffect(() => () => window.clearTimeout(longPress.current), [])
+  useEffect(() => () => longPress.current.forEach((timer) => window.clearTimeout(timer)), [])
 
-  const cancelLongPress = () => window.clearTimeout(longPress.current)
+  const cancelLongPress = () => {
+    longPress.current.forEach((timer) => window.clearTimeout(timer))
+    longPress.current = []
+    setMarking(null)
+  }
 
   function onPointerDown(event: PointerEvent) {
     if (event.button !== 0 || pick) return
     gesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: 'press' }
     swallowClick.current = false
-    const held = !live ? onToggle : state === 'available' ? onMark : undefined
-    if (held) {
-      longPress.current = window.setTimeout(() => {
-        gesture.current = null
+    if (!live) {
+      longPress.current = [
+        window.setTimeout(() => {
+          gesture.current = null
+          swallowClick.current = true
+          navigator.vibrate?.(10)
+          onToggle()
+        }, LONG_PRESS_MS),
+      ]
+    } else if (state === 'available' && onMark) {
+      // Two buzzes on the way; letting go picks the last one reached. Unmarked: the other hand, then
+      // this player's. Marked: the hand it isn't in, then no mark at all.
+      const current: Whose | null = mine ? 'mine' : theirs ? 'theirs' : null
+      const [first, second]: [Whose, Whose | 'clear'] =
+        current === null ? ['theirs', 'mine'] : [current === 'mine' ? 'theirs' : 'mine', 'clear']
+      const reach = (target: Whose | 'clear') => () => {
         swallowClick.current = true
         navigator.vibrate?.(10)
-        held()
-      }, LONG_PRESS_MS)
+        setMarking(target)
+      }
+      longPress.current = [
+        window.setTimeout(reach(first), LONG_PRESS_MS),
+        window.setTimeout(reach(second), MINE_PRESS_MS),
+      ]
     }
   }
 
@@ -138,9 +173,11 @@ export function CardRow({
 
   function onPointerEnd(event: PointerEvent) {
     const g = gesture.current
+    const mark = marking
     cancelLongPress()
     if (!g || g.pointerId !== event.pointerId) return
     gesture.current = null
+    if (g.mode === 'press' && mark && event.type !== 'pointercancel') onMark?.(mark === 'clear' ? null : mark)
     if (g.mode !== 'swipe') return
     swallowClick.current = true
     const moved = event.type === 'pointercancel' ? 0 : dx
@@ -224,11 +261,7 @@ export function CardRow({
           ) : (
             <span className="grid size-4 shrink-0 place-items-center">
               <CardStateIcon state={state} />
-              {mine ? (
-                <Hand className="size-4 text-ink-muted" aria-label={copy.cards.myHand} role="img" />
-              ) : (
-                inHand && <Hand className="size-4 text-gold-text" aria-label={copy.cards.inHand} role="img" />
-              )}
+              <HandMark marking={marking} mine={mine} theirs={theirs} inHand={inHand} />
             </span>
           )}
           <span className={`flex min-w-0 flex-1 items-center gap-1 ${faded}`}>
@@ -312,6 +345,36 @@ function ActionButton({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * The hand a card is in: while held, the mark letting go will set (or the one it will take off,
+ * shown faded); otherwise this player's own marks, then the one a reshuffle or a reveal showed.
+ */
+function HandMark({
+  marking,
+  mine,
+  theirs,
+  inHand,
+}: {
+  marking: Whose | 'clear' | null
+  mine: boolean
+  theirs: boolean
+  inHand: boolean
+}) {
+  if (marking === 'clear') return <HandIcon whose={mine ? 'mine' : 'theirs'} className="opacity-40" />
+  if (marking) return <HandIcon whose={marking} />
+  if (mine) return <HandIcon whose="mine" />
+  if (theirs) return <HandIcon whose="theirs" />
+  return inHand ? <Hand className="size-4 text-gold-text" aria-label={copy.cards.inHand} role="img" /> : null
+}
+
+function HandIcon({ whose, className = '' }: { whose: Whose; className?: string }) {
+  return whose === 'mine' ? (
+    <Hand className={`size-4 text-ink-muted ${className}`} aria-label={copy.cards.myHand} role="img" />
+  ) : (
+    <Hand className={`size-4 text-gold-text ${className}`} aria-label={copy.cards.theirHand} role="img" />
   )
 }
 
