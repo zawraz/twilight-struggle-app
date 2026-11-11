@@ -117,7 +117,7 @@ export const copy = {
     restore: (name: string) => `Przywróć: ${name}`,
     restoreLabel: 'Przywróć',
     changed: (name: string, state: string) => `${name}: ${state}`,
-    /** The header strip with the last card played, from either device in the room. */
+    /** The header strip with the last card played, from either phone. */
     lastAction: 'Ostatni ruch',
     noLastAction: 'Brak',
     undoLast: (what: string) => `Cofnij: ${what}`,
@@ -155,25 +155,6 @@ export const copy = {
     join: 'Dołącz',
     joinWarning: 'Gra na tym telefonie zostanie zastąpiona i nie da się jej odzyskać.',
     joined: 'Dołączono do gry online',
-  },
-
-  room: {
-    /** The header button: opens the room panel. */
-    open: 'Wspólna gra',
-    title: 'Wspólna gra',
-    code: 'Kod pokoju',
-    hint: 'Na drugim urządzeniu otwórz link albo wpisz ten kod.',
-    share: 'Udostępnij link',
-    shareTitle: 'Twilight Struggle: wspólna gra',
-    copied: 'Skopiowano link do pokoju',
-    joinLabel: 'Dołącz do innego pokoju',
-    join: 'Dołącz',
-    joined: (code: string) => `Dołączono do pokoju ${code}`,
-    badCode: 'Kod ma 5 znaków',
-    connected: 'Połączono',
-    offline: 'Brak połączenia: zmiany zostaną wysłane po powrocie',
-    loading: 'Wczytywanie gry, zmiany na razie zablokowane',
-    close: 'Zamknij',
   },
 
   fourOps: {

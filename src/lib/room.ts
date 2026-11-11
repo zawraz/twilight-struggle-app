@@ -51,8 +51,8 @@ export const KEPT_MOVES = 3
 const UNDOABLE_MOVES = 2
 
 /**
- * A shared game: everything both devices see and change. The server keeps one per room code and
- * runs every action through the same reducers the app uses, so the devices always agree.
+ * A game: everything both phones see and change. The server keeps the one online game and
+ * runs every action through the same reducers the app uses, so the phones always agree.
  */
 export interface RoomState {
   game: GameState
@@ -283,10 +283,6 @@ export const isRoomState = (value: unknown): value is RoomState => {
   return isGameState(s.game) && isCardsState(s.cards) && isMoves(s.moves)
 }
 
-/** A room as stored or sent before it kept its moves. */
-export const withMoves = (value: unknown): unknown =>
-  typeof value === 'object' && value !== null && !('moves' in value) ? { ...value, moves: [] } : value
-
 // ---- Persistence -----------------------------------------------------------
 
 export const MOVES_STORAGE_KEY = 'ts-companion:moves:v1'
@@ -307,22 +303,4 @@ export function saveMoves(moves: readonly Move[], storage: Storage | undefined =
   } catch {
     // Storage full or unavailable: keep playing in memory.
   }
-}
-
-// ---- Room codes ------------------------------------------------------------
-
-/** No 0/O, 1/I/L or U/V: easy to read out across the table and to type. */
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTWXYZ23456789'
-export const CODE_LENGTH = 5
-
-export function makeRoomCode(random: () => number = Math.random): string {
-  let code = ''
-  for (let i = 0; i < CODE_LENGTH; i++) code += CODE_ALPHABET[Math.floor(random() * CODE_ALPHABET.length)]
-  return code
-}
-
-/** The code as typed, tidied up; null when it can't be a room code. */
-export function normalizeRoomCode(input: string): string | null {
-  const code = input.trim().toUpperCase()
-  return code.length === CODE_LENGTH && [...code].every((c) => CODE_ALPHABET.includes(c)) ? code : null
 }
