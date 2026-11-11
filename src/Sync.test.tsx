@@ -174,6 +174,26 @@ describe('The people panel', () => {
     expect(turn()).toHaveAccessibleName('Tura 4 z 10')
   })
 
+  it('offers no way into an online game that has ended', async () => {
+    const ended = online(4)
+    ended.state = roomReducer(ended.state, { target: 'game', action: { type: 'end' } })
+    const fake = fakeServer(ended)
+    const user = setup(fake)
+    await openPanel(user)
+    expect(within(panel()).getByText(copy.sync.ended(4))).toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: copy.sync.join })).not.toBeInTheDocument()
+  })
+
+  it('takes Join away if the online game ends between the two taps', async () => {
+    const fake = fakeServer(online(3))
+    const user = setup(fake)
+    await openPanel(user)
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    act(() => fake.replace({ ...fake.game!, state: roomReducer(fake.game!.state, { target: 'game', action: { type: 'end' } }) }))
+    expect(within(panel()).queryByRole('button', { name: copy.sync.join })).not.toBeInTheDocument()
+    expect(localStorage.getItem(SYNC_MODE_KEY)).not.toBe('online')
+  })
+
   it('says when there is no online game', async () => {
     const user = setup(fakeServer(null))
     await openPanel(user)

@@ -148,6 +148,8 @@ export const copy = {
     left: 'Synchronizacja wyłączona: grasz offline',
     checking: 'Sprawdzanie gry online…',
     none: 'Nie ma gry online. Zacznij ją przez Nowa gra → Online.',
+    /** An ended online game can't be joined: there is nothing left to play. */
+    ended: (turn: number) => `Gra online zakończona (tura ${turn}). Nową zaczniesz przez Nowa gra → Online.`,
     unreachable: 'Brak połączenia z serwerem',
     found: (turn: number, ago: string) => `Gra online: tura ${turn}, ostatnia zmiana ${ago}`,
     ago: (minutes: number) =>

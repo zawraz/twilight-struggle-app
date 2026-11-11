@@ -121,6 +121,10 @@ function OfflineBody({ sync, onJoin }: { sync: RoomSync; onJoin: (game: OnlineGa
     case 'unreachable':
       return <p role="status" className="text-sm text-danger">{copy.sync.unreachable}</p>
     case 'found':
+      // An ended game has nothing left to play: no way in, only the way to a new one.
+      if (check.game.state.game.ended) {
+        return <p role="status" className="text-sm text-ink-muted">{copy.sync.ended(check.game.state.cards.turn)}</p>
+      }
       return <Found game={check.game} onJoin={onJoin} />
   }
 }
