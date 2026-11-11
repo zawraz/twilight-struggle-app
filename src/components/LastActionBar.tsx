@@ -104,6 +104,18 @@ function shown(last: Move): { icon: ReactNode; text: ReactNode } {
   }
 }
 
+/**
+ * JSON with every object's keys sorted. Convex hands documents back with their keys in alphabetical
+ * order, unlike the app's own objects: an online move would otherwise read as a new one twice, once
+ * as this phone's optimistic copy and again as the server's.
+ */
+const stableJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) =>
+    v !== null && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v,
+  )
+
 interface LastActionBarProps {
   /** The room's last moves, oldest first. */
   moves: readonly Move[]
@@ -123,7 +135,7 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
   const view = last && shown(last)
   // Only three moves are kept, so a repeat of the same move can leave them looking alike: the
   // counts it changes tell it apart. Taking a move back shortens the list; a new one never does.
-  const signature = JSON.stringify([moves, game.fourOps, game.rolls])
+  const signature = stableJson([moves, game.fourOps, game.rolls])
   const [seen, setSeen] = useState({ signature, length: moves.length })
   const [flashes, setFlashes] = useState(0)
   if (seen.signature !== signature) {
