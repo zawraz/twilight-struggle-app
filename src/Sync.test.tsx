@@ -8,6 +8,7 @@ import { CARDS_STORAGE_KEY } from './lib/cardGame'
 import { newRoom, roomReducer, type RoomState } from './lib/room'
 import type { OnlineGame } from './lib/syncServer'
 import { MY_HAND_KEY } from './lib/useMyHand'
+import { CHECK_TIMEOUT_MS } from './lib/useOnlineGame'
 import { SYNC_MODE_KEY } from './lib/useRoom'
 import { fakeServer, type FakeServer } from './test/fakeServer'
 
@@ -139,5 +140,108 @@ describe('A synced phone', () => {
     await nextTurn(user)
     expect(turn()).toHaveAccessibleName('Tura 7 z 10')
     expect(fake.game?.state.cards.turn).toBe(7)
+  })
+})
+
+describe('The people panel', () => {
+  const openPanel = (user: User) => user.click(within(header()).getByRole('button', { name: copy.sync.open }))
+  const panel = () => screen.getByRole('dialog', { name: copy.sync.title })
+  const closePanel = (user: User) => user.click(within(panel()).getByRole('button', { name: copy.sync.close }))
+
+  it('on an offline phone finds the online game and joins after two taps', async () => {
+    const fake = fakeServer(online(3, Date.now() - 2 * 60_000))
+    const user = setup(fake)
+    await openPanel(user)
+    expect(within(panel()).getByText(copy.sync.found(3, '2 min temu'))).toBeInTheDocument()
+    expect(within(panel()).getByText(copy.sync.joinWarning)).toBeInTheDocument()
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    expect(localStorage.getItem(SYNC_MODE_KEY)).not.toBe('online')
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    expect(localStorage.getItem(SYNC_MODE_KEY)).toBe('online')
+    expect(screen.getByText(copy.sync.joined)).toBeInTheDocument()
+    await cardsTab(user)
+    expect(turn()).toHaveAccessibleName('Tura 3 z 10')
+  })
+
+  it('joins the latest online game, not the one first shown', async () => {
+    const fake = fakeServer(online(3))
+    const user = setup(fake)
+    await openPanel(user)
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    act(() => fake.replace(online(4)))
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    await cardsTab(user)
+    expect(turn()).toHaveAccessibleName('Tura 4 z 10')
+  })
+
+  it('says when there is no online game', async () => {
+    const user = setup(fakeServer(null))
+    await openPanel(user)
+    expect(within(panel()).getByText(copy.sync.none)).toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: copy.sync.join })).not.toBeInTheDocument()
+  })
+
+  it('gives up waiting for the server after CHECK_TIMEOUT_MS', async () => {
+    const user = setup(fakeServer(online(2), { held: true }))
+    await openPanel(user)
+    expect(within(panel()).getByText(copy.sync.checking)).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(CHECK_TIMEOUT_MS))
+    expect(within(panel()).getByText(copy.sync.unreachable)).toBeInTheDocument()
+  })
+
+  it('on an offline phone closes the connection when it closes', async () => {
+    const fake = fakeServer(online(2))
+    const user = setup(fake)
+    await openPanel(user)
+    expect(fake.open).toBe(true)
+    await closePanel(user)
+    expect(fake.open).toBe(false)
+  })
+
+  it('on a synced phone turns sync off and keeps the game, even without a connection', async () => {
+    stored('online', atTurn(3))
+    const fake = fakeServer(online(3))
+    const user = setup(fake)
+    await cardsTab(user)
+    act(() => fake.setConnected(false))
+    await nextTurn(user)
+    expect(turn()).toHaveAccessibleName('Tura 4 z 10')
+    await openPanel(user)
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.leave }))
+    expect(localStorage.getItem(SYNC_MODE_KEY)).toBe('offline')
+    expect(fake.open).toBe(false)
+    expect(screen.getByText(copy.sync.left)).toBeInTheDocument()
+    expect(turn()).toHaveAccessibleName('Tura 4 z 10')
+    await nextTurn(user)
+    expect(turn()).toHaveAccessibleName('Tura 5 z 10')
+    expect(fake.game?.state.cards.turn).toBe(4)
+  })
+
+  it('lets a phone that turned sync off join again', async () => {
+    stored('online', atTurn(3))
+    const fake = fakeServer(online(3))
+    const user = setup(fake)
+    await openPanel(user)
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.leave }))
+    act(() => fake.replace(online(5)))
+    await openPanel(user)
+    expect(within(panel()).getByText(copy.sync.found(5, 'przed chwilą'))).toBeInTheDocument()
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.join }))
+    expect(localStorage.getItem(SYNC_MODE_KEY)).toBe('online')
+    await cardsTab(user)
+    expect(turn()).toHaveAccessibleName('Tura 5 z 10')
+  })
+
+  it('marks a lost connection on the icon only while online', async () => {
+    stored('online', atTurn(2))
+    const fake = fakeServer(online(2))
+    const user = setup(fake)
+    expect(screen.queryByTestId('sync-offline-mark')).not.toBeInTheDocument()
+    act(() => fake.setConnected(false))
+    expect(screen.getByTestId('sync-offline-mark')).toBeInTheDocument()
+    await openPanel(user)
+    await user.click(within(panel()).getByRole('button', { name: copy.sync.leave }))
+    expect(screen.queryByTestId('sync-offline-mark')).not.toBeInTheDocument()
   })
 })

@@ -133,6 +133,30 @@ export const copy = {
     cancel: 'Anuluj',
   },
 
+  /** The people icon: this phone's sync, and the way into the online game. */
+  sync: {
+    open: 'Wspólna gra',
+    title: 'Wspólna gra',
+    close: 'Zamknij',
+    online: 'Ten telefon: online',
+    offline: 'Ten telefon: offline',
+    connected: 'Połączono',
+    disconnected: 'Brak połączenia: zmiany zostaną wysłane po powrocie',
+    loading: 'Wczytywanie gry, zmiany na razie zablokowane',
+    missing: 'Na serwerze nie ma gry online',
+    leave: 'Wyłącz synchronizację',
+    left: 'Synchronizacja wyłączona: grasz offline',
+    checking: 'Sprawdzanie gry online…',
+    none: 'Nie ma gry online. Zacznij ją przez Nowa gra → Online.',
+    unreachable: 'Brak połączenia z serwerem',
+    found: (turn: number, ago: string) => `Gra online: tura ${turn}, ostatnia zmiana ${ago}`,
+    ago: (minutes: number) =>
+      minutes < 1 ? 'przed chwilą' : minutes < 60 ? `${minutes} min temu` : `${Math.floor(minutes / 60)} godz. temu`,
+    join: 'Dołącz',
+    joinWarning: 'Gra na tym telefonie zostanie zastąpiona i nie da się jej odzyskać.',
+    joined: 'Dołączono do gry online',
+  },
+
   room: {
     /** The header button: opens the room panel. */
     open: 'Wspólna gra',

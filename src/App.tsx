@@ -7,6 +7,7 @@ import { OpsCounter } from './components/OpsCounter'
 import { NewGameDialog } from './components/NewGameDialog'
 import { RollTracker } from './components/RollTracker'
 import { Section } from './components/Section'
+import { SyncButton } from './components/SyncButton'
 import { TabBar } from './components/TabBar'
 import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
@@ -85,6 +86,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base">
               {copy.appTitle}
             </h1>
+            {sync && <SyncButton sync={sync} notify={showToast} />}
             {/* The view tabs take the rest of the row: the most tapped buttons, made the widest. */}
             <TabBar tabs={TABS} active={tab} onSelect={setTab} idPrefix={TAB_ID} size="header" stretch className="min-w-24 flex-1" />
           </div>
