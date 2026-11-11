@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import indexHtml from '../index.html?raw'
 import App from './App'
-import { LOG_FLASH_MS } from './components/RollTracker'
 import { ITEM_HEIGHT, SETTLE_MS } from './components/WheelPicker'
 import { copy } from './copy'
 import { STORAGE_KEY } from './lib/game'
@@ -96,14 +95,23 @@ describe('4 Ops Cards', () => {
     await user.click(plus('ZSRR'))
     expect(count('ZSRR')).toHaveTextContent('1')
     expect(plus('ZSRR')).toBeDisabled()
+    expect(plus('ZSRR')).toHaveClass('animate-rest') // dimmed, then easing back over the rest
     expect(plus('USA')).toBeEnabled()
 
     await user.click(plus('ZSRR')) // a double tap: the second lands on the resting button
     expect(count('ZSRR')).toHaveTextContent('1')
 
     act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
+    expect(plus('ZSRR')).not.toHaveClass('animate-rest')
     await user.click(plus('ZSRR'))
     expect(count('ZSRR')).toHaveTextContent('2')
+
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
+    await user.click(minus('ZSRR'))
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
+    await user.click(minus('ZSRR')) // down to zero: it stays disabled, so it doesn't ease back
+    expect(minus('ZSRR')).toBeDisabled()
+    expect(minus('ZSRR')).not.toHaveClass('animate-rest')
   })
 })
 
@@ -260,7 +268,7 @@ describe('Success Rolls', () => {
     const first = within(log('ZSRR')).getByRole('listitem')
     expect(first).toHaveAttribute('data-new', 'true')
 
-    act(() => vi.advanceTimersByTime(LOG_FLASH_MS))
+    act(() => vi.advanceTimersByTime(TAP_LOCK_MS))
     expect(first).toHaveAttribute('data-new', 'false')
 
     await user.click(confirm('ZSRR')) // +1 again
@@ -397,7 +405,7 @@ describe('header: End and New Game', () => {
 
   it('names the app and holds the End button', () => {
     setup()
-    expect(within(header()).getByRole('heading', { level: 1 })).toHaveTextContent(/^Twilight Struggle$/)
+    expect(within(header()).getByRole('heading', { level: 1 })).toHaveTextContent(/^Zimna Wojna$/)
     expect(screen.getAllByRole('button', { name: 'Zakończ grę' })).toHaveLength(1)
     expect(within(header()).getByRole('button', { name: 'Zakończ grę' })).toBeInTheDocument()
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
@@ -626,7 +634,7 @@ describe('Last move', () => {
 
   it('flashes a new move in, even a repeat of the last one, but not one taken back', async () => {
     const { user } = setup()
-    const flash = () => within(header()).getByRole('status', { name: /./ }).firstElementChild!
+    const flash = () => within(header()).getByRole('region', { name: copy.cards.lastAction })
     await submitRoll(user, submit('USA'))
     const first = flash()
     expect(first).toHaveAttribute('data-flash', 'true')

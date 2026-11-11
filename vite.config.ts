@@ -12,9 +12,9 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icon.svg', 'icon-maskable.svg'],
       manifest: {
-        name: 'Twilight Struggle App',
-        short_name: 'Twilight Struggle',
-        description: 'Pomocnik do gry Twilight Struggle: karty 4 PO, rzuty na sukces i EV rzutów.',
+        name: 'Zimna Wojna',
+        short_name: 'Zimna Wojna',
+        description: 'Pomocnik do gry Zimna Wojna: karty 4 PO, rzuty na sukces i EV rzutów.',
         lang: 'pl',
         theme_color: '#0f151c',
         background_color: '#0f151c',

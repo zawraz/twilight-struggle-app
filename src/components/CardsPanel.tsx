@@ -34,7 +34,7 @@ import { CARD_SIDES, PHASES, phaseStarted, type CardSide } from '../lib/cards'
 import { loadView, NO_FILTERS, saveView, type Filters } from '../lib/cardsView'
 import type { PlayerId } from '../lib/players'
 import type { RoomAction } from '../lib/room'
-import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
+import { rest, TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import type { MyHand } from '../lib/useMyHand'
 import type { Toast } from '../lib/useToast'
 import { CardRow, SLOP_PX, SWIPE_COMMIT_PX, type RowDivider } from './CardRow'
@@ -153,6 +153,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const [picks, setPicks] = useState<number[]>([])
   // Right after a new turn its button rests for a moment, so a double tap doesn't skip a turn.
   const [turnLocked, lockTurn] = useCooldown(TAP_LOCK_MS)
+  const turnBlocked = cards.turn >= LAST_TURN || cards.pending !== null
   const pending = cards.pending
   // A revealed hand is the other player's: the cards this player holds can't be in it.
   const pickable = pickableIds(cards).filter((id) => !(isReveal(pending) && myHand.has(id)))
@@ -428,8 +429,10 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
               type="button"
               aria-label={copy.cards.nextTurn}
               onClick={nextTurn}
-              disabled={turnLocked || cards.turn >= LAST_TURN || pending !== null}
-              className="grid size-9 shrink-0 place-items-center rounded-counter border-2 border-line-strong text-ink transition-colors disabled:opacity-30"
+              disabled={turnLocked || turnBlocked}
+              // On the last turn, or with an event to resolve, it stays disabled: no easing back.
+              style={rest(turnLocked && !turnBlocked).style}
+              className={`grid size-9 shrink-0 place-items-center rounded-counter border-2 border-line-strong text-ink transition-colors disabled:opacity-30 ${rest(turnLocked && !turnBlocked).className}`}
             >
               <ChevronRight className="size-5" aria-hidden="true" />
             </button>

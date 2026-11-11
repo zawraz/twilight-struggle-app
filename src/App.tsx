@@ -87,7 +87,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
                 startedNewGame()
               }}
             />
-            <h1 className="shrink-0 font-stencil text-2xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-xl max-[400px]:text-base">
+            <h1 className="shrink-0 font-stencil text-3xl leading-none font-extrabold tracking-[0.01em] text-ink max-[480px]:text-2xl max-[400px]:text-xl">
               {copy.appTitle}
             </h1>
             {sync && <SyncButton sync={sync} notify={showToast} />}

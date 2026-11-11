@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { copy } from '../copy'
 import { ASK_NOT, isReveal, TEHRAN } from '../lib/cardGame'
 import { CARDS } from '../lib/cards'
+import { TAP_LOCK_MS } from '../lib/useCooldown'
 import type { GameState } from '../lib/game'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import type { Move } from '../lib/room'
@@ -130,7 +131,15 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
     setSeen({ signature, length: moves.length })
   }
   return (
-    <section aria-label={copy.cards.lastAction} className="flex h-6 min-w-0 items-center gap-2">
+    // Keyed by the flash count, so each new move mounts the bar afresh and its flash runs again.
+    <section
+      key={flashes}
+      aria-label={copy.cards.lastAction}
+      data-flash={flashes > 0}
+      // As long as the tapped button rests: the flash fades out just as it comes back.
+      style={{ animationDuration: `${TAP_LOCK_MS}ms` }}
+      className={`-mx-1 flex h-6 min-w-0 items-center gap-2 rounded-counter px-1 ${flashes > 0 ? 'animate-move-flash' : ''}`}
+    >
       <h2 className="shrink-0 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text">
         {copy.cards.lastAction}:
       </h2>
@@ -140,19 +149,14 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
         className="flex min-w-0 flex-1 items-center gap-1.5"
       >
         {view ? (
-          // Keyed by the flash count, so each new move mounts afresh and its flash runs again.
-          <span
-            key={flashes}
-            data-flash={flashes > 0}
-            className={`-mx-1 flex min-w-0 items-center gap-1.5 rounded-counter px-1 ${flashes > 0 ? 'animate-move-flash' : ''}`}
-          >
+          <>
             <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center">
               {view.icon}
             </span>
             <span aria-hidden="true" className="min-w-0 truncate text-sm text-ink">
               {view.text}
             </span>
-          </span>
+          </>
         ) : (
           <span aria-hidden="true" className="text-sm text-ink-muted">
             {copy.cards.noLastAction}

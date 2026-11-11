@@ -121,18 +121,24 @@
   /* Containers take the buttons' corners, so every edge on screen turns alike. */
   --radius-card: 3px;
 
-  /* A log entry just added: lights up in its side's color, then fades back. */
-  --animate-log-flash: log-flash 1.4s ease-out;
-  /* The last move just made: washed in gold, its words keeping their colours, then fades back. */
-  --animate-move-flash: move-flash 1.4s ease-out;
+  /* The flashes that show a tap's result fade out from the start, as long as the tapped button rests:
+     the elements set that duration from TAP_LOCK_MS (src/lib/useCooldown.ts); 1s here is only its fallback. */
+  /* A log entry just added: lights up in its side's color, its text at full strength, then fades back. */
+  --animate-log-flash: log-flash 1s ease-out;
+  /* The last move just made: the whole bar lights up gold, everything on it in the colour gold
+     carries, and starts fading back at once. Its parts follow in step (below), whatever colour each has of its own. */
+  --animate-move-flash: move-flash 1s ease-out;
+  /* A button resting after a tap: dimmed at once, then easing back as the flashes fade (rest() in
+     src/lib/useCooldown.ts). Held at full once done, until the rest ends and the button is enabled. */
+  --animate-rest: rest 1s ease-out forwards;
   /* An undo window (a toast), as a bar that drains away; each sets its own duration. */
-  --animate-drain: drain 5s linear forwards;
+  --animate-drain: drain 2s linear forwards;
 
   @keyframes log-flash {
-    0%,
-    35% {
+    0% {
       background-color: var(--flash);
       color: var(--on-flash);
+      opacity: 1;
     }
     100% {
       background-color: transparent;
@@ -140,12 +146,29 @@
   }
 
   @keyframes move-flash {
-    0%,
-    35% {
-      background-color: color-mix(in oklab, var(--gold) 35%, transparent);
+    0% {
+      background-color: var(--gold);
+      color: var(--on-gold);
     }
     100% {
       background-color: transparent;
+    }
+  }
+
+  /* The bar's parts: their own text, icon and border colours give way to gold's own while it flashes. */
+  @keyframes move-flash-part {
+    0% {
+      color: var(--on-gold);
+      border-color: var(--on-gold);
+    }
+  }
+
+  @keyframes rest {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
     }
   }
 
@@ -195,6 +218,13 @@ body {
     transition-duration: 0ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Everything on a flashing last-move bar turns over with it, in step. */
+.animate-move-flash * {
+  animation: move-flash-part 1s ease-out;
+  /* The bar's own duration, handed down level by level. */
+  animation-duration: inherit;
 }
 
 /* Netlify's free plan injects a "Powered by Netlify" badge (an iframe it styles inline) over the app's bottom edge. */

@@ -30,7 +30,7 @@ export interface TrackerCopy {
 }
 
 export const copy = {
-  appTitle: 'Twilight Struggle',
+  appTitle: 'Zimna Wojna',
   end: 'Zakończ grę',
   newGame: 'Nowa gra',
   confirmQuestion: 'Potwierdź?',

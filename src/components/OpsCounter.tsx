@@ -1,6 +1,6 @@
 import { copy } from '../copy'
 import type { Player } from '../lib/players'
-import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
+import { rest, TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import { TONE } from './tone'
 
 interface OpsCounterProps {
@@ -48,7 +48,9 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
               aria-label={copy.fourOps.remove(player.label)}
               disabled={count === 0 || minusLocked}
               onClick={handleMinus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
+              // Taken down to zero, it stays disabled: no easing back.
+              style={rest(minusLocked && count > 0).style}
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill} ${rest(minusLocked && count > 0).className}`}
             >
               <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
                 <path d="M5 12h14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />
@@ -69,7 +71,8 @@ export function OpsCounter({ player, count, onIncrement, onDecrement, locked = f
               aria-label={copy.fourOps.add(player.label)}
               disabled={plusLocked}
               onClick={handlePlus}
-              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
+              style={rest(plusLocked).style}
+              className={`grid size-(--wheel-item) place-items-center rounded-counter border-2 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill} ${rest(plusLocked).className}`}
             >
               <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
                 <path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="3" strokeLinecap="square" />

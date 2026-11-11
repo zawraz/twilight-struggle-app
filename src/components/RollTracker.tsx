@@ -1,15 +1,13 @@
 import { useState, type CSSProperties } from 'react'
 import { copy, rolls, type TrackerCopy } from '../copy'
 import { PLAYERS, type PerPlayer, type Player, type PlayerId } from '../lib/players'
-import { TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
+import { rest, TAP_LOCK_MS, useCooldown } from '../lib/useCooldown'
 import { Section } from './Section'
 import { WheelPicker } from './WheelPicker'
 import { TONE } from './tone'
 
 /** How many of the newest entries the log shows. */
 export const LOG_VISIBLE = 3
-/** How long a new log entry stays lit: the length of its flash (--animate-log-flash). */
-export const LOG_FLASH_MS = 1400
 
 interface RollTrackerProps {
   /** The section's title and every label it shows or announces. */
@@ -111,10 +109,9 @@ function PlayerColumn({
   formatValue,
   summarize,
 }: PlayerColumnProps) {
-  // Just submitted: the button rests for a moment, so a double tap doesn't log the roll twice.
+  // Just submitted: the button rests for a moment, so a double tap doesn't log the roll twice. The
+  // new entry's flash runs on the same clock, fading out just as the button comes back.
   const [locked, lock] = useCooldown(TAP_LOCK_MS)
-  // The entry just added stays lit until its flash ends.
-  const [flashing, startFlash] = useCooldown(LOG_FLASH_MS)
   // What the last tap did, for screen readers.
   const [notice, setNotice] = useState('')
 
@@ -125,7 +122,6 @@ function PlayerColumn({
 
   const submit = () => {
     onSubmit(value)
-    startFlash()
     setNotice(copy.added(formatValue(value)))
     lock()
   }
@@ -164,7 +160,8 @@ function PlayerColumn({
             aria-label={text.submit(player.label)}
             onClick={submit}
             disabled={locked}
-            className={`flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center rounded-counter border-2 px-1 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill}`}
+            style={rest(locked).style}
+            className={`flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center rounded-counter border-2 px-1 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill} ${rest(locked).className}`}
           >
             <CheckIcon className="size-6" />
           </button>
@@ -184,15 +181,15 @@ function PlayerColumn({
           className="flex min-w-0 max-w-full justify-end gap-0.5 overflow-hidden font-mono text-xs leading-5"
         >
           {latest.map(({ v, i }) => {
-            const isNew = flashing && i === count - 1
+            const isNew = locked && i === count - 1
             return (
               // Keyed by position in the whole log, so each new entry mounts afresh and flashes,
               // even when it repeats the previous value.
               <li
                 key={i}
                 data-new={isNew}
-                style={tone.flashVars as CSSProperties}
-                className={`shrink-0 rounded-counter px-1 transition-opacity ${isNew ? 'animate-log-flash' : 'opacity-70'}`}
+                style={{ ...tone.flashVars, animationDuration: `${TAP_LOCK_MS}ms` } as CSSProperties}
+                className={`shrink-0 rounded-counter px-1 opacity-70 ${isNew ? 'animate-log-flash' : ''}`}
               >
                 {formatValue(v)}
               </li>
