@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gameReducer, loadGame, newGame, saveGame, STORAGE_KEY } from './game'
+import { gameReducer, isBlank, loadGame, newGame, notStarted, saveGame, STORAGE_KEY } from './game'
 
 function memoryStorage(initial: Record<string, string> = {}): Storage {
   const data = new Map(Object.entries(initial))
@@ -56,8 +56,8 @@ describe('loadGame / saveGame', () => {
     expect(loadGame(storage)).toEqual(s)
   })
 
-  it('returns a new game when nothing is saved', () => {
-    expect(loadGame(memoryStorage())).toEqual(newGame())
+  it('starts with no game running when nothing is saved', () => {
+    expect(loadGame(memoryStorage())).toEqual(notStarted())
   })
 
   it.each([
@@ -65,8 +65,8 @@ describe('loadGame / saveGame', () => {
     ['wrong shape', JSON.stringify({ fourOps: { ussr: 1 } })],
     ['negative count', JSON.stringify({ ...newGame(), fourOps: { ussr: -1, us: 0 } })],
     ['non-numeric roll', JSON.stringify({ ...newGame(), rolls: { success: { ussr: ['x'], us: [] }, dice: { ussr: [], us: [] } } })],
-  ])('returns a new game for %s', (_, raw) => {
-    expect(loadGame(memoryStorage({ [STORAGE_KEY]: raw }))).toEqual(newGame())
+  ])('starts with no game running for %s', (_, raw) => {
+    expect(loadGame(memoryStorage({ [STORAGE_KEY]: raw }))).toEqual(notStarted())
   })
 
   it('survives storage that throws', () => {
@@ -79,7 +79,20 @@ describe('loadGame / saveGame', () => {
         throw new Error('quota')
       },
     } as Storage
-    expect(loadGame(throwing)).toEqual(newGame())
+    expect(loadGame(throwing)).toEqual(notStarted())
     expect(() => saveGame(newGame(), throwing)).not.toThrow()
+  })
+})
+
+describe('notStarted / isBlank', () => {
+  it('is an ended game with nothing recorded, which New Game starts', () => {
+    expect(notStarted().ended).toBe(true)
+    expect(isBlank(notStarted())).toBe(true)
+    expect(gameReducer(notStarted(), { type: 'newGame' })).toEqual(newGame())
+  })
+
+  it('is not blank once anything is recorded', () => {
+    expect(isBlank(gameReducer(newGame(), { type: 'addRoll', track: 'dice', player: 'us', value: 3 }))).toBe(false)
+    expect(isBlank(gameReducer(newGame(), { type: 'incrementFourOps', player: 'ussr' }))).toBe(false)
   })
 })

@@ -28,6 +28,18 @@ export function newGame(): GameState {
   }
 }
 
+/**
+ * What a fresh install opens on: no game running, so nothing can be recorded until New Game starts
+ * one. Held as an ended game with nothing in it, so the rest of the app needs no state of its own.
+ */
+export const notStarted = (): GameState => ({ ...newGame(), ended: true })
+
+/** Nothing recorded yet: no rolls and no 4 Ops cards, so an ended game has no results to show. */
+export const isBlank = (state: GameState): boolean =>
+  Object.values(state.rolls).every((track) => track.ussr.length === 0 && track.us.length === 0) &&
+  state.fourOps.ussr === 0 &&
+  state.fourOps.us === 0
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'incrementFourOps':
@@ -81,7 +93,7 @@ export function isGameState(value: unknown): value is GameState {
   )
 }
 
-/** The saved game, or a new one when nothing usable is stored or storage is unavailable. */
+/** The saved game, or none running when nothing usable is stored or storage is unavailable. */
 export function loadGame(storage: Storage | undefined = globalThis.localStorage): GameState {
   try {
     const raw = storage?.getItem(STORAGE_KEY)
@@ -92,7 +104,7 @@ export function loadGame(storage: Storage | undefined = globalThis.localStorage)
   } catch {
     // Private mode, blocked storage or a corrupt entry: start fresh.
   }
-  return newGame()
+  return notStarted()
 }
 
 export function saveGame(state: GameState, storage: Storage | undefined = globalThis.localStorage): void {

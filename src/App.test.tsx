@@ -49,6 +49,28 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('a fresh install', () => {
+  it('opens on no game running: nothing can be recorded until New Game', async () => {
+    localStorage.clear()
+    const { user } = setup()
+    expect(within(header()).queryByRole('button', { name: copy.end })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.fourOps.add('ZSRR') })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.success.submit('ZSRR') })).toBeDisabled()
+    expect(screen.getByRole('button', { name: copy.dice.submit('USA') })).toBeDisabled()
+    // Nothing recorded: no results to show in the buttons' place.
+    expect(screen.queryByRole('status', { name: copy.success.resultFor('ZSRR') })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: copy.tabs.cards }))
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeDisabled()
+
+    await user.click(within(header()).getByRole('button', { name: copy.newGame }))
+    expect(within(header()).getByRole('button', { name: copy.end })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: copy.cards.nextTurn })).toBeEnabled()
+    await user.click(screen.getByRole('tab', { name: copy.tabs.log }))
+    expect(screen.getByRole('button', { name: copy.success.submit('ZSRR') })).toBeEnabled()
+  })
+})
+
 describe('4 Ops Cards', () => {
   const count = (player: string) => screen.getByRole('status', { name: copy.fourOps.count(player) })
   const plus = (player: string) => screen.getByRole('button', { name: copy.fourOps.add(player) })

@@ -13,6 +13,7 @@ import { ToastBar } from './components/ToastBar'
 import { copy } from './copy'
 import { PLAYERS } from './lib/players'
 import { defaultServer } from './lib/convexServer'
+import { isBlank } from './lib/game'
 import { canUndo } from './lib/room'
 import { average, formatAverage, formatSigned, sum } from './lib/stats'
 import { useMyHand } from './lib/useMyHand'
@@ -49,6 +50,9 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
     setWasEnded(game.ended)
     if (game.ended) setTab('log')
   }
+
+  // An ended game shows its results; with nothing recorded (a fresh install, before any game) there are none.
+  const revealed = game.ended && !isBlank(game)
 
   /** What every new game does on this phone, whichever way it started. */
   function startedNewGame() {
@@ -129,7 +133,8 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             summarize={(values) => formatSigned(sum(values))}
             entries={game.rolls.success}
             onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'success', player, value })}
-            revealed={game.ended}
+            stopped={game.ended}
+            revealed={revealed}
           />
           <RollTracker
             text={copy.dice}
@@ -139,7 +144,8 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
             summarize={(values) => formatAverage(average(values))}
             entries={game.rolls.dice}
             onSubmit={(player, value) => dispatch({ type: 'addRoll', track: 'dice', player, value })}
-            revealed={game.ended}
+            stopped={game.ended}
+            revealed={revealed}
           />
         </div>
         <div {...panel('cards')} className="grid min-h-0">

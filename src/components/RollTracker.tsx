@@ -20,7 +20,9 @@ interface RollTrackerProps {
   /** Every submitted entry per player, oldest first. */
   entries: PerPlayer<readonly number[]>
   onSubmit: (player: PlayerId, value: number) => void
-  /** The game has ended: summaries are shown and no more entries are taken. */
+  /** No game is running (ended, or none started yet): no more entries are taken, the controls greyed out. */
+  stopped: boolean
+  /** The game has ended with something recorded: summaries are shown in the buttons' place. Implies stopped. */
   revealed: boolean
 }
 
@@ -36,6 +38,7 @@ export function RollTracker({
   summarize,
   entries,
   onSubmit,
+  stopped,
   revealed,
 }: RollTrackerProps) {
   const [selected, setSelected] = useState(initialValue)
@@ -56,7 +59,7 @@ export function RollTracker({
           onChange={setSelected}
           label={text.wheel}
           format={formatValue}
-          disabled={revealed}
+          disabled={stopped}
         />
       </div>
       {PLAYERS.map((player, column) => (
@@ -67,6 +70,7 @@ export function RollTracker({
           value={selected}
           entries={entries[player.id]}
           onSubmit={(v) => onSubmit(player.id, v)}
+          stopped={stopped}
           revealed={revealed}
           text={text}
           formatValue={formatValue}
@@ -74,7 +78,7 @@ export function RollTracker({
         />
       ))}
       <span
-        className={`col-span-3 row-start-2 flex h-7 items-end justify-center pb-1.5 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted short:h-5 short:pb-1 ${revealed ? LOCKED : 'opacity-70'}`}
+        className={`col-span-3 row-start-2 flex h-7 items-end justify-center pb-1.5 font-stencil text-sm leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted short:h-5 short:pb-1 ${stopped ? LOCKED : 'opacity-70'}`}
       >
         {copy.lastRolls}
       </span>
@@ -91,11 +95,12 @@ interface PlayerColumnProps
   value: number
   entries: readonly number[]
   onSubmit: (value: number) => void
+  stopped: boolean
   revealed: boolean
 }
 
 const COLUMN = ['col-start-1', 'col-start-3']
-/** How a locked part of the tracker shows once the game has ended. */
+/** How a locked part of the tracker shows while no game is running. */
 const LOCKED = 'opacity-20 grayscale'
 
 function PlayerColumn({
@@ -104,6 +109,7 @@ function PlayerColumn({
   value,
   entries,
   onSubmit,
+  stopped,
   revealed,
   text,
   formatValue,
@@ -111,7 +117,7 @@ function PlayerColumn({
 }: PlayerColumnProps) {
   // Just submitted: the button rests for a moment, so a double tap doesn't log the roll twice. The
   // new entry's flash runs on the same clock, fading out just as the button comes back.
-  const [locked, lock] = useCooldown(TAP_LOCK_MS)
+  const [resting, startRest] = useCooldown(TAP_LOCK_MS)
   // What the last tap did, for screen readers.
   const [notice, setNotice] = useState('')
 
@@ -123,7 +129,7 @@ function PlayerColumn({
   const submit = () => {
     onSubmit(value)
     setNotice(copy.added(formatValue(value)))
-    lock()
+    startRest()
   }
 
   return (
@@ -159,9 +165,10 @@ function PlayerColumn({
             type="button"
             aria-label={text.submit(player.label)}
             onClick={submit}
-            disabled={locked}
-            style={rest(locked).style}
-            className={`flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center rounded-counter border-2 px-1 transition-colors disabled:opacity-40 ${tone.border} ${tone.fill} ${rest(locked).className}`}
+            // With no game running it stays greyed out like the wheel; otherwise it only rests after a tap.
+            disabled={stopped || resting}
+            style={rest(resting && !stopped).style}
+            className={`flex h-(--wheel-item) w-(--wheel-width) shrink-0 items-center justify-center rounded-counter border-2 px-1 transition-colors ${stopped ? LOCKED : 'disabled:opacity-40'} ${tone.border} ${tone.fill} ${rest(resting && !stopped).className}`}
           >
             <CheckIcon className="size-6" />
           </button>
@@ -170,9 +177,9 @@ function PlayerColumn({
           {notice}
         </span>
       </div>
-      {/* Once the game has ended the log is history: greyed out like the locked controls. */}
+      {/* With no game running the log is history: greyed out like the locked controls. */}
       <div
-        className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center justify-center whitespace-nowrap text-ink-muted transition-opacity ${revealed ? LOCKED : ''}`}
+        className={`${COLUMN[column]} row-start-3 flex h-5 min-w-0 items-center justify-center whitespace-nowrap text-ink-muted transition-opacity ${stopped ? LOCKED : ''}`}
       >
         {count === 0 && <span className="font-mono text-xs opacity-70">{copy.noRolls}</span>}
         {/* Centred under the button. Too narrow for every value: the oldest is clipped on the left, the newest stays in view. */}
@@ -181,7 +188,7 @@ function PlayerColumn({
           className="flex min-w-0 max-w-full justify-end gap-0.5 overflow-hidden font-mono text-xs leading-5"
         >
           {latest.map(({ v, i }) => {
-            const isNew = locked && i === count - 1
+            const isNew = resting && i === count - 1
             return (
               // Keyed by position in the whole log, so each new entry mounts afresh and flashes,
               // even when it repeats the previous value.
