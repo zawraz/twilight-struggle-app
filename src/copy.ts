@@ -54,6 +54,8 @@ export const copy = {
     inHand: 'Na ręce',
     /** A card this player marked as held, with a long press; seen on this device only. */
     myHand: 'Na mojej ręce',
+    /** A card this player marked as held by the other player, with a shorter hold; seen on this device only. */
+    theirHand: 'Na ręce przeciwnika',
     pickTitle: {
       43: 'Negocjacje SALT: karta do ręki',
       77: '„Nie pytajcie…”: odrzucone karty',

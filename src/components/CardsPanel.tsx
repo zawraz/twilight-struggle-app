@@ -163,8 +163,10 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
   const activeFilters = filters.player.length + phaseFilter.length + filters.state.length
-  // The hand: the cards a reshuffle showed are held, and the ones this player marked.
-  const hand = inPlay.filter((card) => isInHand(cards, card.id) || myHand.has(card.id))
+  // The hand: the cards a reshuffle showed are held, and the ones this player marked, in either hand.
+  const hand = inPlay.filter((card) => isInHand(cards, card.id) || myHand.has(card.id) || myHand.theirs(card.id))
+  // Once the hand empties the hand screen is left for good: a card marked later doesn't bring it back.
+  if (handView && hand.length === 0) setHandView(false)
   // Once the last card leaves the hand there is nothing left to show: back to the whole list.
   const showHand = handView && hand.length > 0 && pending === null
   // A picker lists every card it can pick on one screen, wherever they lie.
@@ -548,7 +550,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
             state={cardState(cards, card.id)}
             inHand={isInHand(cards, card.id)}
             mine={myHand.has(card.id)}
-            onMark={() => myHand.toggle(card.id)}
+            theirs={myHand.theirs(card.id)}
+            onMark={(whose) => myHand.mark(card.id, whose)}
             open={openId === card.id}
             onToggle={() => setOpenId((id) => (id === card.id ? null : card.id))}
             onClose={() => setOpenId(null)}

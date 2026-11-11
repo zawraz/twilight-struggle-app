@@ -2,13 +2,13 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { LONG_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
+import { LONG_PRESS_MS, MINE_PRESS_MS, SWIPE_COMMIT_PX } from './components/CardRow'
 import { SUBMIT_COOLDOWN_MS } from './components/RollTracker'
 import { copy } from './copy'
 import { CARDS_STORAGE_KEY, cardsInPlay, type CardsState } from './lib/cardGame'
 import { CARDS } from './lib/cards'
 import { at, discarded } from './test/cardStates'
-import { MY_HAND_KEY } from './lib/useMyHand'
+import { MY_HAND_KEY, THEIR_HAND_KEY } from './lib/useMyHand'
 import { TOAST_MS } from './lib/useToast'
 
 type User = ReturnType<typeof userEvent.setup>
@@ -28,6 +28,7 @@ const nameOf = (id: number) => CARDS.find((c) => c.id === id)!.name
 const idOf = (name: string) => CARDS.find((c) => c.name === name)!.id
 const inHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.inHand })
 const myHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.myHand })
+const theirHandIcon = (name: string) => within(row(name)).queryByRole('img', { name: copy.cards.theirHand })
 
 /** Opens the Karty tab as it first shows, on a saved game when given one. */
 async function open(saved?: CardsState) {
@@ -79,13 +80,20 @@ function swipe(name: string, dx: number) {
   fireEvent.click(button)
 }
 
-function longPress(name: string) {
+/** Presses a row for `ms` and lets go where it started. */
+function hold(name: string, ms: number) {
   const surface = rowButton(name).parentElement!
   fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
-  act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
+  act(() => vi.advanceTimersByTime(ms))
   fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: 10 })
   fireEvent.click(rowButton(name))
 }
+
+const longPress = (name: string) => hold(name, LONG_PRESS_MS)
+/** The shorter hold: the card is in the other player's hand. */
+const markTheirs = (name: string) => hold(name, LONG_PRESS_MS)
+/** Held on past the first buzz: the card is in this player's hand. */
+const markMine = (name: string) => hold(name, MINE_PRESS_MS)
 
 const stateOf = (name: string) => row(name).getAttribute('data-state')
 
@@ -611,20 +619,20 @@ describe('Karty: filters and order', () => {
 })
 
 describe('Karty: my hand', () => {
-  it('marks an available card as held with a long press, and unmarks it with another', async () => {
+  it('marks an available card as held with a long hold, and unmarks it with another', async () => {
     await setup()
-    longPress('Interwencja ONZ')
+    markMine('Interwencja ONZ')
     expect(myHandIcon('Interwencja ONZ')).toBeInTheDocument()
     // No buttons open: the press only marks.
     expect(screen.queryByRole('button', { name: copy.cards.discard('Interwencja ONZ') })).not.toBeInTheDocument()
 
-    longPress('Interwencja ONZ')
+    markMine('Interwencja ONZ')
     expect(myHandIcon('Interwencja ONZ')).not.toBeInTheDocument()
   })
 
   it('keeps the marks on this device, out of the shared game', async () => {
     await setup()
-    longPress('Interwencja ONZ')
+    markMine('Interwencja ONZ')
     expect(JSON.parse(localStorage.getItem(MY_HAND_KEY)!)).toEqual([idOf('Interwencja ONZ')])
     const shared = JSON.parse(localStorage.getItem(CARDS_STORAGE_KEY)!) as CardsState
     expect(shared.inHand).toEqual([])
@@ -632,7 +640,7 @@ describe('Karty: my hand', () => {
 
   it('shows the marked cards on the hand screen', async () => {
     const user = await setup()
-    longPress('Interwencja ONZ')
+    markMine('Interwencja ONZ')
     await user.click(screen.getByRole('button', { name: copy.cards.showHand }))
     expect(rows()).toHaveLength(1)
     expect(rows()[0]).toHaveTextContent('Interwencja ONZ')
@@ -640,8 +648,8 @@ describe('Karty: my hand', () => {
 
   it('drops a card from the hand once it is played, and the whole hand on a new game', async () => {
     const user = await setup()
-    longPress('Interwencja ONZ')
-    longPress('Nasser')
+    markMine('Interwencja ONZ')
+    markMine('Nasser')
     await discard(user, 'Interwencja ONZ')
     expect(myHandIcon('Interwencja ONZ')).not.toBeInTheDocument()
     expect(myHandIcon('Nasser')).toBeInTheDocument()
@@ -654,12 +662,102 @@ describe('Karty: my hand', () => {
 
   it('clears the hand on a new game even when no card was played', async () => {
     const user = await setup()
-    longPress('Nasser')
+    markMine('Nasser')
     await user.click(screen.getByRole('button', { name: copy.end }))
     await user.click(screen.getByRole('button', { name: copy.end }))
     await user.click(screen.getByRole('button', { name: copy.newGame }))
     expect(myHandIcon('Nasser')).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(MY_HAND_KEY)!)).toEqual([])
+  })
+
+  it('marks a card as in the other hand with a shorter hold', async () => {
+    await setup()
+    markTheirs('Interwencja ONZ')
+    expect(theirHandIcon('Interwencja ONZ')).toBeInTheDocument()
+    expect(myHandIcon('Interwencja ONZ')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: copy.cards.discard('Interwencja ONZ') })).not.toBeInTheDocument()
+  })
+
+  it('on a marked card, a short hold moves the mark to the other hand and a long one takes it off', async () => {
+    await setup()
+    markTheirs('Nasser')
+    hold('Nasser', LONG_PRESS_MS)
+    expect(myHandIcon('Nasser')).toBeInTheDocument()
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+    hold('Nasser', LONG_PRESS_MS)
+    expect(theirHandIcon('Nasser')).toBeInTheDocument()
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+    hold('Nasser', MINE_PRESS_MS)
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+  })
+
+  it('shows which mark a hold will set before letting go', async () => {
+    await setup()
+    const surface = rowButton('Nasser').parentElement!
+    fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
+    act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
+    expect(theirHandIcon('Nasser')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(MINE_PRESS_MS - LONG_PRESS_MS))
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+    expect(myHandIcon('Nasser')).toBeInTheDocument()
+    fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: 10 })
+    fireEvent.click(rowButton('Nasser'))
+    expect(myHandIcon('Nasser')).toBeInTheDocument()
+  })
+
+  it('while held, a marked card shows the hand it moves to, then its mark fading', async () => {
+    await setup()
+    markMine('Nasser')
+    const surface = rowButton('Nasser').parentElement!
+    fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
+    act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
+    expect(theirHandIcon('Nasser')).toBeInTheDocument()
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(MINE_PRESS_MS - LONG_PRESS_MS))
+    expect(myHandIcon('Nasser')).toHaveClass('opacity-40')
+    fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: 10 })
+    fireEvent.click(rowButton('Nasser'))
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+  })
+
+  it('a hold that turns into a scroll marks nothing', async () => {
+    await setup()
+    const surface = rowButton('Nasser').parentElement!
+    fireEvent.pointerDown(surface, { pointerId: 1, button: 0, clientX: 100, clientY: 10 })
+    act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
+    fireEvent.pointerMove(surface, { pointerId: 1, clientX: 100, clientY: 40 })
+    fireEvent.pointerUp(surface, { pointerId: 1, clientX: 100, clientY: 40 })
+    expect(theirHandIcon('Nasser')).not.toBeInTheDocument()
+    expect(myHandIcon('Nasser')).not.toBeInTheDocument()
+  })
+
+  it('keeps the other hand on this device too, shows it on the hand screen, and clears it on a new game', async () => {
+    const user = await setup()
+    markTheirs('Fidel')
+    expect(JSON.parse(localStorage.getItem(THEIR_HAND_KEY)!)).toEqual([idOf('Fidel')])
+    expect((JSON.parse(localStorage.getItem(CARDS_STORAGE_KEY)!) as CardsState).inHand).toEqual([])
+    await user.click(screen.getByRole('button', { name: copy.cards.showHand }))
+    expect(rows().map((li) => li.textContent)).toEqual([expect.stringContaining('Fidel')])
+    await user.click(screen.getByRole('button', { name: copy.cards.showHand }))
+
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.end }))
+    await user.click(screen.getByRole('button', { name: copy.newGame }))
+    expect(theirHandIcon('Fidel')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(THEIR_HAND_KEY)!)).toEqual([])
+  })
+
+  it('once the hand screen empties, marking a new card stays on the list', async () => {
+    const user = await setup()
+    markMine('Nasser')
+    const showHand = screen.getByRole('button', { name: copy.cards.showHand })
+    await user.click(showHand)
+    await discard(user, 'Nasser')
+    expect(showHand).toBeDisabled()
+    markMine('Fidel')
+    expect(showHand).toHaveAttribute('aria-pressed', 'false')
+    expect(rows().length).toBeGreaterThan(1)
   })
 })
 
@@ -880,7 +978,7 @@ describe('Karty: event picker', () => {
   it('CIA marks the cards seen in the other hand, leaving out this player’s own', async () => {
     const CIA = 'Utworzenie CIA'
     const user = await setup()
-    longPress('Nasser')
+    markMine('Nasser')
     await play(user, CIA)
     expect(screen.getByText(copy.cards.pickTitle[26])).toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: copy.cards.pick('Nasser') })).not.toBeInTheDocument()
