@@ -1,5 +1,5 @@
 import { ChevronRight, Crosshair, Dices, Layers, RotateCcw, Undo2 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { copy } from '../copy'
 import { ASK_NOT, isReveal, TEHRAN } from '../lib/cardGame'
 import { CARDS } from '../lib/cards'
@@ -7,6 +7,7 @@ import { TAP_LOCK_MS } from '../lib/useCooldown'
 import type { GameState } from '../lib/game'
 import { PLAYERS, type PlayerId } from '../lib/players'
 import type { Move } from '../lib/room'
+import { playMoveSound } from '../lib/sound'
 import { formatSigned } from '../lib/stats'
 import { CardStateIcon } from './CardRow'
 import { TONE } from './tone'
@@ -142,6 +143,15 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
     if (last && moves.length >= seen.length) setFlashes((n) => n + 1)
     setSeen({ signature, length: moves.length })
   }
+  // Each new move that flashes sounds once too: a card discarded or removed, a roll noted, a new turn.
+  useEffect(() => {
+    if (flashes === 0 || !last) return
+    if (last.type === 'roll') playMoveSound('roll')
+    else if (last.type === 'turn') playMoveSound('turn')
+    else if (last.type === 'card' && last.state === 'removed') playMoveSound('remove')
+    else if (last.type === 'card' && last.state !== 'available') playMoveSound('discard')
+    // Only a new flash sounds, not a re-render showing the same move.
+  }, [flashes])
   return (
     // Keyed by the flash count, so each new move mounts the bar afresh and its flash runs again.
     <section

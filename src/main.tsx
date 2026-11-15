@@ -8,6 +8,7 @@ import '@fontsource/ibm-plex-mono/400'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App'
+import { unlockSoundOnFirstTouch } from './lib/sound'
 
 // An installed PWA resumed from the background never re-navigates, so the browser
 // would not look for a new deploy on its own. Check on resume and once a day;
@@ -23,6 +24,8 @@ registerSW({
     })
   },
 })
+
+unlockSoundOnFirstTouch()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

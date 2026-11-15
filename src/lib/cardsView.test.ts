@@ -23,6 +23,7 @@ describe('cards view persistence', () => {
       swipeScreens: true,
       dimPlayed: false,
       shortHold: 'mine',
+      sound: false,
     }
     saveView(view, store)
     expect(loadView(store)).toEqual(view)

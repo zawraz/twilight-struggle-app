@@ -25,6 +25,8 @@ export interface CardsView {
   dimPlayed: boolean
   /** The hand a short hold marks an unmarked card as in; a long hold marks it as in the other one. */
   shortHold: Whose
+  /** A sound when a card is played or a roll noted, on either phone. */
+  sound: boolean
 }
 
 export const DEFAULT_VIEW: CardsView = {
@@ -34,6 +36,7 @@ export const DEFAULT_VIEW: CardsView = {
   swipeScreens: false,
   dimPlayed: true,
   shortHold: 'theirs',
+  sound: true,
 }
 
 const pickList = <T>(value: unknown, allowed: readonly T[]): T[] | null =>
@@ -61,6 +64,7 @@ export function loadView(storage: Storage | undefined = globalThis.localStorage)
           swipeScreens: pickBoolean(s.swipeScreens, DEFAULT_VIEW.swipeScreens),
           dimPlayed: pickBoolean(s.dimPlayed, DEFAULT_VIEW.dimPlayed),
           shortHold: s.shortHold === 'mine' || s.shortHold === 'theirs' ? s.shortHold : DEFAULT_VIEW.shortHold,
+          sound: pickBoolean(s.sound, DEFAULT_VIEW.sound),
         }
       }
     }

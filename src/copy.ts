@@ -82,7 +82,7 @@ export const copy = {
     phases: { early: 'Początek', mid: 'Apogeum', late: 'Schyłek' },
     filters: 'Filtry',
     showHand: 'Pokaż karty na ręce',
-    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest', look: 'Karty', hold: 'Ręka' },
+    filterGroups: { player: 'Strona', phase: 'Faza', state: 'Stan', order: 'Układ', screen: 'Ekran', swipe: 'Gest', look: 'Karty', hold: 'Ręka', sound: 'Dźwięk' },
     clearFilters: 'Wyczyść',
     playedLast: 'Zagrane na dół',
     /** The order chip's visible label: its arrow says which way. */
@@ -105,6 +105,9 @@ export const copy = {
     dimPlayed: 'Przyciemnij zagrane',
     /** The dimming chip's visible label. */
     dimPlayedShort: 'Przyciemnij',
+    sound: 'Dźwięk przy zagraniu karty i rzucie, na obu telefonach',
+    /** The sound chip's visible label: what makes a sound. */
+    soundShort: 'Karty i rzuty',
     /** The footer tabs of the two-screen mode, each showing one half of the list; not shown, the tabs carry icons. */
     piles: { available: 'Dostępne / W grze', played: 'Odrzucone / Usunięte' },
     /** Swiping between the screens, the hand is a third one, after both halves of the list. */

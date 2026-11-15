@@ -8,6 +8,8 @@ import {
   Play,
   SlidersHorizontal,
   SunDim,
+  Volume2,
+  VolumeX,
   Square,
   X,
 } from 'lucide-react'
@@ -143,9 +145,10 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const [swipeScreens, setSwipeScreens] = useState(savedView.swipeScreens)
   const [dimPlayed, setDimPlayed] = useState(savedView.dimPlayed)
   const [shortHold, setShortHold] = useState(savedView.shortHold)
+  const [sound, setSound] = useState(savedView.sound)
   useEffect(() => {
-    saveView({ filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold })
-  }, [filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold])
+    saveView({ filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold, sound })
+  }, [filters, playedLast, multiScreen, swipeScreens, dimPlayed, shortHold, sound])
   // Where a sideways swipe across the list began, to move between its two screens;
   // decided past the slop, as on a row: a swipe, or a scroll the browser owns.
   const listSwipe = useRef<{ pointerId: number; x: number; y: number; mode: 'press' | 'swipe' } | null>(null)
@@ -504,6 +507,12 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
               <Chip pressed={shortHold === 'mine'} onClick={() => setShortHold('mine')} label={copy.cards.shortHoldMine}>
                 <Hand className="size-4" aria-hidden="true" />
                 {copy.cards.shortHoldMineShort}
+              </Chip>
+            </ChipGroup>
+            <ChipGroup label={copy.cards.filterGroups.sound}>
+              <Chip pressed={sound} onClick={() => setSound((s) => !s)} label={copy.cards.sound}>
+                {sound ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
+                {copy.cards.soundShort}
               </Chip>
             </ChipGroup>
             {/* Two screens put the played cards on their own already, leaving the order nothing to show. */}
