@@ -43,7 +43,7 @@ interface CardRowProps {
   pick?: { checked: boolean; onToggle: () => void }
   /** The game has ended: no tap, swipe or hold does anything to the card. */
   locked?: boolean
-  /** A thicker line under the row: the next card down has another ops value, is out of the hand, or is already played. */
+  /** A thicker line under the row: the next card down has another ops value or is already played. */
   divider?: RowDivider
   /** Off, a sideways swipe leaves the row alone and goes to the list around it. */
   swipe?: boolean
@@ -51,11 +51,13 @@ interface CardRowProps {
   dim?: boolean
 }
 
-export type RowDivider = 'value' | 'played'
+export type RowDivider = 'value' | 'played' | 'playedValue'
 
 const DIVIDER: Record<RowDivider, string> = {
   value: 'border-b-2 border-line-strong/60',
   played: 'border-b-2 border-danger/60',
+  // Between values among the played cards: greyed out with them while they are dimmed.
+  playedValue: 'border-b-2 border-line-strong/25',
 }
 
 const DIM: Record<CardState, string> = { available: '', in_play: '', discarded: 'opacity-55', removed: 'opacity-40' }
@@ -212,7 +214,7 @@ export function CardRow({
     <li
       data-state={state}
       data-divider={divider}
-      className={`relative overflow-hidden last:border-b-0 ${divider ? DIVIDER[divider] : 'border-b border-line'}`}
+      className={`relative overflow-hidden last:border-b-0 ${divider ? DIVIDER[divider === 'playedValue' && !dim ? 'value' : divider] : 'border-b border-line'}`}
       onContextMenu={(event) => event.preventDefault()}
     >
       {/* What the swipe will do, revealed behind the row and following its edge. */}

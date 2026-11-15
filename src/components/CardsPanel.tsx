@@ -202,7 +202,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
     cardState(cards, id) === 'in_play' ? -1 : sinkPlayed ? PLAYED_RANK[cardState(cards, id)] : 0
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))
   // The list falls into the blocks the order puts together: the card in play, the rest, and the played cards.
-  // A thicker line closes each block and, in the rest, each ops value; a red one where the played cards begin.
+  // A thicker line closes each block and each ops value, fainter among the played cards; a red one where the played cards begin.
   // With Zagrane off the played cards join the rest.
   const block = (id: number) => {
     const state = cardState(cards, id)
@@ -215,7 +215,8 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
     if (next === undefined) return undefined
     const [here, below] = [block(card.id), block(next.id)]
     if (here !== below) return below === 'played' ? 'played' : 'value'
-    return here !== 'played' && next.value !== card.value ? 'value' : undefined
+    if (next.value === card.value) return undefined
+    return here === 'played' ? 'playedValue' : 'value'
   }
 
   function nextTurn() {

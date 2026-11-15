@@ -353,13 +353,15 @@ describe('Karty: filters and order', () => {
     expect(rows()[0]).toHaveAttribute('data-divider', 'value')
   })
 
-  it('draws no thicker line between played cards', async () => {
+  it('draws a fainter line between values among the played cards, and none within a value', async () => {
     const user = await setup()
-    // Played last, in checklist order: a scoring card, then Blokada.
+    // Played last, by value: a scoring card, then Blokada and Nasser, both 1s.
     await discard(user, 'Kulminacja napięć w Azji')
     await discard(user, 'Blokada')
+    await discard(user, 'Nasser')
     const played = rows().filter((li) => li.dataset.state === 'discarded')
-    expect(played.map((li) => li.dataset.divider)).toEqual([undefined, undefined])
+    expect(played.map((li) => li.dataset.divider)).toEqual(['playedValue', undefined, undefined])
+    expect(played[0].className).toContain('border-line-strong/25')
   })
 
   describe('with the order chip', () => {
@@ -376,10 +378,12 @@ describe('Karty: filters and order', () => {
       for (const name of names) await user.click(screen.getByRole('button', { name }))
     }
 
-    it('on: a line per value, then the red one', async () => {
+    it('on: a line per value, then the red one, then fainter lines per played value', async () => {
       await setup(game())
       // Scoring 0–1, 1 ops 2–8, 2 ops 9–19, 3 ops 20–30, 4 ops 31–35, played 36–38.
-      expect(dividers()).toEqual(['1:value', '8:value', '19:value', '30:value', '35:played'])
+      expect(dividers()).toEqual([
+        '1:value', '8:value', '19:value', '30:value', '35:played', '36:playedValue', '37:playedValue',
+      ])
       expect(names(36)).toEqual([expect.stringContaining('Kulminacja napięć w Azji')])
     })
 
@@ -484,7 +488,7 @@ describe('Karty: filters and order', () => {
 
       await user.click(pileTab('played'))
       expect(rows().map((li) => li.dataset.state).sort()).toEqual(['discarded', 'removed'])
-      expect(rows().map((li) => li.dataset.divider)).toEqual([undefined, undefined])
+      expect(rows().map((li) => li.dataset.divider)).toEqual(['playedValue', undefined])
 
       await user.click(screen.getByRole('button', { name: copy.cards.singleScreen }))
       expect(screen.queryByRole('tab', { name: copy.cards.piles.played })).not.toBeInTheDocument()
