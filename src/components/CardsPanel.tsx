@@ -159,9 +159,10 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
   const pending = cards.pending
   // A revealed hand is the other player's: the cards this player holds can't be in it.
   const pickable = pickableIds(cards).filter((id) => !(isReveal(pending) && myHand.has(id)))
-  // By ops value, so a phase that joins mixes in with the rest; within a value, checklist order.
-  // Each checklist section is already by value, so a single phase reads exactly as on paper.
-  const inPlay = [...cardsInPlay(cards.turn)].sort((a, b) => a.value - b.value || a.order - b.order)
+  // By ops value, so a phase that joins mixes in with the rest; within a value, alphabetically.
+  const inPlay = [...cardsInPlay(cards.turn)].sort(
+    (a, b) => a.value - b.value || a.name.localeCompare(b.name, 'pl'),
+  )
   const startedPhases = PHASES.filter((phase) => phaseStarted(phase, cards.turn))
   // A phase chip left on while going back past its start would hide every card without showing why.
   const phaseFilter = filters.phase.filter((phase) => startedPhases.includes(phase))
@@ -196,7 +197,7 @@ export function CardsPanel({ cards, dispatch, act, notify, onToastStale, countsF
       (!split || pileOf(cardState(cards, card.id)) === pile),
   )
   // Stable sort: a card in play pinned on top whatever Zagrane says, then the rest available,
-  // then played ones, each in checklist order.
+  // then played ones, each by value and name.
   const rank = (id: number) =>
     cardState(cards, id) === 'in_play' ? -1 : sinkPlayed ? PLAYED_RANK[cardState(cards, id)] : 0
   const shown = [...visible].sort((a, b) => rank(a.id) - rank(b.id))

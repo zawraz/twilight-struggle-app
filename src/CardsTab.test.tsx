@@ -128,7 +128,7 @@ describe('Karty: once the game has ended', () => {
 })
 
 describe('Karty: turns', () => {
-  it('starts on turn 1 with the 39 Early War cards in checklist order', async () => {
+  it('starts on turn 1 with the 39 Early War cards by value and name', async () => {
     await setup()
     expect(turn()).toHaveTextContent('1')
     expect(rows()).toHaveLength(39)
@@ -153,12 +153,11 @@ describe('Karty: turns', () => {
     const user = await setup()
     await nextTurns(user, 3)
     expect(rows()).toHaveLength(87)
-    // Sorted by value across phases: Early War and Mid War scoring cards first, then the 1s.
-    expect(rows()[2]).toHaveTextContent('Kulminacja napięć w Europie')
-    expect(rows()[3]).toHaveTextContent('Kulminacja napięć w Afryce')
-    expect(rows()[6]).toHaveTextContent('Kulminacja napięć w Azji Płd.-Wsch.')
-    expect(rows()[7]).toHaveTextContent('Blokada')
-    expect(rows()[15]).toHaveTextContent('Allende')
+    // Sorted by value across phases, and alphabetically within a value, whatever the phase.
+    const expected = [...cardsInPlay(4)].sort((a, b) => a.value - b.value || a.name.localeCompare(b.name, 'pl'))
+    expected.forEach((card, i) => expect(rows()[i]).toHaveTextContent(card.name))
+    expect(rows()[0]).toHaveTextContent('Kulminacja napięć na Bliskim Wschodzie')
+    expect(rows()[7]).toHaveTextContent('Allende')
     await nextTurns(user, 4)
     expect(turn()).toHaveTextContent('8')
     expect(rows()).toHaveLength(111)
