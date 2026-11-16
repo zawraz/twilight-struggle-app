@@ -76,7 +76,8 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
 
   return (
     <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))]">
-      <header className="flex min-w-0 flex-col gap-1.5">
+      {/* gap-2, as the page grid's: the last action sits with the same space above it as below. */}
+      <header className="flex min-w-0 flex-col gap-2">
         {/* The toast lies over the title row and the Iron Curtain, leaving the last action in view. */}
         <div className="relative flex flex-col gap-1.5">
           <div className="flex items-center gap-2 max-[390px]:gap-1.5">

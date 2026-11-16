@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copy } from '../copy'
 import { newGame } from '../lib/game'
 import type { Move } from '../lib/room'
 import { playMoveSound } from '../lib/sound'
-import { LastActionBar } from './LastActionBar'
+import { describeLast, LastActionBar } from './LastActionBar'
 
 vi.mock('../lib/sound', () => ({ playMoveSound: vi.fn() }))
 
@@ -34,6 +34,32 @@ describe('LastActionBar', () => {
     expect(flashed).toHaveAttribute('data-flash', 'true')
     rerender(<LastActionBar moves={[serverMove]} game={serverGame} {...props} />)
     expect(bar()).toBe(flashed) // not mounted afresh: no second flash
+  })
+
+  it('opens on a tap to show the last three moves, newest first, and stays open until tapped again', () => {
+    const game = newGame()
+    const roll: Move = { type: 'roll', track: 'dice', player: 'us', value: 4, armed: true }
+    const played: Move = { type: 'card', id: 1, state: 'discarded', by: null, before: null }
+    const removed: Move = { type: 'card', id: 2, state: 'removed', by: null, before: null }
+    const turn: Move = { type: 'turn', turn: 2, armed: true }
+    const list = () => screen.queryByRole('list', { name: copy.cards.earlierMoves })
+    const toggle = () => screen.getByRole('button', { name: `${copy.cards.lastAction}:` })
+
+    const { rerender } = render(<LastActionBar moves={[roll, played, removed]} game={game} {...props} />)
+    expect(list()).not.toBeInTheDocument()
+    fireEvent.click(toggle())
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
+    const items = within(list()!).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))
+    expect(items).toEqual([describeLast(played), describeLast(roll)])
+
+    rerender(<LastActionBar moves={[played, removed, turn]} game={game} {...props} />) // a new move
+    expect(within(list()!).getAllByRole('listitem')).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: copy.cards.undoLast(describeLast(turn)) }))
+    expect(list()).toBeInTheDocument() // undo leaves it open
+
+    fireEvent.click(toggle())
+    expect(list()).not.toBeInTheDocument()
   })
 
   it('sounds once per new move: a roll, a discard, a removal, a new turn, nothing for a card put back', () => {

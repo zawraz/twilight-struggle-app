@@ -127,6 +127,8 @@ export const copy = {
     /** The header strip with the last card played, from either phone. */
     lastAction: 'Ostatni ruch',
     noLastAction: 'Brak',
+    /** The moves before the last one, shown when the strip is tapped open. */
+    earlierMoves: 'Wcześniejsze ruchy',
     undoLast: (what: string) => `Cofnij: ${what}`,
   },
 

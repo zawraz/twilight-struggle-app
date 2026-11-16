@@ -152,6 +152,9 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
     else if (last.type === 'card' && last.state !== 'available') playMoveSound('discard')
     // Only a new flash sounds, not a re-render showing the same move.
   }, [flashes])
+  // A tap on the strip shows the moves before the last one too, until it is tapped again.
+  const [expanded, setExpanded] = useState(false)
+  const earlier = moves.slice(0, -1).reverse()
   return (
     // Keyed by the flash count, so each new move mounts the bar afresh and its flash runs again.
     <section
@@ -160,15 +163,24 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
       data-flash={flashes > 0}
       // As long as the tapped button rests: the flash fades out just as it comes back.
       style={{ animationDuration: `${TAP_LOCK_MS}ms` }}
-      className={`-mx-1 flex h-6 min-w-0 items-center gap-2 rounded-counter px-1 ${flashes > 0 ? 'animate-move-flash' : ''}`}
+      // Heading | moves | undo: the earlier moves fall in the middle column, right under the last one.
+      className={`-mx-1 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-counter px-1 ${flashes > 0 ? 'animate-move-flash' : ''}`}
     >
-      <h2 className="shrink-0 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text">
-        {copy.cards.lastAction}:
+      {/* The whole row toggles; the heading's button is how a keyboard or screen reader reaches it. */}
+      <div onClick={() => setExpanded((open) => !open)} className="contents cursor-pointer">
+      <h2 className="col-start-1 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text">
+        <button type="button" aria-expanded={expanded} className="flex items-center gap-0.5 uppercase">
+          <ChevronRight
+            aria-hidden="true"
+            className={`size-3 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          />
+          {copy.cards.lastAction}:
+        </button>
       </h2>
       <p
         role="status"
         aria-label={last ? describeLast(last) : copy.cards.noLastAction}
-        className="flex min-w-0 flex-1 items-center gap-1.5"
+        className="col-start-2 flex h-6 min-w-0 cursor-pointer items-center gap-1.5"
       >
         {view ? (
           <>
@@ -188,13 +200,38 @@ export function LastActionBar({ moves, game, undoable, onUndo }: LastActionBarPr
       {last && undoable && (
         <button
           type="button"
-          onClick={onUndo}
+          onClick={(e) => {
+            e.stopPropagation() // undoing doesn't open or close the list
+            onUndo()
+          }}
           aria-label={copy.cards.undoLast(describeLast(last))}
-          className="flex h-5 shrink-0 items-center gap-1 rounded-counter border border-gold px-1.5 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text"
+          className="col-start-3 flex h-5 items-center gap-1 rounded-counter border border-gold px-1.5 font-condensed text-xs font-semibold uppercase tracking-[0.08em] text-gold-text"
         >
           <Undo2 className="size-3" aria-hidden="true" />
           {copy.undo}
         </button>
+      )}
+      </div>
+      {expanded && earlier.length > 0 && (
+        <ol
+          aria-label={copy.cards.earlierMoves}
+          onClick={() => setExpanded(false)}
+          className="col-span-2 col-start-2 flex min-w-0 cursor-pointer flex-col"
+        >
+          {earlier.map((move, i) => {
+            const view = shown(move)
+            return (
+              <li key={i} aria-label={describeLast(move)} className="flex h-6 min-w-0 items-center gap-1.5 opacity-70">
+                <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center">
+                  {view.icon}
+                </span>
+                <span aria-hidden="true" className="min-w-0 truncate text-sm text-ink">
+                  {view.text}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
       )}
     </section>
   )
