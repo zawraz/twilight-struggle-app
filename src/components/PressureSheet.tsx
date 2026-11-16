@@ -86,13 +86,13 @@ export function PressureSheet() {
   }
 
   return (
-    <footer>
+    <div>
       <button
         ref={opener}
         type="button"
         aria-expanded={open}
         onClick={show}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-card border border-line bg-surface-raised font-stencil text-lg leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted"
+        className="flex h-12.5 w-full items-center justify-center gap-2 rounded-card border border-line bg-surface-raised font-stencil text-lg leading-none font-extrabold uppercase tracking-[0.04em] text-ink-muted"
       >
         <ChevronUp className="size-5" aria-hidden="true" />
         {copy.pressure.title}
@@ -163,6 +163,6 @@ export function PressureSheet() {
       </div>
         </>
       )}
-    </footer>
+    </div>
   )
 }

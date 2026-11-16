@@ -430,7 +430,7 @@ describe('header: End and New Game', () => {
     expect(within(header()).getByRole('heading', { level: 1 })).toHaveTextContent(/^Zimna Wojna$/)
     expect(screen.getAllByRole('button', { name: 'Zakończ grę' })).toHaveLength(1)
     expect(within(header()).getByRole('button', { name: 'Zakończ grę' })).toBeInTheDocument()
-    expect(within(screen.getByRole('contentinfo')).queryByRole('button', { name: 'Zakończ grę' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
   })
 
   it('asks for confirmation before ending', async () => {
@@ -566,7 +566,7 @@ describe('header tabs', () => {
 describe('footer: Wywieranie presji', () => {
   it('opens the odds table from the footer and closes it with a tap outside', async () => {
     const { user } = setup()
-    const opener = within(screen.getByRole('contentinfo')).getByRole('button', { name: 'Wywieranie presji' })
+    const opener = within(screen.getByRole('tabpanel', { name: 'Dziennik' })).getByRole('button', { name: 'Wywieranie presji' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await user.click(opener)
     const sheet = screen.getByRole('dialog', { name: 'Wywieranie presji' })
@@ -578,6 +578,15 @@ describe('footer: Wywieranie presji', () => {
     await user.click(sheet.previousElementSibling as HTMLElement)
     expect(opener).toHaveAttribute('aria-expanded', 'false')
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+})
+
+describe('footer: only in the log', () => {
+  it('hides Wywieranie presji on the Karty tab', async () => {
+    const { user } = setup()
+    expect(screen.getByRole('button', { name: 'Wywieranie presji' })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Karty' }))
+    expect(screen.queryByRole('button', { name: 'Wywieranie presji' })).not.toBeInTheDocument()
   })
 })
 
