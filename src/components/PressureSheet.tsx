@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState, type PointerEvent } from 'react'
 import { copy } from '../copy'
 
 /** Chance (%) of at least N successes, by net bonus, then by the card's ops (1–4), then N (1–5). */
-export const PRESSURE_ODDS = [
+const PRESSURE_ODDS = [
   {
     bonus: 1,
     byOps: [
