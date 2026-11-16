@@ -27,6 +27,10 @@ export const PRESSURE_ODDS = [
 /** "58 %": a whole percent, spaced as Polish writes it. */
 const percent = (value: number) => `${Math.round(value)} %`
 
+/** A cell's heatmap tint: red for the least likely, through to green for the surest. */
+const heat = (value: number) =>
+  `color-mix(in oklab, color-mix(in oklab, var(--go) ${value}%, var(--danger)) 35%, transparent)`
+
 /** How far down (px) a drag must pull the sheet to close it. */
 const CLOSE_DRAG = 80
 
@@ -137,7 +141,7 @@ export function PressureSheet() {
                     <span className="sr-only">{copy.pressure.successes}</span>
                   </th>
                   {byOps.map((_, i) => (
-                    <th key={i} scope="col" className="py-1 text-right font-semibold">
+                    <th key={i} scope="col" className="px-2 py-1 text-right font-semibold">
                       {copy.pressure.ops(i + 1)}
                     </th>
                   ))}
@@ -150,7 +154,7 @@ export function PressureSheet() {
                       {row + 1}:
                     </th>
                     {byOps.map((odds, i) => (
-                      <td key={i} className="py-1 text-right text-ink">
+                      <td key={i} className="px-2 py-1 text-right text-ink" style={{ backgroundColor: heat(odds[row]) }}>
                         {percent(odds[row])}
                       </td>
                     ))}
