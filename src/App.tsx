@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CardsPanel } from './components/CardsPanel'
 import { GameAction } from './components/GameAction'
 import { LastActionBar } from './components/LastActionBar'
+import { PressureSheet } from './components/PressureSheet'
 import { OpsCounter } from './components/OpsCounter'
 import { NewGameDialog } from './components/NewGameDialog'
 import { RollTracker } from './components/RollTracker'
@@ -75,7 +76,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
   })
 
   return (
-    <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))]">
+    <div className="mx-auto grid h-full max-w-3xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] gap-2 py-[max(8px,env(safe-area-inset-top))] pr-[max(8px,env(safe-area-inset-right))] pb-[max(8px,env(safe-area-inset-bottom))] pl-[max(8px,env(safe-area-inset-left))]">
       {/* gap-2, as the page grid's: the last action sits with the same space above it as below. */}
       <header className="flex min-w-0 flex-col gap-2">
         {/* The toast lies over the title row and the Iron Curtain, leaving the last action in view. */}
@@ -112,7 +113,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
       <main className="grid min-h-0">
         <div
           {...panel('log')}
-          className="grid min-h-0 grid-rows-3 gap-2"
+          className="grid min-h-0 grid-rows-[0.75fr_1fr_1fr] gap-2"
         >
           <Section title={copy.fourOps.title} balanced>
             {PLAYERS.map((player) => (
@@ -162,6 +163,7 @@ export default function App({ server = defaultServer }: { server?: SyncServer | 
           />
         </div>
       </main>
+      <PressureSheet />
       {askingMode && <NewGameDialog onChoose={chooseMode} onCancel={() => setAskingMode(false)} />}
     </div>
   )

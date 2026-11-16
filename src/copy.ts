@@ -195,6 +195,13 @@ export const copy = {
     resultFor: (side) => `Średnia: ${side}`,
   } satisfies TrackerCopy,
 
+  pressure: {
+    title: 'Wywieranie presji',
+    bonus: (bonus: number) => `Modyfikator: +${bonus}`,
+    ops: (ops: number) => `${ops} PO`,
+    successes: 'Sukcesy',
+  },
+
   lastRolls: 'Ostatnie 3 rzuty:',
   noRolls: 'Brak rzutów',
   added: (value: string) => `Dodano ${value}`,
