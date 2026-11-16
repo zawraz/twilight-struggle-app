@@ -197,7 +197,10 @@ export const copy = {
 
   pressure: {
     title: 'Wywieranie presji',
-    bonus: (bonus: number) => `Modyfikator: +${bonus}`,
+    /** "+2", "0", "−3": a net bonus with its sign. */
+    signed: (bonus: number) => (bonus > 0 ? `+${bonus}` : bonus < 0 ? `−${-bonus}` : '0'),
+    bonus: (bonus: number) => `Modyfikator: ${bonus > 0 ? `+${bonus}` : bonus < 0 ? `−${-bonus}` : '0'}`,
+    bonusLabel: 'Modyfikator',
     ops: (ops: number) => `${ops} PO`,
     successes: 'Sukcesy',
   },
